@@ -1,7 +1,7 @@
 package model
 
 import (
-	"github.com/materials-commons/mcdstore/pkg/db/schema"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
 // Groups is a default model for the usergroups table.

@@ -6,7 +6,7 @@ import (
 
 	r "github.com/dancannon/gorethink"
 	"github.com/dancannon/gorethink/encoding"
-	"github.com/materials-commons/mcstore/base/mcerr"
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
 )
 
@@ -34,7 +34,7 @@ func (q *rQuery) ByID(id string, obj interface{}) error {
 func (m *rModel) Q() *rQuery {
 	session, err := db.RSession()
 	if err != nil {
-		panic(fmt.Sprintf("Unable to connect to database:", err))
+		panic(fmt.Sprintf("Unable to connect to database: %s", err))
 	}
 	return m.Qs(session)
 }
@@ -114,7 +114,7 @@ func (q *rQuery) Update(id string, what interface{}) error {
 	if v.Kind() == reflect.Struct || v.Kind() == reflect.Struct {
 		dv, err = encoding.Encode(what)
 		if err != nil {
-			return mcerr.ErrInvalid
+			return app.ErrInvalid
 		}
 	} else {
 		dv = what
@@ -124,7 +124,7 @@ func (q *rQuery) Update(id string, what interface{}) error {
 	case err != nil:
 		return err
 	case rv.Errors != 0:
-		return mcerr.ErrNotFound
+		return app.ErrNotFound
 	default:
 		return nil
 	}
@@ -140,7 +140,7 @@ func (q *rQuery) InsertRaw(table string, what interface{}, dest interface{}) err
 	if dv.Kind() == reflect.Ptr {
 		returnValue = true
 	} else if dv.Kind() != reflect.Invalid {
-		return mcerr.ErrInvalid
+		return app.ErrInvalid
 	}
 
 	opts := r.InsertOpts{
@@ -153,12 +153,12 @@ func (q *rQuery) InsertRaw(table string, what interface{}, dest interface{}) err
 	case err != nil:
 		return err
 	case rv.Errors != 0:
-		return mcerr.ErrCreate
+		return app.ErrCreate
 	case rv.Inserted == 0:
-		return mcerr.ErrCreate
+		return app.ErrCreate
 	case returnValue:
 		if len(rv.Changes) == 0 {
-			return mcerr.ErrCreate
+			return app.ErrCreate
 		}
 		err := encoding.Decode(dest, rv.Changes[0].NewValue)
 		return err
@@ -179,9 +179,9 @@ func (q *rQuery) Delete(id string) error {
 	case err != nil:
 		return err
 	case rv.Errors != 0:
-		return mcerr.ErrNotFound
+		return app.ErrNotFound
 	case rv.Deleted == 0:
-		return mcerr.ErrNotFound
+		return app.ErrNotFound
 	default:
 		return nil
 	}
@@ -194,7 +194,7 @@ func GetItem(id, table string, session *r.Session, obj interface{}) error {
 	case err != nil:
 		return err
 	case result.IsNil():
-		return mcerr.ErrNotFound
+		return app.ErrNotFound
 	default:
 		err := result.One(obj)
 		return err
@@ -208,7 +208,7 @@ func GetRow(query r.Term, session *r.Session, obj interface{}) error {
 	case err != nil:
 		return err
 	case result.IsNil():
-		return mcerr.ErrNotFound
+		return app.ErrNotFound
 	default:
 		err := result.One(obj)
 		return err

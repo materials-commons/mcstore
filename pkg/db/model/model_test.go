@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	r "github.com/dancannon/gorethink"
-	"github.com/materials-commons/mcfs/base/mcerr"
-	"github.com/materials-commons/mcdstore/pkg/db/schema"
+	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
 var _ = fmt.Println
@@ -61,7 +61,7 @@ func TestInsertDeleteUserModel(t *testing.T) {
 	}
 
 	err = m.Qs(session).Insert(u, user)
-	if err != mcerr.ErrInvalid {
+	if err != app.ErrInvalid {
 		t.Fatalf("Passed in wrong type and did not get error")
 	}
 
