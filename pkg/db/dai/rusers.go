@@ -19,20 +19,20 @@ func NewRUsers(session *r.Session) rUsers {
 }
 
 // ByID looks up users by their primary key. In RethinkDB this is the id field.
-func (u rUsers) ByID(id string) (schema.User, error) {
+func (u rUsers) ByID(id string) (*schema.User, error) {
 	var user schema.User
 	if err := model.Users.Qs(u.session).ByID(id, &user); err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
 
 // ByAPIKey looks up users by their apikey. In RethinkDB this is the apikey field.
-func (u rUsers) ByAPIKey(apikey string) (schema.User, error) {
+func (u rUsers) ByAPIKey(apikey string) (*schema.User, error) {
 	var user schema.User
 	rql := model.Users.T().GetAllByIndex("apikey", apikey)
 	if err := model.Users.Qs(u.session).Row(rql, &user); err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }

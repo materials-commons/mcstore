@@ -19,10 +19,10 @@ func NewRFiles(session *r.Session) rFiles {
 }
 
 // ByID looks up a file by its primary key. In RethinkDB this is the id field.
-func (f rFiles) ByID(id string) (schema.File, error) {
+func (f rFiles) ByID(id string) (*schema.File, error) {
 	var file schema.File
 	if err := model.Files.Qs(f.session).ByID(id, &file); err != nil {
 		return nil, err
 	}
-	return file, nil
+	return &file, nil
 }
