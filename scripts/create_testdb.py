@@ -64,6 +64,27 @@ class User(object):
         }
 
 
+class Usergroup(object):
+    def __init__(self, name, owner):
+        self._type = "group"
+        now = r.now()
+        self.birthtime = now
+        self.mtime = now
+        self.name = name
+        self.owner = owner
+        self.projects = []
+        self.users = []
+
+    def add_user(self, user):
+        self.users.append(user)
+
+    def add_project(self, name, id):
+        self.projects.append({
+            "id": id,
+            "name": name
+        })
+
+
 def create_table(table, conn, *args):
     run(r.table_create(table), conn)
     for index_name in args:
@@ -101,6 +122,7 @@ def make_tables(conn):
     create_table("project2datafile", conn, "project_id", "datafile_id")
     create_table("datadir2datafile", conn, "datadir_id", "datafile_id")
     create_table("users", conn, "apikey")
+    create_table("usergroups", conn, "owner")
     print "Done..."
 
 
@@ -108,11 +130,21 @@ def load_tables(conn):
     print "Loading tables..."
     user = User("test@mc.org", "test")
     insert(user.__dict__, "users", conn)
+    user = User("test1@mc.org", "test1")
+    insert(user.__dict__, "users", conn)
+    user = User("test2@mc.org", "test2")
+    insert(user.__dict__, "users", conn)
 
     project = Project("test", "test@mc.org")
     project.id = "test"
     created_project = insert(project.__dict__, "projects", conn)
     project_id = created_project['id']
+
+    group = Usergroup("test", "test@mc.org")
+    group.add_project("test", project_id)
+    group.add_user("test1@mc.org")
+    group.id = "test"
+    insert(group.__dict__, "usergroups", conn)
 
     ddir = DataDir("test", "test@mc.org", "")
     ddir.id = "test"
@@ -160,7 +192,7 @@ def load_tables(conn):
 
 
 def create_db():
-    print "Creating mctestdb"
+    print "Creating mctestdb..."
     conn = r.connect("localhost", 30815)
     run(r.db_drop("mctestdb"), conn)
     run(r.db_create("mctestdb"), conn)
