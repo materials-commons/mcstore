@@ -87,6 +87,10 @@ func (q *rQuery) Rows(query r.Term, results interface{}) error {
 	}
 	defer rows.Close()
 
+	if rows.IsNil() {
+		return app.ErrNotFound
+	}
+
 	i := 0
 	var result = reflect.New(elementType)
 	for rows.Next(result.Interface()) {
@@ -213,49 +217,4 @@ func GetRow(query r.Term, session *r.Session, obj interface{}) error {
 		err := result.One(obj)
 		return err
 	}
-}
-
-// GetRows runs a query an returns a list of results.
-func GetRows(query r.Term, session *r.Session, results interface{}) error {
-	resultsValue := reflect.ValueOf(results)
-	if resultsValue.Kind() != reflect.Ptr || (resultsValue.Elem().Kind() != reflect.Slice && resultsValue.Elem().Kind() != reflect.Interface) {
-		return fmt.Errorf("bad type for results")
-	}
-
-	sliceValue := resultsValue.Elem()
-
-	if resultsValue.Elem().Kind() == reflect.Interface {
-		sliceValue = sliceValue.Elem().Slice(0, sliceValue.Cap())
-	} else {
-		sliceValue = sliceValue.Slice(0, sliceValue.Cap())
-	}
-	elementType := sliceValue.Type().Elem()
-	rows, err := query.Run(session)
-	if err != nil {
-		return err
-	}
-
-	defer rows.Close()
-
-	i := 0
-	var result = reflect.New(elementType)
-	for rows.Next(result.Interface()) {
-		if sliceValue.Len() == i {
-			sliceValue = reflect.Append(sliceValue, result.Elem())
-			sliceValue = sliceValue.Slice(0, sliceValue.Cap())
-		} else {
-			sliceValue.Index(i).Set(result.Elem())
-		}
-		i++
-		result = reflect.New(elementType)
-	}
-
-	resultsValue.Elem().Set(sliceValue.Slice(0, i))
-	return nil
-}
-
-// Delete deletes an item by id in the given table.
-func Delete(table, id string, session *r.Session) error {
-	_, err := r.Table(table).Get(id).Delete().RunWrite(session)
-	return err
 }

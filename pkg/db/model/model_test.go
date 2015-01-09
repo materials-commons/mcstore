@@ -7,6 +7,7 @@ import (
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
+	"github.com/stretchr/testify/require"
 )
 
 var _ = fmt.Println
@@ -101,20 +102,21 @@ func TestUpdateDeleteUserModel(t *testing.T) {
 	}
 }
 
-func TestGetRows(t *testing.T) {
+func TestRows(t *testing.T) {
+	m := Users
 	var users []schema.User
 	rql := r.Table("users")
-	err := GetRows(rql, session, &users)
-	if err != nil {
-		t.Errorf("GetRows all users failed: %s", err)
-	}
+	err := m.Qs(session).Rows(rql, &users)
+	require.Nil(t, err, "Rows all users failed: %s", err)
+	require.NotEqual(t, len(users), 0, "Users length == 0")
 
-	if len(users) == 0 {
-		t.Errorf("Users length == 0")
-	}
+	err = m.Qs(session).Rows(rql, users)
+	require.NotNil(t, err, "Unexpected nil error when passing in bad parameter")
 
-	err = GetRows(rql, session, users)
-	if err == nil {
-		t.Errorf("Unexpected nil error when passing in bad parameter")
-	}
+	// Test non-existant
+	rql = r.Table("usergroups").GetAll("does-not-exist")
+	var groups []schema.Group
+	err = m.Qs(session).Rows(rql, &groups)
+	require.Equal(t, err, app.ErrNotFound, "Unexpected error, wanted ErrNotFound: %s", err)
+	require.Equal(t, len(groups), 0, "Unexpected group entries: %#v", groups)
 }
