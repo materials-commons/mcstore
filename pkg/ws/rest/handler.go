@@ -1,12 +1,9 @@
 package rest
 
 import (
-	"fmt"
-	"net/http"
-
 	"github.com/emicklei/go-restful"
-	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
+	"github.com/materials-commons/mcstore/pkg/ws"
 )
 
 // httpError is the error and message to respond with.
@@ -37,7 +34,7 @@ func RouteHandler(f RouteFunc) restful.RouteFunction {
 		err, val := f(request, response, user)
 		switch {
 		case err != nil:
-			httpErr := errorToHTTPError(err)
+			httpErr := ws.ErrorToHTTPError(err)
 			httpErr.Write(response)
 		case val != nil:
 			err = response.WriteEntity(val)
@@ -59,40 +56,4 @@ func RouteHandler1(f RouteFunc1) restful.RouteFunction {
 		return err, nil
 	}
 	return RouteHandler(f2)
-}
-
-// ErrorToHTTPError translates an error code into an httpError. It checks
-// if the error code is of type mcerr.Error and handles it appropriately.
-func ErrorToHTTPError(err error) *httpError {
-	switch e := err.(type) {
-	case *app.Error:
-		return appErrToHTTPError(e)
-	default:
-		return otherErrorToHTTPError(e)
-	}
-}
-
-// appErrToHTTPError tranlates an app.Error to an httpError.
-func appErrToHTTPError(err *app.Error) *httpError {
-	httpErr := otherErrorToHTTPError(err.Err)
-	httpErr.message = fmt.Sprintf("%s: %s", httpErr.message, err.Message)
-	return httpErr
-}
-
-// otherErrorToHTTPError translates other error types to an httpError.
-func otherErrorToHTTPError(err error) *httpError {
-	var httpErr httpError
-	switch err {
-	case app.ErrNotFound:
-		httpErr.statusCode = http.StatusBadRequest
-	case app.ErrExists:
-		httpErr.statusCode = http.StatusForbidden
-	case app.ErrNoAccess:
-		httpErr.statusCode = http.StatusUnauthorized
-	default:
-		httpErr.statusCode = http.StatusInternalServerError
-	}
-
-	httpErr.message = err.Error()
-	return &httpErr
 }
