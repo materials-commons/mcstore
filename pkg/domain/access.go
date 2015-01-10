@@ -1,17 +1,25 @@
 package domain
 
-import "github.com/materials-commons/mcstore/pkg/db/dai"
+import (
+	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/db/dai"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
+)
 
 // TODO: Group caching
 // TODO: cache reloading
 
 type Access struct {
 	groups dai.Groups
+	files  dai.Files
+	users  dai.Users
 }
 
-func NewAccess(groups dai.Groups) *Access {
+func NewAccess(groups dai.Groups, files dai.Files, users dai.Users) *Access {
 	return &Access{
 		groups: groups,
+		files:  files,
+		users:  users,
 	}
 }
 
@@ -64,4 +72,26 @@ func (a *Access) isAdmin(user string) bool {
 	}
 
 	return false
+}
+
+func (a *Access) GetFile(apikey, fileID string) (*schema.File, error) {
+	user, err := a.users.ByAPIKey(apikey)
+	if err != nil {
+		// log error here
+		app.Log.Error("User lookup failed", "error", err, "apikey", apikey)
+		return nil, app.ErrNoAccess
+	}
+
+	file, err := a.files.ByID(fileID)
+	if err != nil {
+		app.Log.Error("File lookup failed", "error", err, "fileid", fileID)
+		return nil, app.ErrNoAccess
+	}
+
+	if !a.AllowedByOwner(file.Owner, user.ID) {
+		app.Log.Info("Access denied", "fileid", file.ID, "user", user.ID)
+		return nil, app.ErrNoAccess
+	}
+
+	return file, nil
 }
