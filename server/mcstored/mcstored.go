@@ -35,10 +35,12 @@ type options struct {
 	Database databaseOptions `group:"Database Options"`
 }
 
+// configErrorHandler gives us a chance to handle configuration look up errors.
 func configErrorHandler(key string, err error, args ...interface{}) {
 
 }
 
+// init initializes config for the server.
 func init() {
 	config.Init(config.TwelveFactorWithOverride)
 	config.SetErrorHandler(configErrorHandler)
@@ -60,6 +62,7 @@ func main() {
 	server(opts.Server.HTTPPort)
 }
 
+// setupConfig sets up configuration overrides that were passed in on the command line.
 func setupConfig(opts options) {
 	if opts.Database.Connection != "" {
 		config.Set("MCDB_CONNECTION", opts.Database.Connection)
@@ -78,6 +81,7 @@ func setupConfig(opts options) {
 	}
 }
 
+// server implements the actual serve for mcstored.
 func server(port uint) {
 	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
