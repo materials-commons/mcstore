@@ -13,12 +13,21 @@ type HTTPError struct {
 	message    string
 }
 
+// Write writes the HTTPError to the ResponseWriter
 func (e *HTTPError) Write(response http.ResponseWriter) {
 	response.WriteHeader(e.statusCode)
 	response.Write([]byte(e.message))
 }
 
-// if the error code is of type mcerr.Error and handles it appropriately.
+// WriteError writes the specified error to the writer. It translates the
+// error to a HTTP status code.
+func WriteError(err error, writer http.ResponseWriter) {
+	httpErr := ErrorToHTTPError(err)
+	httpErr.Write(writer)
+}
+
+// ErrorToHTTPError translates an error to an HTTPError. It translates an
+// error to an HTTP status code.
 func ErrorToHTTPError(err error) *HTTPError {
 	switch e := err.(type) {
 	case *app.Error:
