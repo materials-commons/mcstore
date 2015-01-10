@@ -9,6 +9,10 @@ import (
 	"github.com/jessevdk/go-flags"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/db"
+	"github.com/materials-commons/mcstore/pkg/db/dai"
+	"github.com/materials-commons/mcstore/pkg/domain"
+	"github.com/materials-commons/mcstore/server/mcstored/service"
 )
 
 // Options for server startup
@@ -75,10 +79,9 @@ func setupConfig(opts options) {
 }
 
 func server(port uint) {
-	http.HandleFunc("/data/", dataHandler)
+	session := db.RSessionMust()
+	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
+	dataHandler := service.NewDataHandler(access)
+	http.Handle("/data/", dataHandler)
 	app.Log.Crit("http Server failed", "error", http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
-}
-
-func dataHandler(writer http.ResponseWriter, req *http.Request) {
-
 }
