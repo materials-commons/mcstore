@@ -16,11 +16,11 @@ func (d mcdir) Path() string {
 	return config.GetString("MCDIR")
 }
 
-func (d mcdir) FileIDDir(fileID string) string {
-	pieces := strings.Split(fileID, "-")
-	return filepath.Join(d.Path(), pieces[1][0:2])
+func (d mcdir) FileDir(fileID string) string {
+	idSegments := strings.Split(fileID, "-")
+	return filepath.Join(d.Path(), idSegments[1][0:2], idSegments[1][2:4])
 }
 
-func (d mcdir) FileIDPath(fileID string) string {
-	return filepath.Join(d.FileIDDir(fileID), fileID)
+func (d mcdir) FilePath(fileID string) string {
+	return filepath.Join(d.FileDir(fileID), fileID)
 }
