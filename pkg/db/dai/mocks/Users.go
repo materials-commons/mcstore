@@ -1,6 +1,6 @@
 package mocks
 
-import "github.com/stretchr/testify/mock"
+import "github.com/materials-commons/testify/mock"
 
 import "github.com/materials-commons/mcstore/pkg/db/schema"
 

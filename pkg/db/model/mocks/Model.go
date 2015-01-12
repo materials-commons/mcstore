@@ -1,7 +1,7 @@
 package mocks
 
 import "github.com/materials-commons/mcstore/pkg/db/model"
-import "github.com/stretchr/testify/mock"
+import "github.com/materials-commons/testify/mock"
 
 import r "github.com/dancannon/gorethink"
 
