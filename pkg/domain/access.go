@@ -9,17 +9,22 @@ import (
 // TODO: Group caching
 // TODO: cache reloading
 
-// Access validates access to data. It checks if a user
+type Access interface {
+	AllowedByOwner(owner, user string) bool
+	GetFile(apikey, fileID string) (*schema.File, error)
+}
+
+// access validates access to data. It checks if a user
 // has been given permission to access a particular item.
-type Access struct {
+type access struct {
 	groups dai.Groups
 	files  dai.Files
 	users  dai.Users
 }
 
 // NewAccess creates a new Access.
-func NewAccess(groups dai.Groups, files dai.Files, users dai.Users) *Access {
-	return &Access{
+func NewAccess(groups dai.Groups, files dai.Files, users dai.Users) *access {
+	return &access{
 		groups: groups,
 		files:  files,
 		users:  users,
@@ -34,7 +39,7 @@ func NewAccess(groups dai.Groups, files dai.Files, users dai.Users) *Access {
 //    For each user in the user group see if the requesting user
 //    is included. If so then return true (has access).
 // 3. None of the above matched - return false (no access).
-func (a *Access) AllowedByOwner(owner, user string) bool {
+func (a *access) AllowedByOwner(owner, user string) bool {
 	// Check if user and file owner are the same, or the user is
 	// in the admin group.
 	if user == owner || a.isAdmin(user) {
@@ -64,7 +69,7 @@ func (a *Access) AllowedByOwner(owner, user string) bool {
 }
 
 // isAdmin checks if a user is in the admin group.
-func (a *Access) isAdmin(user string) bool {
+func (a *access) isAdmin(user string) bool {
 	group, err := a.groups.ByID("admin")
 	if err != nil {
 		return false
@@ -82,7 +87,7 @@ func (a *Access) isAdmin(user string) bool {
 // GetFile will validate access to a file. Rather than taking a user,
 // it takes an apikey and looks up the user. It returns the file if
 // access has been granted, otherwise it returns the erro ErrNoAccess.
-func (a *Access) GetFile(apikey, fileID string) (*schema.File, error) {
+func (a *access) GetFile(apikey, fileID string) (*schema.File, error) {
 	user, err := a.users.ByAPIKey(apikey)
 	if err != nil {
 		// log error here
