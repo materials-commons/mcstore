@@ -34,6 +34,10 @@ func (h *dataHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	}
 }
 
+// serveFile serves up the actual file contents. It sets the content-type header to
+// the mediatype specified. If the file doesn't exist, or the server doesn't have
+// permissions to access the file then a 404 (not found) will be returned by the
+// http.ServeFile method.
 func serveFile(writer http.ResponseWriter, req *http.Request, path, mediatype string) {
 	writer.Header().Set("Content-Type", mediatype)
 	app.Log.Debug(app.Logf("Set Content-Type to %s", mediatype))
