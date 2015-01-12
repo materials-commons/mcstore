@@ -117,6 +117,15 @@ func TestFilePath(t *testing.T) {
 }
 
 func TestServeData(t *testing.T) {
+	mcdir := config.GetString("MCDIR")
+	defer func() {
+		// reset MCDIR to original value when this test ends.
+		config.Set("MCDIR", mcdir)
+	}()
+
+	// Set MCDIR so we know what to test against.
+	config.Set("MCDIR", "/tmp/mcdir")
+
 	a := mocks.NewMAccess()
 	dh := NewDataHandler(a)
 	ts := httptest.NewServer(dh)
@@ -126,21 +135,31 @@ func TestServeData(t *testing.T) {
 	req, _ := http.NewRequest("GET", ts.URL, nil)
 	rr := httptest.NewRecorder() // rr = response recorder
 
+	//
 	// Test with no apikey specified
+	//
 	dhhandler := dh.(*dataHandler)
-	_, mediatype, err := dhhandler.serveData(rr, req)
+	path, mediatype, err := dhhandler.serveData(rr, req)
 	require.Equal(t, err, app.ErrNoAccess, "Expected ErrNoAccess: %s ", err)
+	require.Equal(t, path, "", "Got unexpected value for path %s", path)
+	require.Equal(t, mediatype, "", "Got unexpected value for mediatype %s", mediatype)
 
 	fileURL := ts.URL + "/abc-defg-456"
 
+	//
 	// Test with GetFile failing
+	//
 	req, _ = http.NewRequest("GET", fileURL+"?apikey=abc123", nil)
 	var nilFile *schema.File = nil
 	a.On("GetFile", "abc123", "abc-defg-456").Return(nilFile, app.ErrNoAccess)
-	_, mediatype, err = dhhandler.serveData(rr, req)
+	path, mediatype, err = dhhandler.serveData(rr, req)
 	require.Equal(t, err, app.ErrNoAccess, "Expected ErrNoAccess: %s", err)
+	require.Equal(t, path, "", "Got unexpected value for path %s", path)
+	require.Equal(t, mediatype, "", "Got unexpected value for mediatype %s", mediatype)
 
+	//
 	// Test with good key and fileID, get converted image
+	//
 	req, _ = http.NewRequest("GET", fileURL+"?apikey=abc123", nil)
 	f := schema.File{
 		ID: "abc-defg-456",
@@ -149,15 +168,19 @@ func TestServeData(t *testing.T) {
 		},
 	}
 	a.On("GetFile", "abc123", "abc-defg-456").Return(&f, nil)
-	_, mediatype, err = dhhandler.serveData(rr, req)
+	path, mediatype, err = dhhandler.serveData(rr, req)
 	require.Nil(t, err, "Error should have been nil: %s", err)
 	require.Equal(t, mediatype, "image/jpeg", "Expected image/jpeg, got %s", mediatype)
+	require.Equal(t, path, "/tmp/mcdir/de/fg/.conversion/abc-defg-456.jpg", "Got unexpected value for path %s", path)
 
+	//
 	// Test with good key and fileID, get original image
+	//
 	req, _ = http.NewRequest("GET", fileURL+"?apikey=abc123&original=true", nil)
-	_, mediatype, err = dhhandler.serveData(rr, req)
+	path, mediatype, err = dhhandler.serveData(rr, req)
 	require.Nil(t, err, "Error should have been nil: %s", err)
 	require.Equal(t, mediatype, "image/tiff", "Expected image/tiff, got %s", mediatype)
+	require.Equal(t, path, "/tmp/mcdir/de/fg/abc-defg-456", "Got unexpected value for path %s", path)
 }
 
 func TestServeHTTP(t *testing.T) {
