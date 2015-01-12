@@ -1,6 +1,15 @@
 package flow
 
-import "fmt"
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
+	"github.com/materials-commons/mcstore/pkg/app"
+)
+
+const ChunkPerms = 0700
 
 // A FlowRequest encapsulates the flowjs protocol for uploading a file. The
 // protocol supports extensions to the protocol. We extend the protocol to
@@ -24,4 +33,42 @@ type Request struct {
 
 func (r *Request) UploadID() string {
 	return fmt.Sprintf("%s-%s-%s", r.ProjectID, r.DirectoryID, r.FileID)
+}
+
+func (r *Request) Write() error {
+	path := r.Path()
+	err := os.MkdirAll(path, ChunkPerms)
+	switch {
+	case err != nil:
+		return err
+	case !r.canWriteTo(path):
+		return app.ErrInvalid
+	default:
+		return ioutil.WriteFile(path, r.Chunk, ChunkPerms)
+	}
+}
+
+// canWriteTo determines if a particular chunk can be written.
+// If the size of the ondisk chunk is smaller than the request
+// chunk then that chunk is incomplete and we allow a write to it.
+func (r *Request) canWriteTo(path string) bool {
+	finfo, err := os.Stat(path)
+	switch {
+	case err != nil:
+		return os.IsNotExist(err)
+	case finfo.Size() < int64(r.FlowChunkSize):
+		return true
+	default:
+		return false
+	}
+}
+
+func (r *Request) Dir() string {
+	mcdir := app.MCDir.Path()
+	uploadPath := filepath.Join(mcdir, "upload", r.ProjectID, r.DirectoryID, r.FileID)
+	return uploadPath
+}
+
+func (r *Request) Path() string {
+	return filepath.Join(r.Dir(), fmt.Sprintf("%d", r.FlowChunkNumber))
 }
