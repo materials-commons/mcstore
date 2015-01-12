@@ -36,23 +36,6 @@ func TestGetOriginal(t *testing.T) {
 	require.True(t, getOriginalFormValue(req), "Original flag specified with value, but returned false")
 }
 
-func TestImageConversionPath(t *testing.T) {
-	mcdir := config.GetString("MCDIR")
-	defer func() {
-		// reset MCDIR to original value when this test ends.
-		config.Set("MCDIR", mcdir)
-	}()
-
-	// Set MCDIR so we know what to test against.
-	config.Set("MCDIR", "/tmp/mcdir")
-
-	// imageConversionPath should always be called with a good id. So we
-	// just need to test that the directory it constructs looks ok.
-	fileID := "abc-defg-456"
-	path := imageConversionPath(fileID)
-	require.Equal(t, "/tmp/mcdir/de/fg/.conversion/abc-defg-456.jpg", path, "Got unexpected path: %s", path)
-}
-
 func TestIsConvertedImage(t *testing.T) {
 	// Test against a couple of different MiME types.
 	require.True(t, isConvertedImage("image/tiff"), "image/tiff should be a converted type")
@@ -81,39 +64,39 @@ func TestFilePath(t *testing.T) {
 
 	// Test converted image, and not requesting original
 	path := filePath(&f, false)
-	require.Equal(t, path, "/tmp/mcdir/de/fg/.conversion/abc-defg-456.jpg")
+	require.Equal(t, path, app.MCDir.FilePathImageConversion(f.FileID()))
 
 	// Test converted image and requesting original
 	path = filePath(&f, true)
-	require.Equal(t, path, "/tmp/mcdir/de/fg/abc-defg-456")
+	require.Equal(t, path, app.MCDir.FilePath(f.FileID()))
 
 	// Test unconverted and not requesting original
 	f.MediaType.Mime = "text/plain"
 	path = filePath(&f, false)
-	require.Equal(t, path, "/tmp/mcdir/de/fg/abc-defg-456")
+	require.Equal(t, path, app.MCDir.FilePath(f.FileID()))
 
 	// Test unconverted and requesting original
 	path = filePath(&f, true)
-	require.Equal(t, path, "/tmp/mcdir/de/fg/abc-defg-456")
+	require.Equal(t, path, app.MCDir.FilePath(f.FileID()))
 
 	// Test with uses set, converted image, not requesting original
 	f.MediaType.Mime = "image/tiff"
 	f.UsesID = "def-ghij-789"
 	path = filePath(&f, false)
-	require.Equal(t, path, "/tmp/mcdir/gh/ij/.conversion/def-ghij-789.jpg")
+	require.Equal(t, path, app.MCDir.FilePathImageConversion(f.FileID()))
 
 	// Test with uses set, converted image, requesting original
 	path = filePath(&f, true)
-	require.Equal(t, path, "/tmp/mcdir/gh/ij/def-ghij-789")
+	require.Equal(t, path, app.MCDir.FilePath(f.FileID()))
 
 	// Test with uses set, not converted image, not requesting original
 	f.MediaType.Mime = "text/plain"
 	path = filePath(&f, false)
-	require.Equal(t, path, "/tmp/mcdir/gh/ij/def-ghij-789")
+	require.Equal(t, path, app.MCDir.FilePath(f.FileID()))
 
 	// Test with uses set, not converted image, requesting original
 	path = filePath(&f, true)
-	require.Equal(t, path, "/tmp/mcdir/gh/ij/def-ghij-789")
+	require.Equal(t, path, app.MCDir.FilePath(f.FileID()))
 }
 
 func TestServeData(t *testing.T) {
@@ -171,7 +154,7 @@ func TestServeData(t *testing.T) {
 	path, mediatype, err = dhhandler.serveData(rr, req)
 	require.Nil(t, err, "Error should have been nil: %s", err)
 	require.Equal(t, mediatype, "image/jpeg", "Expected image/jpeg, got %s", mediatype)
-	require.Equal(t, path, "/tmp/mcdir/de/fg/.conversion/abc-defg-456.jpg", "Got unexpected value for path %s", path)
+	require.Equal(t, path, app.MCDir.FilePathImageConversion(f.FileID()), "Got unexpected value for path %s", path)
 
 	//
 	// Test with good key and fileID, get original image
@@ -180,7 +163,7 @@ func TestServeData(t *testing.T) {
 	path, mediatype, err = dhhandler.serveData(rr, req)
 	require.Nil(t, err, "Error should have been nil: %s", err)
 	require.Equal(t, mediatype, "image/tiff", "Expected image/tiff, got %s", mediatype)
-	require.Equal(t, path, "/tmp/mcdir/de/fg/abc-defg-456", "Got unexpected value for path %s", path)
+	require.Equal(t, path, app.MCDir.FilePath(f.FileID()), "Got unexpected value for path %s", path)
 }
 
 func TestServeHTTP(t *testing.T) {

@@ -34,10 +34,26 @@ func (d mcdir) FileDir(fileID string) string {
 	}
 }
 
+func (d mcdir) FileConversionDir(fileID string) string {
+	dir := d.FileDir(fileID)
+	if dir == "" {
+		return ""
+	}
+	return filepath.Join(dir, ".conversion")
+}
+
 func (d mcdir) FilePath(fileID string) string {
 	dir := d.FileDir(fileID)
 	if dir == "" {
 		return ""
 	}
-	return filepath.Join(d.FileDir(fileID), fileID)
+	return filepath.Join(dir, fileID)
+}
+
+func (d mcdir) FilePathImageConversion(fileID string) string {
+	dir := d.FileConversionDir(fileID)
+	if dir == "" {
+		return ""
+	}
+	return filepath.Join(dir, fileID+".jpg")
 }

@@ -101,7 +101,7 @@ func getOriginalFormValue(req *http.Request) bool {
 func filePath(file *schema.File, original bool) string {
 	switch {
 	case isConvertedImage(file.MediaType.Mime) && !original:
-		return imageConversionPath(file.FileID())
+		return app.MCDir.FilePathImageConversion(file.FileID())
 	default:
 		return app.MCDir.FilePath(file.FileID())
 	}
@@ -117,10 +117,4 @@ func isConvertedImage(mime string) bool {
 	default:
 		return false
 	}
-}
-
-// imageConversionPath returns the path to the converted image. Converted images
-// are kept in the filepath subdirectory .conversion.
-func imageConversionPath(id string) string {
-	return filepath.Join(app.MCDir.FileDir(id), ".conversion", id+".jpg")
 }

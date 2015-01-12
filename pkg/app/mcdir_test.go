@@ -51,3 +51,37 @@ func TestFilePath(t *testing.T) {
 	path = MCDir.FilePath(fileID)
 	require.Equal(t, "", path, "Expected '', got %s", path)
 }
+
+func TestFileConversionDir(t *testing.T) {
+	// Good file id
+	fileID := "abc-defg-ghi"
+	path := MCDir.FileConversionDir(fileID)
+	require.Equal(t, "/tmp/mcdir/de/fg/.conversion", path)
+
+	// Bad file id
+	fileID = "bad_file_id"
+	path = MCDir.FileConversionDir(fileID)
+	require.Equal(t, "", path, "Expected '', got %s", path)
+
+	// Bad segment in file id
+	fileID = "abc-def-ghi-jkl"
+	path = MCDir.FileConversionDir(fileID)
+	require.Equal(t, "", path, "Expected '', got %s", path)
+}
+
+func TestFilePathImageConversion(t *testing.T) {
+	// Good file id
+	fileID := "abc-defg-ghi"
+	path := MCDir.FilePathImageConversion(fileID)
+	require.Equal(t, "/tmp/mcdir/de/fg/.conversion/abc-defg-ghi.jpg", path, "Expected /tmp/mcdir/de/fg/.conversion/abc-defg-ghi.jpg, got %s", path)
+
+	// Bad file id
+	fileID = "bad_file_id"
+	path = MCDir.FilePathImageConversion(fileID)
+	require.Equal(t, "", path, "Expected '', got %s", path)
+
+	// Bad segment in file id
+	fileID = "abc-def-ghi-jkl"
+	path = MCDir.FilePathImageConversion(fileID)
+	require.Equal(t, "", path, "Expected '', got %s", path)
+}
