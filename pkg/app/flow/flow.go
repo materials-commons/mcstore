@@ -37,38 +37,45 @@ func (r *Request) UploadID() string {
 
 func (r *Request) Write() error {
 	path := r.Path()
-	err := os.MkdirAll(path, ChunkPerms)
+	err := r.validateWrite(path)
 	switch {
-	case err != nil:
-		return err
-	case !r.canWriteTo(path):
-		return app.ErrInvalid
-	default:
+	case err == nil:
 		return ioutil.WriteFile(path, r.Chunk, ChunkPerms)
+	case err == app.ErrExists:
+		return nil
+	default:
+		return err
 	}
 }
 
-// canWriteTo determines if a particular chunk can be written.
+// validateWrite determines if a particular chunk can be written.
 // If the size of the ondisk chunk is smaller than the request
 // chunk then that chunk is incomplete and we allow a write to it.
-func (r *Request) canWriteTo(path string) bool {
+func (r *Request) validateWrite(path string) error {
+	if err := os.MkdirAll(path, ChunkPerms); err != nil {
+		return err
+	}
 	finfo, err := os.Stat(path)
 	switch {
+	case os.IsNotExist(err):
+		return nil
 	case err != nil:
-		return os.IsNotExist(err)
+		return app.ErrInvalid
 	case finfo.Size() < int64(r.FlowChunkSize):
-		return true
+		return nil
+	case finfo.Size() == int64(r.FlowChunkSize):
+		return app.ErrExists
 	default:
-		return false
+		return app.ErrInvalid
 	}
+}
+
+func (r *Request) Path() string {
+	return filepath.Join(r.Dir(), fmt.Sprintf("%d", r.FlowChunkNumber))
 }
 
 func (r *Request) Dir() string {
 	mcdir := app.MCDir.Path()
 	uploadPath := filepath.Join(mcdir, "upload", r.ProjectID, r.DirectoryID, r.FileID)
 	return uploadPath
-}
-
-func (r *Request) Path() string {
-	return filepath.Join(r.Dir(), fmt.Sprintf("%d", r.FlowChunkNumber))
 }
