@@ -33,8 +33,10 @@ func (u *uploader) uploadDone(request *flow.Request) bool {
 }
 
 func (u *uploader) assembleUpload(request *flow.Request) {
-	assembler := newAssembler(request, u.tracker)
-	assembler.launch()
+	assembler := NewAssembler(nil, nil) // fix this with real items and finisher
+	go func() {
+		assembler.To(nil) // fix this with real destination
+	}()
 }
 
 type uploadFinisher struct {
@@ -51,5 +53,6 @@ func newUploadFinisher(uploadID string, tracker *uploadTracker) *uploadFinisher 
 
 func (f *uploadFinisher) Finish() error {
 	f.tracker.clear(f.uploadID)
+	//os.RemoveAll(uploadDir)
 	return nil
 }
