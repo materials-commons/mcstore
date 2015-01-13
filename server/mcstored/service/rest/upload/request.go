@@ -69,3 +69,11 @@ func (p *mcdirRequestPath) Dir(req *flow.Request) string {
 	uploadPath := filepath.Join(mcdir, "upload", req.ProjectID, req.DirectoryID, req.FileID)
 	return uploadPath
 }
+
+type nopRequestWriter struct {
+	err error
+}
+
+func (r *nopRequestWriter) Write(req *flow.Request) error {
+	return r.err
+}
