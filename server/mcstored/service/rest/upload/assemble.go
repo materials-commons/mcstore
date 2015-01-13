@@ -55,7 +55,7 @@ func (a *assembler) createUploadPaths() (*os.File, error) {
 }
 
 func (a *assembler) assembleFromDirectory(fdst *os.File) bool {
-	uploadDir := a.request.Dir()
+	uploadDir := "" // a.request.Dir()
 	finfos, err := ioutil.ReadDir(uploadDir)
 	if err != nil {
 		a.log.Error(app.Logf("Error reading assembly dir %s: %s", uploadDir, err))
