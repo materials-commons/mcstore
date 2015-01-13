@@ -23,6 +23,12 @@ type fileRequestWriter struct {
 	RequestPath
 }
 
+func newFileRequestWriter(requestPath RequestPath) *fileRequestWriter {
+	return &fileRequestWriter{
+		RequestPath: requestPath,
+	}
+}
+
 func (r *fileRequestWriter) Write(req *flow.Request) error {
 	path := r.Path(req)
 	err := r.validateWrite(path, req)
@@ -59,6 +65,10 @@ func (r *fileRequestWriter) validateWrite(path string, req *flow.Request) error 
 }
 
 type mcdirRequestPath struct{}
+
+func newMCDirRequestPath() *mcdirRequestPath {
+	return &mcdirRequestPath{}
+}
 
 func (p *mcdirRequestPath) Path(req *flow.Request) string {
 	return filepath.Join(p.Dir(req), fmt.Sprintf("%d", req.FlowChunkNumber))
