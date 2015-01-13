@@ -9,7 +9,8 @@ import (
 
 type mcdir struct{}
 
-// MCDir gives access to methods on the MCDIR directory.
+// MCDir gives access to methods on the MCDIR directory. It will
+// panic if MCDIR is not set.
 var MCDir mcdir
 
 func (d mcdir) Path() string {
@@ -20,6 +21,8 @@ func (d mcdir) Path() string {
 	return dir
 }
 
+// FileDir returns the directory path for a given fileID. It returns the
+// empty string if a bad fileID is given.
 func (d mcdir) FileDir(fileID string) string {
 	idSegments := strings.Split(fileID, "-")
 	switch {
@@ -34,26 +37,40 @@ func (d mcdir) FileDir(fileID string) string {
 	}
 }
 
+// FileConversionDir returns the conversion directory path for a fileID. The
+// conversion directory is the directory where converted image files are kept.
+// It returns the empty string if a bad fileID is given.
 func (d mcdir) FileConversionDir(fileID string) string {
 	dir := d.FileDir(fileID)
-	if dir == "" {
-		return ""
-	}
-	return filepath.Join(dir, ".conversion")
+	return makePath(dir, ".conversion")
 }
 
+// FilePath returns the full path including the file for a fileID.
+// It returns the empty string if a bad fileID is given.
 func (d mcdir) FilePath(fileID string) string {
 	dir := d.FileDir(fileID)
-	if dir == "" {
-		return ""
-	}
-	return filepath.Join(dir, fileID)
+	return makePath(dir, fileID)
 }
 
+// FilePathImageConversion returns the full path, include the file,
+// to the converted image file. It returns the empty string if a
+// bad fileID is given.
 func (d mcdir) FilePathImageConversion(fileID string) string {
 	dir := d.FileConversionDir(fileID)
-	if dir == "" {
+	return makePath(dir, fileID+".jpg")
+}
+
+// makePath constructs the file path. It handles checking
+// for bad segments and empty directory paths. It returns
+// the empty string if the first segment is empty, or
+// if the list of segments is empty.
+func makePath(pathSegments ...string) string {
+	switch {
+	case len(pathSegments) == 0:
 		return ""
+	case pathSegments[0] == "":
+		return ""
+	default:
+		return filepath.Join(pathSegments...)
 	}
-	return filepath.Join(dir, fileID+".jpg")
 }
