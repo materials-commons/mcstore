@@ -2,6 +2,8 @@ package upload
 
 import "github.com/materials-commons/mcstore/pkg/app/flow"
 
+// TODO: Uploader will need to know the destination for assembly.
+
 type uploader struct {
 	tracker *uploadTracker
 	w       RequestWriter
