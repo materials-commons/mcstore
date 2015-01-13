@@ -2,11 +2,9 @@ package upload
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
-	"path/filepath"
 	"strconv"
 
 	"github.com/emicklei/go-restful"
@@ -98,15 +96,4 @@ func atoi64(str string) int64 {
 func atoi32(str string) int32 {
 	i := atoi64(str)
 	return int32(i)
-}
-
-// fileUploadPath creates the path to upload file chunks to.
-func fileUploadPath(projectID, directoryID, fileID string) string {
-	return filepath.Join(app.MCDir.Path(), "upload", projectID, directoryID, fileID)
-}
-
-// chunkPath creates the full path name for a chunk.
-func chunkPath(uploadPath string, chunkNumber int32) string {
-	n := fmt.Sprintf("%d", chunkNumber)
-	return filepath.Join(uploadPath, n)
 }
