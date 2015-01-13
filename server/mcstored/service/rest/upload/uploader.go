@@ -7,9 +7,10 @@ type uploader struct {
 	w       RequestWriter
 }
 
-func newUploader() *uploader {
+func newUploader(w RequestWriter) *uploader {
 	return &uploader{
 		tracker: newUploadTracker(),
+		w:       w,
 	}
 }
 

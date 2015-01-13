@@ -21,7 +21,7 @@ type uploadResource struct {
 // NewResources creates a new upload resource
 func NewResource() rest.Service {
 	return &uploadResource{
-		uploader: newUploader(),
+		uploader: newUploader(nil),
 		log:      app.NewLog("resource", "upload"),
 	}
 }
