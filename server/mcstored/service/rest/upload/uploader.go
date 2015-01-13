@@ -4,6 +4,7 @@ import "github.com/materials-commons/mcstore/pkg/app/flow"
 
 type uploader struct {
 	tracker *uploadTracker
+	w       RequestWriter
 }
 
 func newUploader() *uploader {
@@ -13,7 +14,7 @@ func newUploader() *uploader {
 }
 
 func (u *uploader) processRequest(request *flow.Request) error {
-	if err := request.Write(); err != nil {
+	if err := u.w.Write(request); err != nil {
 		// write failed for some reason
 		return err
 	}
