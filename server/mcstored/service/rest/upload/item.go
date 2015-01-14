@@ -14,6 +14,11 @@ type Item interface {
 	Reader() (io.Reader, error) // Returns a reader to get at the items data
 }
 
+type DirItems interface {
+	Dir() string
+	Items() ([]Item, error)
+}
+
 // dirItem implements the Item interface. It provides an item for
 // each file in a directory.
 type dirItem struct {
@@ -51,6 +56,7 @@ func (d dirItem) Reader() (io.Reader, error) {
 
 // byChunk provides sorting on chunk files. Chunk file names are numeric since
 // chunks are numeric in ascending order.
+
 type byChunk []Item
 
 func (l byChunk) Len() int      { return len(l) }
