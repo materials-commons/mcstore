@@ -60,6 +60,12 @@ func (d mcdir) FilePathImageConversion(fileID string) string {
 	return makePath(dir, fileID+".jpg")
 }
 
+// UploadDir returns the path to the upload directory for a
+// given uploadID.
+func (d mcdir) UploadDir(uploadID string) string {
+	return filepath.Join(d.Path(), "upload", uploadID)
+}
+
 // makePath constructs the file path. It handles checking
 // for bad segments and empty directory paths. It returns
 // the empty string if the first segment is empty, or
