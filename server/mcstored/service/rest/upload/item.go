@@ -14,8 +14,7 @@ type Item interface {
 	Reader() (io.Reader, error) // Returns a reader to get at the items data
 }
 
-type DirItems interface {
-	Dir() string
+type ItemSupplier interface {
 	Items() ([]Item, error)
 }
 
@@ -26,9 +25,24 @@ type dirItem struct {
 	reader func() (io.Reader, error)
 }
 
+// Reader returns a new io.Reader for the given dirItem file entry.
+func (d dirItem) Reader() (io.Reader, error) {
+	return d.reader()
+}
+
+type DirItemSupplier struct {
+	dir string
+}
+
+func newDirItemSupplier(dir string) *DirItemSupplier {
+	return &DirItemSupplier{
+		dir: dir,
+	}
+}
+
 // fromDir returns a list of the files in a given directory as a set of Items.
-func fromDir(dir string) ([]Item, error) {
-	finfos, err := ioutil.ReadDir(dir)
+func (s *DirItemSupplier) Items() ([]Item, error) {
+	finfos, err := ioutil.ReadDir(s.dir)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +54,7 @@ func fromDir(dir string) ([]Item, error) {
 			item := dirItem{
 				FileInfo: saveFinfo,
 				reader: func() (io.Reader, error) {
-					return os.Open(filepath.Join(dir, saveFinfo.Name()))
+					return os.Open(filepath.Join(s.dir, saveFinfo.Name()))
 				},
 			}
 			dirItems = append(dirItems, item)
@@ -49,14 +63,8 @@ func fromDir(dir string) ([]Item, error) {
 	return dirItems, err
 }
 
-// Reader returns a new io.Reader for the given dirItem file entry.
-func (d dirItem) Reader() (io.Reader, error) {
-	return d.reader()
-}
-
 // byChunk provides sorting on chunk files. Chunk file names are numeric since
 // chunks are numeric in ascending order.
-
 type byChunk []Item
 
 func (l byChunk) Len() int      { return len(l) }

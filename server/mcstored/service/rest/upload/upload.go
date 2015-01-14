@@ -4,6 +4,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/inconshreveable/log15"
 	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
 )
@@ -11,16 +12,16 @@ import (
 // An uploadResource handles all upload requests.
 type uploadResource struct {
 	uploader *uploader
-	log      log15.Logger // Resource specific logging.
-	//requestPath RequestPath
+	log      log15.Logger
+	factory  AssemblerFactory
 }
 
 // NewResources creates a new upload resource
-func NewResource(requestWriter RequestWriter) rest.Service {
+func NewResource(uploader *uploader, factory AssemblerFactory) rest.Service {
 	return &uploadResource{
-		uploader: newUploader(requestWriter),
+		uploader: uploader,
 		log:      app.NewLog("resource", "upload"),
-		//requestPath: requestPath,
+		factory:  factory,
 	}
 }
 
@@ -38,7 +39,6 @@ func (r *uploadResource) WebService() *restful.WebService {
 
 // uploadFileChunk uploads a new file chunk.
 func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) error {
-	// Create request
 	flowRequest, err := form2FlowRequest(request)
 	if err != nil {
 		r.log.Error(app.Logf("Error converting form to flow.Request: %s", err))
@@ -50,8 +50,17 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 	}
 
 	if r.uploader.allBlocksUploaded(flowRequest) {
-		// create assembler and launch in background
+		go r.assembler(flowRequest)
 	}
 
 	return nil
+}
+
+// assembler builds a new Assembler to assemble the pieces of the file.
+func (r *uploadResource) assembler(request *flow.Request) {
+	fileID := request.FileID
+	uploadID := request.UploadID()
+	if assembler := r.factory.Assembler(uploadID, fileID); assembler != nil {
+		assembler.Assemble()
+	}
 }

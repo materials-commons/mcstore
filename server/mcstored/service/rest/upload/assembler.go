@@ -1,25 +1,56 @@
 package upload
 
-import "io"
+import (
+	"io"
+	"os"
 
-// A Finisher implements the method to call when assembly has finished successfully.
-type Finisher interface {
-	Finish() error
+	"github.com/materials-commons/mcstore/pkg/app"
+)
+
+type AssemblerFactory interface {
+	Assembler(uploadID, fileID string) *Assembler
+}
+
+type MCDirAssemblerFactory struct {
+	FinisherFactory
+}
+
+func NewMCDirAssemblerFactory(ff FinisherFactory) *MCDirAssemblerFactory {
+	return &MCDirAssemblerFactory{
+		FinisherFactory: ff,
+	}
+}
+
+func (f *MCDirAssemblerFactory) Assembler(uploadID, fileID string) *Assembler {
+	itemSupplier := newDirItemSupplier(app.MCDir.UploadDir(uploadID))
+	fileDir := app.MCDir.FileDir(fileID)
+	if err := os.MkdirAll(fileDir, 0700); err != nil {
+		app.Log.Error(app.Logf("Cannot create path (%s) to assemble file: %s ", fileDir, fileID))
+		return nil
+	}
+
+	destination, err := os.Create(app.MCDir.FilePath(fileID))
+	if err != nil {
+		app.Log.Error(app.Logf("Cannot create %s to assemble upload", app.MCDir.FilePath(fileID)))
+		return nil
+	}
+
+	return NewAssembler(itemSupplier, destination, f.Finisher(uploadID, fileID))
 }
 
 // A Assembler takes a list of items and assembles them.
 type Assembler struct {
-	items []Item
+	ItemSupplier
 	Finisher
 	destination io.Writer
 }
 
 // NewAssembler creates an Assembler.
-func NewAssembler(items []Item, destination io.Writer, finisher Finisher) *Assembler {
+func NewAssembler(itemSupplier ItemSupplier, destination io.Writer, finisher Finisher) *Assembler {
 	return &Assembler{
-		items:       items,
-		Finisher:    finisher,
-		destination: destination,
+		ItemSupplier: itemSupplier,
+		Finisher:     finisher,
+		destination:  destination,
 	}
 }
 
@@ -41,12 +72,17 @@ func (a *Assembler) Assemble() error {
 // will stop on the first item it cannot write and return
 // its error.
 func (a *Assembler) writeEach() error {
-	for _, item := range a.items {
-		if err := a.writeItem(item); err != nil {
-			return err
+	switch items, err := a.Items(); {
+	case err != nil:
+		return err
+	default:
+		for _, item := range items {
+			if err := a.writeItem(item); err != nil {
+				return err
+			}
 		}
+		return nil
 	}
-	return nil
 }
 
 // writeItemTo performs the write to destination of a particular

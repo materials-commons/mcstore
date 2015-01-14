@@ -7,7 +7,7 @@ type uploadTracker struct {
 	tracker map[string]int32
 }
 
-func newUploadTracker() *uploadTracker {
+func NewUploadTracker() *uploadTracker {
 	return &uploadTracker{
 		tracker: make(map[string]int32),
 	}

@@ -27,7 +27,7 @@ type fileRequestWriter struct {
 	RequestPath
 }
 
-func newFileRequestWriter(requestPath RequestPath) *fileRequestWriter {
+func NewFileRequestWriter(requestPath RequestPath) *fileRequestWriter {
 	return &fileRequestWriter{
 		RequestPath: requestPath,
 	}
@@ -70,7 +70,7 @@ func (r *fileRequestWriter) validateWrite(path string, req *flow.Request) error 
 
 type mcdirRequestPath struct{}
 
-func newMCDirRequestPath() *mcdirRequestPath {
+func NewMCDirRequestPath() *mcdirRequestPath {
 	return &mcdirRequestPath{}
 }
 

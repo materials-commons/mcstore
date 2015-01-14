@@ -1,10 +1,6 @@
 package upload
 
-import (
-	"os"
-
-	"github.com/materials-commons/mcstore/pkg/app/flow"
-)
+import "github.com/materials-commons/mcstore/pkg/app/flow"
 
 // TODO: Uploader will need to know the destination for assembly.
 // TODO: Uploader will need a Finisher to be passed in to it.
@@ -16,9 +12,9 @@ type uploader struct {
 	assembler     *Assembler
 }
 
-func newUploader(requestWriter RequestWriter) *uploader {
+func NewUploader(requestWriter RequestWriter, tracker *uploadTracker) *uploader {
 	return &uploader{
-		tracker:       newUploadTracker(),
+		tracker:       tracker,
 		requestWriter: requestWriter,
 	}
 }
@@ -39,24 +35,4 @@ func (u *uploader) allBlocksUploaded(request *flow.Request) bool {
 	id := request.UploadID()
 	count := u.tracker.count(id)
 	return count == request.FlowTotalChunks
-}
-
-type uploadFinisher struct {
-	uploadID  string
-	tracker   *uploadTracker
-	uploadDir string
-}
-
-func newUploadFinisher(uploadID string, tracker *uploadTracker, uploadDir string) *uploadFinisher {
-	return &uploadFinisher{
-		uploadID:  uploadID,
-		tracker:   tracker,
-		uploadDir: uploadDir,
-	}
-}
-
-func (f *uploadFinisher) Finish() error {
-	f.tracker.clear(f.uploadID)
-	os.RemoveAll(f.uploadDir)
-	return nil
 }
