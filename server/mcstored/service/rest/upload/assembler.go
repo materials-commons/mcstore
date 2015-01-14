@@ -19,8 +19,7 @@ type Assembler struct {
 	Finisher
 }
 
-type ItemLess func(item1, item2 Item) bool
-
+// NewAssembler creates an Assembler.
 func NewAssembler(items []Item, finisher Finisher) *Assembler {
 	return &Assembler{
 		items:    items,
@@ -28,6 +27,12 @@ func NewAssembler(items []Item, finisher Finisher) *Assembler {
 	}
 }
 
+// To will write the assembled items to destination. It writes
+// the items in the order they were give. If it can't write
+// any item, it will quit on that item and return it's error.
+// If it is able to write all items then it will call Finisher.
+// It only calls Finisher if it was able to successfully write
+// all items. If it calls Finisher it will return its result.
 func (a *Assembler) To(destination io.Writer) error {
 	err := writeEach(a.items, destination)
 	switch {
@@ -38,6 +43,9 @@ func (a *Assembler) To(destination io.Writer) error {
 	}
 }
 
+// writeEach attempts to write each item to destination. It
+// will stop on the first item it cannot write and return
+// its error.
 func writeEach(items []Item, destination io.Writer) error {
 	for _, item := range items {
 		if err := writeItemTo(item, destination); err != nil {
@@ -47,17 +55,21 @@ func writeEach(items []Item, destination io.Writer) error {
 	return nil
 }
 
+// writeItemTo performs the write to destination of a particular
+// item. It calls copy to append the item to destination. If the
+// reader returned by a item is a ReadCloser then it will call
+// the close routine.
 func writeItemTo(item Item, destination io.Writer) error {
 	source, err := item.Reader()
 	switch {
 	case err != nil:
 		return err
 	default:
-		_, err = io.Copy(destination, source)
 		sclose, ok := source.(io.ReadCloser)
 		if ok {
-			sclose.Close()
+			defer sclose.Close()
 		}
+		_, err = io.Copy(destination, source)
 		return err
 	}
 }
