@@ -14,6 +14,10 @@ type RequestWriter interface {
 	Write(req *flow.Request) error
 }
 
+type UploadAssembler interface {
+	Assemble(uploadID string)
+}
+
 type RequestPath interface {
 	Path(req *flow.Request) string
 	Dir(req *flow.Request) string

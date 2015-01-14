@@ -12,13 +12,15 @@ import (
 type uploadResource struct {
 	uploader *uploader
 	log      log15.Logger // Resource specific logging.
+	//requestPath RequestPath
 }
 
 // NewResources creates a new upload resource
-func NewResource() rest.Service {
+func NewResource(requestWriter RequestWriter) rest.Service {
 	return &uploadResource{
-		uploader: newUploader(newFileRequestWriter(newMCDirRequestPath())),
+		uploader: newUploader(requestWriter),
 		log:      app.NewLog("resource", "upload"),
+		//requestPath: requestPath,
 	}
 }
 
@@ -43,5 +45,13 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 		return err
 	}
 
-	return r.uploader.processRequest(flowRequest)
+	if err := r.uploader.processRequest(flowRequest); err != nil {
+		return err
+	}
+
+	if r.uploader.allBlocksUploaded(flowRequest) {
+		// create assembler and launch in background
+	}
+
+	return nil
 }

@@ -13,15 +13,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAssemblerWriteItemTo(t *testing.T) {
+func TestAssemblerWriteItem(t *testing.T) {
 	var b bytes.Buffer
 	destination := bufio.NewWriter(&b)
+	a := NewAssembler(nil, destination, nil)
 	item := testItem{
 		name:    "name1",
 		content: "content1",
 	}
 
-	writeItemTo(item, destination)
+	a.writeItem(item)
 	require.Equal(t, "content1", b.String())
 }
 
@@ -29,18 +30,21 @@ func TestAssemblerWriteEach(t *testing.T) {
 	items := makeTestItems()
 	var b bytes.Buffer
 	destination := bufio.NewWriter(&b)
-	writeEach(items, destination)
+	finisher := newTrackFinisher()
+	a := NewAssembler(items, destination, finisher)
+	a.writeEach()
 	require.Equal(t, "content2content1", b.String())
+	require.False(t, finisher.called)
 }
 
-func TestAssemblerTo(t *testing.T) {
+func TestAssemblerAssemble(t *testing.T) {
 	// Test valid data case
 	items := makeTestItems()
 	var b bytes.Buffer
 	destination := bufio.NewWriter(&b)
 	finisher := &trackFinisher{}
-	a := NewAssembler(items, finisher)
-	err := a.To(destination)
+	a := NewAssembler(items, destination, finisher)
+	err := a.Assemble()
 	require.Nil(t, err, "Expected nil err, got %s", err)
 	require.Equal(t, "content2content1", b.String())
 	require.True(t, finisher.called)
@@ -52,8 +56,8 @@ func TestAssemblerTo(t *testing.T) {
 		content: "content3",
 		err:     errors.New("test item failing"),
 	})
-	a = NewAssembler(items, finisher)
-	err = a.To(destination)
+	a = NewAssembler(items, destination, finisher)
+	err = a.Assemble()
 	require.NotNil(t, err, "Expected non nil err")
 	require.False(t, finisher.called)
 
@@ -61,8 +65,8 @@ func TestAssemblerTo(t *testing.T) {
 	items = makeTestItems() // make items with no errors
 	finisher.called = false
 	finisher.err = errors.New("test finisher failing")
-	a = NewAssembler(items, finisher)
-	err = a.To(destination)
+	a = NewAssembler(items, destination, finisher)
+	err = a.Assemble()
 	require.NotNil(t, err, "Expected non nil err")
 	require.True(t, finisher.called)
 
@@ -73,8 +77,8 @@ func TestAssemblerTo(t *testing.T) {
 	var b2 bytes.Buffer
 	destination = bufio.NewWriter(&b2)
 	sort.Sort(byChunk(items))
-	a = NewAssembler(items, finisher)
-	err = a.To(destination)
+	a = NewAssembler(items, destination, finisher)
+	err = a.Assemble()
 	require.Nil(t, err, "Expected nil err: %s", err)
 	require.True(t, finisher.called)
 	require.Equal(t, "content1content2", b2.String())
@@ -112,6 +116,10 @@ func makeTestItems() []Item {
 type trackFinisher struct {
 	called bool
 	err    error
+}
+
+func newTrackFinisher() *trackFinisher {
+	return &trackFinisher{}
 }
 
 func (f *trackFinisher) Finish() error {

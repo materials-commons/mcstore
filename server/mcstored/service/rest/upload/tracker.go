@@ -23,6 +23,13 @@ func (u *uploadTracker) increment(id string) int32 {
 	return val
 }
 
+func (u *uploadTracker) count(id string) int32 {
+	defer u.mutex.Unlock()
+	u.mutex.Lock()
+	val := u.tracker[id]
+	return val
+}
+
 // clear removes an id from the tracker.
 func (u *uploadTracker) clear(id string) {
 	defer u.mutex.Unlock()

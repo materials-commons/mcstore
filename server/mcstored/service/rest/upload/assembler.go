@@ -11,24 +11,26 @@ type Finisher interface {
 type Assembler struct {
 	items []Item
 	Finisher
+	destination io.Writer
 }
 
 // NewAssembler creates an Assembler.
-func NewAssembler(items []Item, finisher Finisher) *Assembler {
+func NewAssembler(items []Item, destination io.Writer, finisher Finisher) *Assembler {
 	return &Assembler{
-		items:    items,
-		Finisher: finisher,
+		items:       items,
+		Finisher:    finisher,
+		destination: destination,
 	}
 }
 
-// To will write the assembled items to destination. It writes
+// Assemble will write the assembled items to destination. It writes
 // the items in the order they were give. If it can't write
 // any item, it will quit on that item and return it's error.
 // If it is able to write all items then it will call Finisher.
 // It only calls Finisher if it was able to successfully write
 // all items. If it calls Finisher it will return its result.
-func (a *Assembler) To(destination io.Writer) error {
-	if err := writeEach(a.items, destination); err != nil {
+func (a *Assembler) Assemble() error {
+	if err := a.writeEach(); err != nil {
 		return err
 	}
 
@@ -38,9 +40,9 @@ func (a *Assembler) To(destination io.Writer) error {
 // writeEach attempts to write each item to destination. It
 // will stop on the first item it cannot write and return
 // its error.
-func writeEach(items []Item, destination io.Writer) error {
-	for _, item := range items {
-		if err := writeItemTo(item, destination); err != nil {
+func (a *Assembler) writeEach() error {
+	for _, item := range a.items {
+		if err := a.writeItem(item); err != nil {
 			return err
 		}
 	}
@@ -51,7 +53,7 @@ func writeEach(items []Item, destination io.Writer) error {
 // item. It calls copy to append the item to destination. If the
 // reader returned by a item is a ReadCloser then it will call
 // the close routine.
-func writeItemTo(item Item, destination io.Writer) error {
+func (a *Assembler) writeItem(item Item) error {
 	switch source, err := item.Reader(); {
 	case err != nil:
 		return err
@@ -59,7 +61,7 @@ func writeItemTo(item Item, destination io.Writer) error {
 		if closer, ok := source.(io.ReadCloser); ok {
 			defer closer.Close()
 		}
-		_, err = io.Copy(destination, source)
+		_, err = io.Copy(a.destination, source)
 		return err
 	}
 }

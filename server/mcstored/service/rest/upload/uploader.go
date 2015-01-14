@@ -1,7 +1,6 @@
 package upload
 
 import (
-	"io"
 	"os"
 
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -12,44 +11,34 @@ import (
 // TODO: ***** To simplify the above, just pass in the assembler *****
 
 type uploader struct {
-	tracker     *uploadTracker
-	w           RequestWriter
-	finisher    Finisher
-	destination io.Writer
+	tracker       *uploadTracker
+	requestWriter RequestWriter
+	assembler     *Assembler
 }
 
-func newUploader(w RequestWriter, destination io.Writer, finisher Finisher) *uploader {
+func newUploader(requestWriter RequestWriter) *uploader {
 	return &uploader{
-		tracker:     newUploadTracker(),
-		w:           w,
-		finisher:    finisher,
-		destination: destination,
+		tracker:       newUploadTracker(),
+		requestWriter: requestWriter,
 	}
 }
 
 func (u *uploader) processRequest(request *flow.Request) error {
-	if err := u.w.Write(request); err != nil {
+	if err := u.requestWriter.Write(request); err != nil {
 		// write failed for some reason
 		return err
 	}
 
-	if u.uploadDone(request) {
-		u.assembleUpload(request)
-	}
+	// Increment block count
+	id := request.UploadID()
+	u.tracker.increment(id)
 	return nil
 }
 
-func (u *uploader) uploadDone(request *flow.Request) bool {
+func (u *uploader) allBlocksUploaded(request *flow.Request) bool {
 	id := request.UploadID()
-	count := u.tracker.increment(id)
+	count := u.tracker.count(id)
 	return count == request.FlowTotalChunks
-}
-
-func (u *uploader) assembleUpload(request *flow.Request) {
-	assembler := NewAssembler(nil, u.finisher) // Need list of Items
-	go func() {
-		assembler.To(u.destination) // fix this with real destination
-	}()
 }
 
 type uploadFinisher struct {
