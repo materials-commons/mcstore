@@ -28,13 +28,11 @@ func NewAssembler(items []Item, finisher Finisher) *Assembler {
 // It only calls Finisher if it was able to successfully write
 // all items. If it calls Finisher it will return its result.
 func (a *Assembler) To(destination io.Writer) error {
-	err := writeEach(a.items, destination)
-	switch {
-	case err != nil:
+	if err := writeEach(a.items, destination); err != nil {
 		return err
-	default:
-		return a.Finish()
 	}
+
+	return a.Finish()
 }
 
 // writeEach attempts to write each item to destination. It
@@ -54,8 +52,7 @@ func writeEach(items []Item, destination io.Writer) error {
 // reader returned by a item is a ReadCloser then it will call
 // the close routine.
 func writeItemTo(item Item, destination io.Writer) error {
-	source, err := item.Reader()
-	switch {
+	switch source, err := item.Reader(); {
 	case err != nil:
 		return err
 	default:
