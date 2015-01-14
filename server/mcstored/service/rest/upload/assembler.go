@@ -65,9 +65,8 @@ func writeItemTo(item Item, destination io.Writer) error {
 	case err != nil:
 		return err
 	default:
-		sclose, ok := source.(io.ReadCloser)
-		if ok {
-			defer sclose.Close()
+		if closer, ok := source.(io.ReadCloser); ok {
+			defer closer.Close()
 		}
 		_, err = io.Copy(destination, source)
 		return err
