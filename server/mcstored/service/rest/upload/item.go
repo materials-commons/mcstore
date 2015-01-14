@@ -8,6 +8,12 @@ import (
 	"strconv"
 )
 
+// A Item contains data to assemble.
+type Item interface {
+	Name() string               // Name of the item
+	Reader() (io.Reader, error) // Returns a reader to get at the items data
+}
+
 type dirItem struct {
 	os.FileInfo
 	reader func() (io.Reader, error)

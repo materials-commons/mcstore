@@ -2,12 +2,6 @@ package upload
 
 import "io"
 
-// A Item contains data to assemble.
-type Item interface {
-	Name() string               // Name of the item
-	Reader() (io.Reader, error) // Returns a reader to get at the items data
-}
-
 // A Finisher implements the method to call when assembly has finished successfully.
 type Finisher interface {
 	Finish() error
