@@ -14,33 +14,43 @@ type Item interface {
 	Reader() (io.Reader, error) // Returns a reader to get at the items data
 }
 
+// dirItem implements the Item interface. It provides an item for
+// each file in a directory.
 type dirItem struct {
 	os.FileInfo
 	reader func() (io.Reader, error)
 }
 
+// fromDir returns a list of the files in a given directory as a set of Items.
 func fromDir(dir string) ([]Item, error) {
 	finfos, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return nil, err
 	}
+
 	var dirItems []Item
 	for _, finfo := range finfos {
-		item := dirItem{
-			FileInfo: finfo,
-			reader: func() (io.Reader, error) {
-				return os.Open(filepath.Join(dir, finfo.Name()))
-			},
+		if !finfo.IsDir() {
+			saveFinfo := finfo
+			item := dirItem{
+				FileInfo: saveFinfo,
+				reader: func() (io.Reader, error) {
+					return os.Open(filepath.Join(dir, saveFinfo.Name()))
+				},
+			}
+			dirItems = append(dirItems, item)
 		}
-		dirItems = append(dirItems, item)
 	}
 	return dirItems, err
 }
 
+// Reader returns a new io.Reader for the given dirItem file entry.
 func (d dirItem) Reader() (io.Reader, error) {
 	return d.reader()
 }
 
+// byChunk provides sorting on chunk files. Chunk file names are numeric since
+// chunks are numeric in ascending order.
 type byChunk []Item
 
 func (l byChunk) Len() int      { return len(l) }
