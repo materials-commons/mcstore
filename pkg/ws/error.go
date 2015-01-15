@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
 )
 
@@ -15,8 +16,13 @@ type HTTPError struct {
 
 // Write writes the HTTPError to the ResponseWriter
 func (e *HTTPError) Write(response http.ResponseWriter) {
-	response.WriteHeader(e.statusCode)
-	response.Write([]byte(e.message))
+	r, ok := response.(*restful.Response)
+	if ok {
+		r.WriteErrorString(e.statusCode, e.message)
+	} else {
+		response.WriteHeader(e.statusCode)
+		response.Write([]byte(e.message))
+	}
 }
 
 // WriteError writes the specified error to the writer. It translates the
