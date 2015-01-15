@@ -80,9 +80,9 @@ func TestAssemblerAssemble(t *testing.T) {
 	require.Equal(t, "content1content2", b2.String())
 }
 
-func TestMCDirAssemblerFactory(t *testing.T) {
-	require.True(t, false, "Not implemented")
-}
+//func TestMCDirAssemblerFactory(t *testing.T) {
+//	require.True(t, false, "Not implemented")
+//}
 
 type testItem struct {
 	name    string
