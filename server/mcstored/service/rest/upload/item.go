@@ -14,6 +14,8 @@ type Item interface {
 	Reader() (io.Reader, error) // Returns a reader to get at the items data
 }
 
+// A ItemSupplier supplies a list of items. Its useful for implementing
+// different ways to get a list of items.
 type ItemSupplier interface {
 	Items() ([]Item, error)
 }
@@ -30,17 +32,19 @@ func (d dirItem) Reader() (io.Reader, error) {
 	return d.reader()
 }
 
+// A DirItemSupplier returns a list of items from a directory.
 type DirItemSupplier struct {
 	dir string
 }
 
+// newDirItemSupplier creates a new DirItemSupplier for the given directory path.
 func newDirItemSupplier(dir string) *DirItemSupplier {
 	return &DirItemSupplier{
 		dir: dir,
 	}
 }
 
-// fromDir returns a list of the files in a given directory as a set of Items.
+// Items returns a list of the files in a given directory as a set of Items.
 func (s *DirItemSupplier) Items() ([]Item, error) {
 	finfos, err := ioutil.ReadDir(s.dir)
 	if err != nil {
