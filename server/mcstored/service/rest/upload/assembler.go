@@ -80,17 +80,17 @@ func (a *Assembler) Assemble() error {
 // will stop on the first item it cannot write and return
 // its error.
 func (a *Assembler) writeEach() error {
-	switch items, err := a.Items(); {
-	case err != nil:
+	items, err := a.Items()
+	if err != nil {
 		return err
-	default:
-		for _, item := range items {
-			if err := a.writeItem(item); err != nil {
-				return err
-			}
-		}
-		return nil
 	}
+
+	for _, item := range items {
+		if err := a.writeItem(item); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // writeItemTo performs the write to destination of a particular
