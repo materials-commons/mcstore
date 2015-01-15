@@ -1,6 +1,7 @@
 package upload
 
 import (
+	"bufio"
 	"bytes"
 	"io"
 	"io/ioutil"
@@ -14,19 +15,22 @@ import (
 
 // form2FlowRequest reads a multipart upload form and converts it to a flow.Request.
 func form2FlowRequest(request *restful.Request) (*flow.Request, error) {
+	reader, err := request.Request.MultipartReader()
+	if err != nil {
+		return nil, err
+	}
+	return multipart2FlowRequest(reader)
+}
+
+func multipart2FlowRequest(reader *multipart.Reader) (*flow.Request, error) {
 	var (
-		r      flow.Request
-		err    error
-		reader *multipart.Reader
-		part   *multipart.Part
+		r    flow.Request
+		err  error
+		part *multipart.Part
 	)
 
 	// Open multipart reading
 	buf := new(bytes.Buffer)
-	reader, err = request.Request.MultipartReader()
-	if err != nil {
-		return nil, err
-	}
 
 	// For each part identify its name to decide which field
 	// to fill in the flow.Request.
@@ -96,4 +100,25 @@ func atoi64(str string) int64 {
 func atoi32(str string) int32 {
 	i := atoi64(str)
 	return int32(i)
+}
+
+func flowRequest2Form(req *flow.Request) (*bytes.Buffer, string) {
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	fw := multipart.NewWriter(w)
+	fw.WriteField("flowChunkNumber", strconv.Itoa(int(req.FlowChunkNumber)))
+	fw.WriteField("flowTotalChunks", strconv.Itoa(int(req.FlowTotalChunks)))
+	fw.WriteField("flowChunkSize", strconv.Itoa(int(req.FlowChunkSize)))
+	fw.WriteField("flowTotalSize", strconv.Itoa(int(req.FlowTotalSize)))
+	fw.WriteField("flowIdentifier", req.FlowIdentifier)
+	fw.WriteField("flowFileName", req.FlowFileName)
+	fw.WriteField("flowRelativePath", req.FlowRelativePath)
+	fw.WriteField("projectID", req.ProjectID)
+	fw.WriteField("directoryID", req.DirectoryID)
+	fw.WriteField("fileID", req.FileID)
+	fw.WriteField("chunkData", string(req.Chunk))
+	contentType := fw.FormDataContentType()
+	fw.Close()
+	w.Flush() // Need to flush the writer
+	return &b, contentType
 }
