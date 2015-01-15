@@ -7,20 +7,28 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 )
 
+// AssemblerFactory creates new instance of an Assembler
 type AssemblerFactory interface {
 	Assembler(uploadID, fileID string) *Assembler
 }
 
+// MCDirAssemblerFactory creates new instance of an Assembler using
+// app.MCDir to determine locations, and DirItemSupplier to get the
+// list of Items to assemble.
 type MCDirAssemblerFactory struct {
 	FinisherFactory
 }
 
+// NewMCDirAssemblerFactory creates a new instance of MCDirAssemblerFactory.
 func NewMCDirAssemblerFactory(ff FinisherFactory) *MCDirAssemblerFactory {
 	return &MCDirAssemblerFactory{
 		FinisherFactory: ff,
 	}
 }
 
+// Assembler creates the new Assembler using a DirItemSupplier, and app.MCDir
+// to determine location. Assembler will also make all the paths exist by
+// calling os.MkdirAll, and creating the destination file to write.
 func (f *MCDirAssemblerFactory) Assembler(uploadID, fileID string) *Assembler {
 	itemSupplier := newDirItemSupplier(app.MCDir.UploadDir(uploadID))
 	fileDir := app.MCDir.FileDir(fileID)
