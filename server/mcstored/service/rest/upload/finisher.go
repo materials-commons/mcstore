@@ -52,6 +52,9 @@ func newUploadFinisher(uploadID string, tracker *uploadTracker, fileID string) *
 	}
 }
 
+// Finish removes the temporary directory containing the chunks.
+// It also clears the uploadID from the tracker since the upload
+// has been completed and processed.
 func (f *uploadFinisher) Finish() error {
 	f.tracker.clear(f.uploadID)
 	os.RemoveAll(app.MCDir.UploadDir(f.uploadID))

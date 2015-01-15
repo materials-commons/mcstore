@@ -2,11 +2,15 @@ package upload
 
 import "sync"
 
+// A uploadTracker tracks the block count for a given id.
+// It synchronizes access so it can be safely used by
+// multiple routines.
 type uploadTracker struct {
 	mutex   sync.RWMutex
 	tracker map[string]int32
 }
 
+// NewUploadTracker creates a new uploadTracker.
 func NewUploadTracker() *uploadTracker {
 	return &uploadTracker{
 		tracker: make(map[string]int32),

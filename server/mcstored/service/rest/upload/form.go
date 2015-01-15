@@ -22,6 +22,8 @@ func form2FlowRequest(request *restful.Request) (*flow.Request, error) {
 	return multipart2FlowRequest(reader)
 }
 
+// multipart2FlowRequest creates a new flow.Request from the multipart Reader.
+// If returns an error if the form is invalid.
 func multipart2FlowRequest(reader *multipart.Reader) (*flow.Request, error) {
 	var (
 		r    flow.Request
@@ -102,6 +104,7 @@ func atoi32(str string) int32 {
 	return int32(i)
 }
 
+// flowRequest2Form creates a form bytes buffer from a flow.Request.
 func flowRequest2Form(req *flow.Request) (*bytes.Buffer, string) {
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)

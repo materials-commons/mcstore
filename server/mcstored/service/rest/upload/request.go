@@ -95,10 +95,13 @@ func (p *mcdirRequestPath) Dir(req *flow.Request) string {
 	return uploadPath
 }
 
+// A nopRequestWriter doesn't do anything. It returns the error
+// set in err.
 type nopRequestWriter struct {
 	err error
 }
 
+// Write returns the r.err. It performs no action on the request.
 func (r *nopRequestWriter) Write(req *flow.Request) error {
 	return r.err
 }
