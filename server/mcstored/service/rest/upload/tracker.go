@@ -23,6 +23,7 @@ func (u *uploadTracker) increment(id string) int32 {
 	return val
 }
 
+// count will return the count for a given id.
 func (u *uploadTracker) count(id string) int32 {
 	defer u.mutex.Unlock()
 	u.mutex.Lock()
