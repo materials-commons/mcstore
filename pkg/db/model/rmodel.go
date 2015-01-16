@@ -171,14 +171,14 @@ func (q *rQuery) InsertRaw(table string, what interface{}, dest interface{}) err
 	}
 }
 
-// Insert inserts a new model entry into the database
+// Insert inserts a new model entry into the database.
 func (q *rQuery) Insert(what interface{}, dest interface{}) error {
 	return q.InsertRaw(q.table, what, dest)
 }
 
-// Delete deletes an existing database model entry.
-func (q *rQuery) Delete(id string) error {
-	rv, err := q.T().Get(id).Delete().RunWrite(q.Session)
+// DeleteFrom deletes the given id from the named table.
+func (q *rQuery) DeleteFrom(table, id string) error {
+	rv, err := r.Table(table).Get(id).Delete().RunWrite(q.Session)
 	switch {
 	case err != nil:
 		return err
@@ -189,6 +189,11 @@ func (q *rQuery) Delete(id string) error {
 	default:
 		return nil
 	}
+}
+
+// Delete deletes an existing database model entry.
+func (q *rQuery) Delete(id string) error {
+	return q.DeleteFrom(q.table, id)
 }
 
 // GetItem retrieves an item by id in the given table.
