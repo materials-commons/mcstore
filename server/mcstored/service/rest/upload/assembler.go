@@ -5,11 +5,12 @@ import (
 	"os"
 
 	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/app/flow"
 )
 
 // AssemblerFactory creates new instance of an Assembler
 type AssemblerFactory interface {
-	Assembler(uploadID, fileID string) *Assembler
+	Assembler(req *flow.Request) *Assembler
 }
 
 // MCDirAssemblerFactory creates new instance of an Assembler using
@@ -29,21 +30,21 @@ func NewMCDirAssemblerFactory(ff FinisherFactory) *MCDirAssemblerFactory {
 // Assembler creates the new Assembler using a DirItemSupplier, and app.MCDir
 // to determine location. Assembler will also make all the paths exist by
 // calling os.MkdirAll, and creating the destination file to write.
-func (f *MCDirAssemblerFactory) Assembler(uploadID, fileID string) *Assembler {
-	itemSupplier := newDirItemSupplier(app.MCDir.UploadDir(uploadID))
-	fileDir := app.MCDir.FileDir(fileID)
+func (f *MCDirAssemblerFactory) Assembler(req *flow.Request) *Assembler {
+	itemSupplier := newDirItemSupplier(app.MCDir.UploadDir(req.UploadID()))
+	fileDir := app.MCDir.FileDir(req.FileID)
 	if err := os.MkdirAll(fileDir, 0700); err != nil {
-		app.Log.Error(app.Logf("Cannot create path (%s) to assemble file: %s ", fileDir, fileID))
+		app.Log.Error(app.Logf("Cannot create path (%s) to assemble file: %s ", fileDir, req.FileID))
 		return nil
 	}
 
-	destination, err := os.Create(app.MCDir.FilePath(fileID))
+	destination, err := os.Create(app.MCDir.FilePath(req.FileID))
 	if err != nil {
-		app.Log.Error(app.Logf("Cannot create %s to assemble upload", app.MCDir.FilePath(fileID)))
+		app.Log.Error(app.Logf("Cannot create %s to assemble upload", app.MCDir.FilePath(req.FileID)))
 		return nil
 	}
 
-	return NewAssembler(itemSupplier, destination, f.Finisher(uploadID, fileID))
+	return NewAssembler(itemSupplier, destination, f.Finisher(req))
 }
 
 // A Assembler takes a list of items and assembles them.
