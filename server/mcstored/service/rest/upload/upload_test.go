@@ -227,7 +227,7 @@ func newSeparateItemAssemblerFactory(rw *separateItemRequestWriter, dest io.Writ
 	}
 }
 
-func (f *separateItemAssemblerFactory) Assembler(uploadID, fileID string) *Assembler {
+func (f *separateItemAssemblerFactory) Assembler(req *flow.Request) *Assembler {
 	f.called = true
 	itemSupplier := newSeparateItemSupplier(f.rw)
 	return NewAssembler(itemSupplier, f.dest, f.finisher)
