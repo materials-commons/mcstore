@@ -118,6 +118,12 @@ func TestUploadServiceErrorWritingUpload(t *testing.T) {
 	require.False(t, finisher.called)
 }
 
+// func TestMD5(t *testing.T) {
+// 	checksum, err := file.HashStr(md5.New(), "/home/gtarcea/workspace/src/github.com/materials-commons/mcstore/server/mcstored/service/rest/upload/hashit")
+// 	fmt.Println(err)
+// 	fmt.Println(checksum)
+// }
+
 func newFlowReq1() *flow.Request {
 	return &flow.Request{
 		FlowChunkNumber:  1,
