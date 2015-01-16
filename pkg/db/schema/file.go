@@ -4,6 +4,26 @@ import (
 	"time"
 )
 
+type fileFields int
+
+// File contains methods to get the json fields names for a File
+var FileFields fileFields
+
+func (f fileFields) ID() string          { return "id" }
+func (f fileFields) Current() string     { return "current" }
+func (f fileFields) Name() string        { return "name" }
+func (f fileFields) Birthtime() string   { return "birthtime" }
+func (f fileFields) MTime() string       { return "mtime" }
+func (f fileFields) ATime() string       { return "atime" }
+func (f fileFields) Description() string { return "description" }
+func (f fileFields) MediaType() string   { return "mediatype" }
+func (f fileFields) Owner() string       { return "owner" }
+func (f fileFields) Checksum() string    { return "checksum" }
+func (f fileFields) Size() string        { return "size" }
+func (f fileFields) Uploaded() string    { return "uploaded" }
+func (f fileFields) Parent() string      { return "parent" }
+func (f fileFields) UsesID() string      { return "usesid" }
+
 // MediaType describes the mime media type and its description.
 type MediaType struct {
 	Mime        string `gorethink:"mime"`        // The MIME type
