@@ -51,20 +51,17 @@ func (f rFiles) updateDependencies(fileID, dirID, projectID string) error {
 		DataFileID: fileID,
 	}
 
-	err1 := model.Files.Qs(f.session).InsertRaw("datadir2datafile", &dir2file, nil)
-	app.Log.Error(app.Logf("Unable to update datadir2datafile for file %s, directory %s, error %s", fileID, dirID, err1))
-
-	err2 := model.Files.Qs(f.session).InsertRaw("project2datafile", &proj2file, nil)
-	app.Log.Error(app.Logf("Unable to update project2datafile for file %s, project %s, error %s", fileID, projectID, err2))
-
 	// We will return one of the errors, even if both inserts failed. There really isn't anything the
 	// system can do about a specific error, so we just want to communicate that a failure occured.
-	switch {
-	case err1 != nil:
-		return err1
-	case err2 != nil:
-		return err2
-	default:
-		return nil
+	err := model.DirFiles.Qs(f.session).Insert(&dir2file, nil)
+	if err != nil {
+		app.Log.Error(app.Logf("Unable to update datadir2datafile for file %s, directory %s, error %s", fileID, dirID, err))
 	}
+
+	err = model.ProjectFiles.Qs(f.session).Insert(&proj2file, nil)
+	if err != nil {
+		app.Log.Error(app.Logf("Unable to update project2datafile for file %s, project %s, error %s", fileID, projectID, err))
+	}
+
+	return err
 }
