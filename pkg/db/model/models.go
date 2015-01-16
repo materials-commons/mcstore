@@ -22,12 +22,6 @@ var Dirs = &rModel{
 	table:  "datadirs",
 }
 
-// DirsDenorm is a default model for the denormalized datadirs_denorm table
-var DirsDenorm = &rModel{
-	schema: schema.DataDirDenorm{},
-	table:  "datadirs_denorm",
-}
-
 // Files is a default model for the datafiles table
 var Files = &rModel{
 	schema: schema.File{},
@@ -38,4 +32,22 @@ var Files = &rModel{
 var Projects = &rModel{
 	schema: schema.Project{},
 	table:  "projects",
+}
+
+// Project files
+var ProjectFiles = &rModel{
+	schema: schema.Project2DataFile{},
+	table:  "project2datafile",
+}
+
+// Project directories
+var ProjectDirs = &rModel{
+	schema: schema.Project2DataDir{},
+	table:  "project2datadir",
+}
+
+// Directory files
+var DirFiles = &rModel{
+	schema: schema.DataDir2DataFile{},
+	table:  "datadir2datafile",
 }
