@@ -20,24 +20,60 @@ func TestRFilesByID(t *testing.T) {
 	require.NotNil(t, f, "Found file, but returned nil for entry")
 	require.Equal(t, f.ID, "testfile.txt", "Retrieved wrong file %#v", f)
 
-	// Test non-existant
+	// Test no such file id
 	f, err = rfiles.ByID("does-not-exist")
 	require.Equal(t, err, app.ErrNotFound, "Found file that doesn't exist")
 	require.Nil(t, f, "Returned file entry rather than nil %#v", f)
 }
 
-func TestInsert(t *testing.T) {
-	//require.True(t, false, "Implementing cleanup")
+func TestRFilesInsertIDSet(t *testing.T) {
 	file := schema.NewFile("test1.txt", "test@mc.org")
-	// Explicitly set the ID for our tests
-	file.ID = "test1.txt"
+	file.ID = "test1.txt" // Explicitly set the ID
 
 	newFile, err := rfiles.Insert(&file, "test", "test")
 	require.Nil(t, err)
 	require.NotNil(t, newFile)
 	require.Equal(t, newFile.ID, "test1.txt")
 
+	// Check that the join tables were updated.
+	session := test.RSession()
+	var p2df []schema.Project2DataFile
+	rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(file.ID))
+	err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
+	require.Nil(t, err)
+	require.Equal(t, len(p2df), 1)
+
+	var dir2df []schema.DataDir2DataFile
+	rql = r.Table("datadir2datafile").Filter(r.Row.Field("datafile_id").Eq(file.ID))
+	err = model.DirFiles.Qs(session).Rows(rql, &dir2df)
+	require.Nil(t, err)
+	require.Equal(t, len(dir2df), 1)
+
 	deleteFile(file.ID)
+}
+
+func TestRFilesInsertNoIDSet(t *testing.T) {
+	file := schema.NewFile("test1.txt", "test@mc.org")
+
+	newFile, err := rfiles.Insert(&file, "test", "test")
+	require.Nil(t, err)
+	require.NotNil(t, newFile)
+
+	// Check that the join tables were updated.
+	session := test.RSession()
+	var p2df []schema.Project2DataFile
+	rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(newFile.ID))
+	err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
+	require.Nil(t, err)
+	require.Equal(t, len(p2df), 1)
+
+	var dir2df []schema.DataDir2DataFile
+	rql = r.Table("datadir2datafile").Filter(r.Row.Field("datafile_id").Eq(newFile.ID))
+	err = model.DirFiles.Qs(session).Rows(rql, &dir2df)
+	require.Nil(t, err)
+	require.Equal(t, len(dir2df), 1)
+
+	deleteFile(newFile.ID)
 }
 
 func deleteFile(fileID string) {

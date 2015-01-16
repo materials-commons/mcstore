@@ -28,6 +28,17 @@ func (f rFiles) ByID(id string) (*schema.File, error) {
 	return &file, nil
 }
 
+// ByChecksum looks up a file by its checksum. This routine only returns the original
+// root entry, it will not return entries that are duplicates and point at the root.
+func (f rFiles) ByChecksum(checksum string) (*schema.File, error) {
+	rql := model.Files.T().GetAllByIndex("checksum", checksum).Filter(r.Row.Field("usesid").Eq(""))
+	var file schema.File
+	if err := model.Files.Qs(f.session).Row(rql, &file); err != nil {
+		return nil, err
+	}
+	return &file, nil
+}
+
 // Insert adds a new file to the system.
 func (f rFiles) Insert(file *schema.File, dirID string, projectID string) (*schema.File, error) {
 	var newFile schema.File
@@ -64,4 +75,20 @@ func (f rFiles) updateDependencies(fileID, dirID, projectID string) error {
 	}
 
 	return err
+}
+
+// Update updates an existing datafile.
+func (f rFiles) Update(file *schema.File) error {
+	if err := model.Files.Qs(f.session).Update(file.ID, file); err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateFields updates the fields for the given id
+func (f rFiles) UpdateFields(fileID string, fields map[string]interface{}) error {
+	if err := model.Files.Qs(f.session).Update(fileID, fields); err != nil {
+		return err
+	}
+	return nil
 }
