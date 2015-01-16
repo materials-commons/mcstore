@@ -56,6 +56,36 @@ func newUploadFinisher(req *flow.Request, tracker *uploadTracker) *uploadFinishe
 	}
 }
 
+/*
+Finish code:
+    Get the checksum
+    if another file has that checksum then
+       delete file just uploaded
+       set usesid to that files checksum
+    end
+    Check if this file will be current file
+    Get this files size
+    Get this files parent
+    Create file and insert into project and directory
+    if there wasn't a matching checksum then
+        move assembled file from upload area to app.MCDir.FilePath(fileID)
+    end
+
+    Other implied changes:
+       * The assembler will assemble the file in the directory
+         with the parts
+       * There is no FileID in flow.Request
+       * An upload request first needs to get an UploadID
+       * We should track UploadIDs for a directory/machine/lastModifiedDate/Size combination
+            - This will allow us to track incomplete uploads
+            - It will also allow us check if the file has changed
+            - It isn't perfect, but it is better than nothing
+            - Better method is to compute a checksum for each block
+            - we upload and compare that to the checksum for blocks
+              already loaded
+
+*/
+
 // Finish removes the temporary directory containing the chunks.
 // It also clears the uploadID from the tracker since the upload
 // has been completed and processed.
