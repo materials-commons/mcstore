@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/inconshreveable/log15"
 	"github.com/jessevdk/go-flags"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -21,13 +22,13 @@ type serverOptions struct {
 	MCDir    string `long:"mcdir" description:"Directory path to materials commons file storage"`
 	PrintPid bool   `long:"print-pid" description:"Prints the server pid to stdout"`
 	HTTPPort uint   `long:"http-port" description:"Port webserver listens on" default:"5010"`
+	LogLevel string `long:"log-level" description:"Logging level for server (debug, info, warn, error, crit)" default:"info"`
 }
 
 // Options for the database
 type databaseOptions struct {
 	Connection string `long:"db-connect" description:"The database connection string"`
-	Name       string `long:"db" description:"Database to use"`
-	Type       string `long:"db-type" description:"The type of database to connect to"`
+	Name       string `long:"db" description:"Database to use" default:"materialscommons"`
 }
 
 // Break the options into option groups.
@@ -73,12 +74,16 @@ func setupConfig(opts options) {
 		config.Set("MCDB_NAME", opts.Database.Name)
 	}
 
-	if opts.Database.Type != "" {
-		config.Set("MCDB_TYPE", opts.Database.Type)
-	}
-
 	if opts.Server.MCDir != "" {
 		config.Set("MCDIR", opts.Server.MCDir)
+	}
+
+	if lvl, err := log15.LvlFromString(opts.Server.LogLevel); err != nil {
+		fmt.Printf("Invalid Log Level: %s, setting to Info\n", opts.Server.LogLevel)
+		app.SetLogLvl(log15.LvlInfo)
+	} else {
+		fmt.Println("Log level set to:", opts.Server.LogLevel)
+		app.SetLogLvl(lvl)
 	}
 }
 
