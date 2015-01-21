@@ -61,7 +61,7 @@ func (h *dataHandler) serveData(writer http.ResponseWriter, req *http.Request) (
 	// Is the original data requested, or can we serve the converted
 	// image data (if it exists)?
 	original := getOriginalFormValue(req)
-	app.Log.Debug(app.Logf("serveData - Original flag %s", original))
+	app.Log.Debug(app.Logf("serveData - Original flag %t", original))
 
 	fileID := filepath.Base(req.URL.Path)
 	app.Log.Debug(app.Logf("serveData - fileID %s, URL %s", fileID, req.URL.Path))
@@ -79,7 +79,7 @@ func (h *dataHandler) serveData(writer http.ResponseWriter, req *http.Request) (
 
 	// The content type is dependent on whether we are
 	// serving the original or the converted file.
-	if !original {
+	if !original && isConvertedImage(file.MediaType.Mime) {
 		mediatype = "image/jpeg"
 	}
 
