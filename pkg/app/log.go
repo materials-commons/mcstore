@@ -11,13 +11,15 @@ var (
 	// Log Is the global log variable.
 	Log = log15.New()
 
+	// stdHandler is the log handler with level applied
+	stdHandler = log15.StreamHandler(os.Stdout, log15.LogfmtFormat())
+
 	// Default handler used in the package.
 	defaultHandler log15.Handler
 )
 
 func init() {
-	stdoutHandler := log15.StreamHandler(os.Stdout, log15.LogfmtFormat())
-	SetDefaultLogHandler(log15.LvlFilterHandler(log15.LvlInfo, stdoutHandler))
+	SetDefaultLogHandler(log15.LvlFilterHandler(log15.LvlInfo, stdHandler))
 	Log.SetHandler(defaultHandler)
 }
 
@@ -38,6 +40,12 @@ func Logf(format string, args ...interface{}) string {
 // should not pass in handlers that are already wrapped in a SyncHandler.
 func SetDefaultLogHandler(handler log15.Handler) {
 	defaultHandler = log15.SyncHandler(handler)
+	Log.SetHandler(defaultHandler)
+}
+
+// Sets a new log level for the global logging and the default handler.
+func SetLogLvl(lvl log15.Lvl) {
+	SetDefaultLogHandler(log15.LvlFilterHandler(lvl, stdHandler))
 	Log.SetHandler(defaultHandler)
 }
 
