@@ -66,7 +66,7 @@ func (h *dataHandler) serveData(writer http.ResponseWriter, req *http.Request) (
 	fileID := filepath.Base(req.URL.Path)
 	app.Log.Debug(app.Logf("serveData - fileID %s, URL %s", fileID, req.URL.Path))
 
-	// Get the file checking its access.
+	// Get the file, checking its access.
 	file, err := h.access.GetFile(apikey, fileID)
 	if err != nil {
 		return path, mediatype, err
