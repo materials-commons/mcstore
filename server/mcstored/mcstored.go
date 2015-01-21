@@ -1,5 +1,5 @@
 // Package mcstored implements the server for storage requests.
-package mcstored
+package main
 
 import (
 	"fmt"
@@ -13,6 +13,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/domain"
 	"github.com/materials-commons/mcstore/server/mcstored/service"
+	"github.com/materials-commons/mcstore/server/mcstored/service/rest"
 )
 
 // Options for server startup
@@ -85,7 +86,9 @@ func setupConfig(opts options) {
 func server(port uint) {
 	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
+	container := rest.NewServicesContainer()
+	http.Handle("/", container)
 	dataHandler := service.NewDataHandler(access)
-	http.Handle("/data/", dataHandler)
+	http.Handle("/datafiles/static/", dataHandler)
 	app.Log.Crit("http Server failed", "error", http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
