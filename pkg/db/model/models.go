@@ -51,3 +51,9 @@ var DirFiles = &rModel{
 	schema: schema.DataDir2DataFile{},
 	table:  "datadir2datafile",
 }
+
+// Uploads
+var Uploads = &rModel{
+	schema: schema.Upload{},
+	table:  "uploads",
+}

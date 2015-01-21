@@ -30,6 +30,10 @@ func (r *uploadResource) WebService() *restful.WebService {
 	ws := new(restful.WebService)
 
 	ws.Path("/upload").Produces(restful.MIME_JSON)
+	ws.Route(ws.POST("").To(rest.RouteHandler(r.createUploadRequest)).
+		Doc("Creates a new upload request").
+		Reads(uploadCreateRequest{}).
+		Writes(uploadCreateResponse{}))
 	ws.Route(ws.POST("/chunk").To(rest.RouteHandler1(r.uploadFileChunk)).
 		Consumes("multipart/form-data").
 		Doc("Upload a file chunk"))

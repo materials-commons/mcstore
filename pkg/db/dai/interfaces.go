@@ -18,3 +18,10 @@ type Groups interface {
 	ByID(id string) (*schema.Group, error)
 	ForOwner(owner string) ([]schema.Group, error)
 }
+
+type Uploads interface {
+	ByID(id string) (*schema.Upload, error)
+	Insert(upload *schema.Upload) (*schema.Upload, error)
+	Update(upload *schema.Upload) error
+	ForUser(user string) ([]schema.Upload, error)
+}

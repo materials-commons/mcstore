@@ -12,7 +12,7 @@ type rFiles struct {
 	session *r.Session
 }
 
-// newRFiles creates a new instance of rFiles
+// NewRFiles creates a new instance of rFiles
 func NewRFiles(session *r.Session) rFiles {
 	return rFiles{
 		session: session,
