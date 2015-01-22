@@ -7,21 +7,24 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
+	"github.com/materials-commons/mcstore/server/mcstored/service/uploads"
 )
 
 // An uploadResource handles all upload requests.
 type uploadResource struct {
-	uploader *uploader
-	log      log15.Logger
-	factory  AssemblerFactory
+	uploader      *uploader
+	log           log15.Logger
+	factory       AssemblerFactory
+	createService uploads.CreateService
 }
 
 // NewResources creates a new upload resource
 func NewResource(uploader *uploader, factory AssemblerFactory) rest.Service {
 	return &uploadResource{
-		uploader: uploader,
-		log:      app.NewLog("resource", "upload"),
-		factory:  factory,
+		uploader:      uploader,
+		log:           app.NewLog("resource", "upload"),
+		factory:       factory,
+		createService: uploads.NewCreateService(),
 	}
 }
 
