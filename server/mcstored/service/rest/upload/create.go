@@ -15,6 +15,11 @@ type uploadCreateResponse struct {
 	requestID string `json:"request_id"`
 }
 
-func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (error, interface{}) {
+func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	var req uploadCreateRequest
+	if err := request.ReadEntity(&req); err != nil {
+		return nil, err
+	}
+
 	return nil, nil
 }
