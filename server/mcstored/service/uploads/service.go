@@ -1,6 +1,8 @@
 package uploads
 
 import (
+	"time"
+
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
@@ -8,10 +10,23 @@ import (
 	"github.com/materials-commons/mcstore/pkg/domain"
 )
 
+// A CreateRequest requests a new upload id be created for
+// the given parameters.
+type CreateRequest struct {
+	User        string
+	DirectoryID string
+	ProjectID   string
+	Host        string
+	Birthtime   time.Time
+}
+
+// CreateService creates new upload requests
 type CreateService interface {
 	Create(req CreateRequest) (*schema.Upload, error)
 }
 
+// createService implements the CreateService interface using
+// the dai services.
 type createService struct {
 	dirs     dai.Dirs
 	projects dai.Projects
@@ -19,6 +34,9 @@ type createService struct {
 	access   domain.Access
 }
 
+// NewCreateService creates a new createService. It uses db.RSessionMust() to get
+// a session to connect to the database. It will panic if it cannot connect to
+// the database.
 func NewCreateService() *createService {
 	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
@@ -30,6 +48,7 @@ func NewCreateService() *createService {
 	}
 }
 
+// NewCreateServiceFrom creates a new instance of the createService using the passed in dai and access parameters.
 func NewCreateServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Uploads, access domain.Access) *createService {
 	return &createService{
 		dirs:     dirs,
@@ -39,6 +58,8 @@ func NewCreateServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Uplo
 	}
 }
 
+// Create will create a new Upload request. It validates and checks access to the given project
+// and directory.
 func (s *createService) Create(req CreateRequest) (*schema.Upload, error) {
 	proj, err := s.getProj(req.ProjectID, req.User)
 	if err != nil {
@@ -59,6 +80,8 @@ func (s *createService) Create(req CreateRequest) (*schema.Upload, error) {
 	return s.uploads.Insert(&upload)
 }
 
+// getProj retrieves the project with the given projectID. It checks that the
+// given user has access to that project.
 func (s *createService) getProj(projectID, user string) (*schema.Project, error) {
 	project, err := s.projects.ByID(projectID)
 	switch {
@@ -71,6 +94,8 @@ func (s *createService) getProj(projectID, user string) (*schema.Project, error)
 	}
 }
 
+// getDir retrieves the directory with the given directoryID. It checks access to the
+// directory and validates that the directory exists in the given project.
 func (s *createService) getDir(directoryID, projectID, user string) (*schema.Directory, error) {
 	dir, err := s.dirs.ByID(directoryID)
 	switch {

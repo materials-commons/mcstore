@@ -6,16 +6,19 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
+// rProjects implements the Projects interface for RethinkDB
 type rProjects struct {
 	session *r.Session
 }
 
+// NewRProjects creates a new instance of rProjects.
 func NewRProjects(session *r.Session) rProjects {
 	return rProjects{
 		session: session,
 	}
 }
 
+// ByID looks up a project by the given id.
 func (p rProjects) ByID(id string) (*schema.Project, error) {
 	var project schema.Project
 	if err := model.Projects.Qs(p.session).ByID(id, &project); err != nil {
@@ -24,6 +27,7 @@ func (p rProjects) ByID(id string) (*schema.Project, error) {
 	return &project, nil
 }
 
+// HasDirectory checks if the given directoryID is in the given project.
 func (p rProjects) HasDirectory(projectID, dirID string) bool {
 	rql := model.ProjectDirs.T().GetAllByIndex("datadir_id", dirID)
 	var proj2dir []schema.Project2DataDir
