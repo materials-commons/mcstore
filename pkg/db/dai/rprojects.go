@@ -25,7 +25,7 @@ func (p rProjects) ByID(id string) (*schema.Project, error) {
 }
 
 func (p rProjects) HasDirectory(projectID, dirID string) bool {
-	rql := model.ProjectDirs.T().GetAllByIndex("directory_id", dirID)
+	rql := model.ProjectDirs.T().GetAllByIndex("datadir_id", dirID)
 	var proj2dir []schema.Project2DataDir
 	if err := model.ProjectDirs.Qs(p.session).Rows(rql, &proj2dir); err != nil {
 		return false
