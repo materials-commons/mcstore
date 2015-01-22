@@ -8,21 +8,21 @@ import (
 	"github.com/materials-commons/mcstore/pkg/domain"
 )
 
-type UploadsService interface {
+type CreateService interface {
 	Create(req CreateRequest) (*schema.Upload, error)
 }
 
-type uploadsService struct {
+type createService struct {
 	dirs     dai.Dirs
 	projects dai.Projects
 	uploads  dai.Uploads
 	access   domain.Access
 }
 
-func NewUploadsService() *uploadsService {
+func NewCreateService() *createService {
 	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
-	return &uploadsService{
+	return &createService{
 		dirs:     dai.NewRDirs(session),
 		projects: dai.NewRProjects(session),
 		uploads:  dai.NewRUploads(session),
@@ -30,8 +30,8 @@ func NewUploadsService() *uploadsService {
 	}
 }
 
-func NewUploadsServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Uploads, access domain.Access) *uploadsService {
-	return &uploadsService{
+func NewCreateServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Uploads, access domain.Access) *createService {
+	return &createService{
 		dirs:     dirs,
 		projects: projects,
 		uploads:  uploads,
@@ -39,7 +39,7 @@ func NewUploadsServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Upl
 	}
 }
 
-func (s *uploadsService) Create(req CreateRequest) (*schema.Upload, error) {
+func (s *createService) Create(req CreateRequest) (*schema.Upload, error) {
 	proj, err := s.getProj(req.ProjectID, req.User)
 	if err != nil {
 		return nil, err
@@ -59,7 +59,7 @@ func (s *uploadsService) Create(req CreateRequest) (*schema.Upload, error) {
 	return s.uploads.Insert(&upload)
 }
 
-func (s *uploadsService) getProj(projectID, user string) (*schema.Project, error) {
+func (s *createService) getProj(projectID, user string) (*schema.Project, error) {
 	project, err := s.projects.ByID(projectID)
 	switch {
 	case err != nil:
@@ -71,7 +71,7 @@ func (s *uploadsService) getProj(projectID, user string) (*schema.Project, error
 	}
 }
 
-func (s *uploadsService) getDir(directoryID, projectID, user string) (*schema.Directory, error) {
+func (s *createService) getDir(directoryID, projectID, user string) (*schema.Directory, error) {
 	dir, err := s.dirs.ByID(directoryID)
 	switch {
 	case err != nil:
