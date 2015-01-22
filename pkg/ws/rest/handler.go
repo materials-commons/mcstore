@@ -18,7 +18,7 @@ func (e *httpError) Write(response *restful.Response) {
 }
 
 // RouteFunc represents the routes function
-type RouteFunc func(request *restful.Request, response *restful.Response, user schema.User) (error, interface{})
+type RouteFunc func(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error)
 
 // RouteFunc1 is a route function that only returns an error, but no value
 type RouteFunc1 func(request *restful.Request, response *restful.Response, user schema.User) error
@@ -31,7 +31,7 @@ type Handler func(request *restful.Request, response *restful.Response)
 func RouteHandler(f RouteFunc) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		user := schema.User{} //request.Attribute("user").(schema.User)
-		err, val := f(request, response, user)
+		val, err := f(request, response, user)
 		switch {
 		case err != nil:
 			httpErr := ws.ErrorToHTTPError(err)
@@ -51,9 +51,9 @@ func RouteHandler(f RouteFunc) restful.RouteFunction {
 // RouteHandler for details.
 func RouteHandler1(f RouteFunc1) restful.RouteFunction {
 	// Create a function that looks like a RouteFunc but always returns null for its second return value
-	f2 := func(request *restful.Request, response *restful.Response, user schema.User) (error, interface{}) {
+	f2 := func(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 		err := f(request, response, user)
-		return err, nil
+		return nil, err
 	}
 	return RouteHandler(f2)
 }
