@@ -19,9 +19,9 @@ var (
 	uploads  = dai.NewRUploads(test.RSession())
 )
 
-func TestUploadsHasAccess(t *testing.T) {
+func TestCreateHasAccess(t *testing.T) {
 	access := domain.NewAccess(groups, files, users)
-	s := NewUploadsServiceFrom(dirs, projects, uploads, access)
+	s := NewCreateServiceFrom(dirs, projects, uploads, access)
 
 	// Test with admin
 	cf := CreateRequest{
@@ -45,9 +45,9 @@ func TestUploadsHasAccess(t *testing.T) {
 	require.Nil(t, err)
 }
 
-func TestUploadsNoAccess(t *testing.T) {
+func TestCreateNoAccess(t *testing.T) {
 	access := domain.NewAccess(groups, files, users)
-	s := NewUploadsServiceFrom(dirs, projects, uploads, access)
+	s := NewCreateServiceFrom(dirs, projects, uploads, access)
 
 	// Test with admin
 	cf := CreateRequest{
@@ -62,9 +62,9 @@ func TestUploadsNoAccess(t *testing.T) {
 	require.Nil(t, upload)
 }
 
-func TestUploadsInvalidRequest(t *testing.T) {
+func TestCreateInvalidRequest(t *testing.T) {
 	access := domain.NewAccess(groups, files, users)
-	s := NewUploadsServiceFrom(dirs, projects, uploads, access)
+	s := NewCreateServiceFrom(dirs, projects, uploads, access)
 
 	cf := CreateRequest{
 		ProjectID:   "test",
