@@ -123,6 +123,7 @@ def make_tables(conn):
     create_table("datadir2datafile", conn, "datadir_id", "datafile_id")
     create_table("users", conn, "apikey")
     create_table("usergroups", conn, "owner")
+    create_table("uploads", conn, "owner", "project_id")
     print "Done..."
 
 
