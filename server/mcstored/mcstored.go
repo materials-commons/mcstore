@@ -87,13 +87,16 @@ func setupConfig(opts options) {
 	}
 }
 
-// server implements the actual serve for mcstored.
+// server implements the actual serve for mcstored. It sets up the http routes and handlers. This
+// method never returns.
 func server(port uint) {
-	session := db.RSessionMust()
-	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	container := rest.NewServicesContainer()
 	http.Handle("/", container)
+
+	session := db.RSessionMust()
+	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	dataHandler := service.NewDataHandler(access)
 	http.Handle("/datafiles/static/", dataHandler)
+
 	app.Log.Crit("http Server failed", "error", http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
