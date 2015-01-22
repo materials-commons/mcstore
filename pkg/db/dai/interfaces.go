@@ -24,4 +24,14 @@ type Uploads interface {
 	Insert(upload *schema.Upload) (*schema.Upload, error)
 	Update(upload *schema.Upload) error
 	ForUser(user string) ([]schema.Upload, error)
+	Delete(uploadID string) error
+}
+
+type Projects interface {
+	ByID(id string) (*schema.Project, error)
+	HasDirectory(projectID, directoryID string) bool
+}
+
+type Dirs interface {
+	ByID(id string) (*schema.Directory, error)
 }

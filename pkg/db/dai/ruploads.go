@@ -48,8 +48,13 @@ func (u rUploads) Update(upload *schema.Upload) error {
 func (u rUploads) ForUser(user string) ([]schema.Upload, error) {
 	rql := model.Uploads.T().GetAllByIndex("owner", user)
 	var uploads []schema.Upload
-	if err := model.Groups.Qs(u.session).Rows(rql, &uploads); err != nil {
+	if err := model.Uploads.Qs(u.session).Rows(rql, &uploads); err != nil {
 		return nil, err
 	}
 	return uploads, nil
+}
+
+// Delete deletes the given upload id
+func (u rUploads) Delete(uploadID string) error {
+	return model.Uploads.Qs(u.session).Delete(uploadID)
 }
