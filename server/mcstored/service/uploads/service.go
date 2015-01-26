@@ -16,6 +16,9 @@ type CreateRequest struct {
 	User        string
 	DirectoryID string
 	ProjectID   string
+	FileName    string
+	FileSize    int64
+	FileCTime   time.Time
 	Host        string
 	Birthtime   time.Time
 }
@@ -76,6 +79,9 @@ func (s *createService) Create(req CreateRequest) (*schema.Upload, error) {
 		Project(req.ProjectID, proj.Name).
 		Directory(req.DirectoryID, dir.Name).
 		Host(req.Host).
+		FName(req.FileName).
+		FSize(req.FileSize).
+		FRemoteCTime(req.FileCTime).
 		Create()
 	return s.uploads.Insert(&upload)
 }
