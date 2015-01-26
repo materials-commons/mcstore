@@ -15,7 +15,7 @@ type uploadCreateRequest struct {
 	DirectoryID string `json:"directory_id"`
 	FileName    string `json:"filename"`
 	FileSize    int64  `json:"filesize"`
-	FileCTime   string `json:"filectime"`
+	FileMTime   string `json:"filemtime"`
 	UserID      string `json:"user_id"`
 }
 
@@ -34,7 +34,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		return nil, err
 	}
 
-	t, err := time.Parse(time.RFC1123, req.FileCTime)
+	fileMTime, err := time.Parse(time.RFC1123, req.FileMTime)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		ProjectID:   req.ProjectID,
 		FileName:    req.FileName,
 		FileSize:    req.FileSize,
-		FileCTime:   t,
+		FileMTime:   fileMTime,
 		Host:        request.Request.RemoteAddr,
 		Birthtime:   time.Now(),
 	}

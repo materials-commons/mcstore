@@ -49,7 +49,7 @@ func TestCreateUploadRequest(t *testing.T) {
 		"directory_id": "test",
 		"filename": "test.txt",
 		"filesize": 50,
-		"filectime": "Tue, 18 Nov 2014 16:26:40 GMT",
+		"filemtime": "Tue, 18 Nov 2014 16:26:40 GMT",
 		"user_id": "test@mc.org"
 	}`)
 	s := bytes.NewBuffer(jsonStr)
@@ -75,7 +75,7 @@ func TestCreateUploadRequest(t *testing.T) {
 		"directory_id": "test",
 		"filename": "test.txt",
 		"filesize": 50,
-		"filectime": "Tue, 18 Nov 2014 16:26:40 GMT",
+		"filemtime": "Tue, 18 Nov 2014 16:26:40 GMT",
 		"user_id": "test@mc.org"
         }`)
 	s = bytes.NewBuffer(jsonStr)

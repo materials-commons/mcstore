@@ -9,7 +9,7 @@ type FileUpload struct {
 	Size        int64     `gorethink:"size"`         // Size of file on remote system
 	Birthtime   time.Time `gorethink:"birthtime"`    // When was FileUpload started
 	MTime       time.Time `gorethink:"mtime"`        // Last time this entry was modified
-	RemoteCTime time.Time `gorethink:"remote_ctime"` // CTime of the remote file
+	RemoteMTime time.Time `gorethink:"remote_mtime"` // CTime of the remote file
 	ChunkSize   int       `gorethink:"chunk_size"`   // Chunk transfer size
 	ChunkCount  int       `gorethink:"chunk_count"`  // Number of chunks expected
 	ChunkHashes []string  `gorethink:"chunk_hashes"` // Hash for each uploaded chunk
@@ -41,7 +41,7 @@ func CUpload() *uploadCreater {
 	u.upload.Birthtime = now
 	u.upload.File.Birthtime = now
 	u.upload.File.MTime = now
-	u.upload.File.RemoteCTime = now
+	u.upload.File.RemoteMTime = now
 	return u
 }
 
@@ -103,8 +103,8 @@ func (c *uploadCreater) FTime(t time.Time) *uploadCreater {
 }
 
 // FRemoteCTime sets the Upload.File.RemoteCTime field.
-func (c *uploadCreater) FRemoteCTime(t time.Time) *uploadCreater {
-	c.upload.File.RemoteCTime = t
+func (c *uploadCreater) FRemoteMTime(t time.Time) *uploadCreater {
+	c.upload.File.RemoteMTime = t
 	return c
 }
 
