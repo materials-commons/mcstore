@@ -11,15 +11,18 @@ import (
 // uploadCreateRequest describes the JSON request a client will send
 // to create a new upload request.
 type uploadCreateRequest struct {
-	projectID   string `json:"project_id"`
-	directoryID string `json:"directory_id"`
-	userID      string `json:"user_id"`
+	ProjectID   string `json:"project_id"`
+	DirectoryID string `json:"directory_id"`
+	FileName    string `json:"filename"`
+	FileSize    int64  `json:"filesize"`
+	FileCTime   int64  `json:"filectime"`
+	UserID      string `json:"user_id"`
 }
 
 // uploadCreateResponse is the format of JSON sent back containing
 // the upload request ID.
 type uploadCreateResponse struct {
-	requestID string `json:"request_id"`
+	RequestID string `json:"request_id"`
 }
 
 // createUploadRequest services requests to create a new upload id. It validates
@@ -32,9 +35,12 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 	}
 
 	cr := uploads.CreateRequest{
-		User:        req.userID,
-		DirectoryID: req.directoryID,
-		ProjectID:   req.projectID,
+		User:        req.UserID,
+		DirectoryID: req.DirectoryID,
+		ProjectID:   req.ProjectID,
+		FileName:    req.FileName,
+		FileSize:    req.FileSize,
+		FileCTime:   time.Unix(req.FileCTime, 0),
 		Host:        request.Request.RemoteAddr,
 		Birthtime:   time.Now(),
 	}
@@ -44,7 +50,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 	}
 
 	resp := uploadCreateResponse{
-		requestID: upload.ID,
+		RequestID: upload.ID,
 	}
 	return &resp, nil
 }
