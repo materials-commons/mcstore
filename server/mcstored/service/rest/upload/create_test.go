@@ -49,7 +49,7 @@ func TestCreateUploadRequest(t *testing.T) {
 		"directory_id": "test",
 		"filename": "test.txt",
 		"filesize": 50,
-		"filectime": 1416328000000,
+		"filectime": "Tue, 18 Nov 2014 16:26:40 GMT",
 		"user_id": "test@mc.org"
 	}`)
 	s := bytes.NewBuffer(jsonStr)
@@ -64,15 +64,25 @@ func TestCreateUploadRequest(t *testing.T) {
 	var v map[string]interface{}
 	json.Unmarshal(data, &v)
 	requestID := v["request_id"].(string)
-	deleteRequest(requestID)
+	upload, err := tuploads.ByID(requestID)
+	require.Nil(t, err)
+	require.NotNil(t, upload)
+	tuploads.Delete(requestID)
 
 	// Test with invalid data
+	jsonStr = []byte(`{
+                "project_id": "no-project",
+		"directory_id": "test",
+		"filename": "test.txt",
+		"filesize": 50,
+		"filectime": "Tue, 18 Nov 2014 16:26:40 GMT",
+		"user_id": "test@mc.org"
+        }`)
+	s = bytes.NewBuffer(jsonStr)
+	req, err = http.NewRequest("POST", url, s)
+	require.Nil(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = client.Do(req)
+	require.Nil(t, err)
+	require.Equal(t, resp.StatusCode, 400)
 }
-
-func deleteRequest(requestID string) {
-	tuploads.Delete(requestID)
-}
-
-// func TestGetExistingUploads(t *testing.T) {
-// 	require.True(t, false, "Not implemented")
-// }
