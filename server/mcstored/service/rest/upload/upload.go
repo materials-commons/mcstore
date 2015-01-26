@@ -19,12 +19,12 @@ type uploadResource struct {
 }
 
 // NewResources creates a new upload resource
-func NewResource(uploader *uploader, factory AssemblerFactory) rest.Service {
+func NewResource(uploader *uploader, factory AssemblerFactory, createService uploads.CreateService) rest.Service {
 	return &uploadResource{
 		uploader:      uploader,
 		log:           app.NewLog("resource", "upload"),
 		factory:       factory,
-		createService: uploads.NewCreateService(),
+		createService: createService,
 	}
 }
 
@@ -32,7 +32,7 @@ func NewResource(uploader *uploader, factory AssemblerFactory) rest.Service {
 func (r *uploadResource) WebService() *restful.WebService {
 	ws := new(restful.WebService)
 
-	ws.Path("/upload").Produces(restful.MIME_JSON)
+	ws.Path("/upload").Produces(restful.MIME_JSON).Consumes(restful.MIME_JSON)
 	ws.Route(ws.POST("").To(rest.RouteHandler(r.createUploadRequest)).
 		Doc("Creates a new upload request").
 		Reads(uploadCreateRequest{}).
