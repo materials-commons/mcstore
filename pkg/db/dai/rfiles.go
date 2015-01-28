@@ -39,6 +39,20 @@ func (f rFiles) ByChecksum(checksum string) (*schema.File, error) {
 	return &file, nil
 }
 
+// ByPath looks up a file by its name in a specific directory. It only returns the
+// current file, not hidden files.
+func (f rFiles) ByPath(name, dirID string) (*schema.File, error) {
+	rql := r.Table("datadir2datafile").GetAllByIndex("datadir_id", dirID).
+		EqJoin("datafile_id", r.Table("datafiles")).
+		Zip().
+		Filter(r.Row.Field("current").Eq(true).And(r.Row.Field("name").Eq(name)))
+	var file schema.File
+	if err := model.Files.Qs(f.session).Row(rql, &file); err != nil {
+		return nil, err
+	}
+	return &file, nil
+}
+
 // Insert adds a new file to the system.
 func (f rFiles) Insert(file *schema.File, dirID string, projectID string) (*schema.File, error) {
 	var newFile schema.File
