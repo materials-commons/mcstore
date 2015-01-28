@@ -38,7 +38,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 	if err != nil {
 		return nil, err
 	}
-	cr := uploads.CreateRequest{
+	cr := uploads.IDRequest{
 		User:        req.UserID,
 		DirectoryID: req.DirectoryID,
 		ProjectID:   req.ProjectID,
@@ -48,7 +48,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		Host:        request.Request.RemoteAddr,
 		Birthtime:   time.Now(),
 	}
-	upload, err := r.createService.Create(cr)
+	upload, err := r.idService.ID(cr)
 	if err != nil {
 		return nil, err
 	}

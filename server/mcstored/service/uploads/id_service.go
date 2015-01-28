@@ -10,9 +10,9 @@ import (
 	"github.com/materials-commons/mcstore/pkg/domain"
 )
 
-// A CreateRequest requests a new upload id be created for
+// A IDRequest requests a new upload id be created for
 // the given parameters.
-type CreateRequest struct {
+type IDRequest struct {
 	User        string
 	DirectoryID string
 	ProjectID   string
@@ -23,27 +23,27 @@ type CreateRequest struct {
 	Birthtime   time.Time
 }
 
-// CreateService creates new upload requests
-type CreateService interface {
-	Create(req CreateRequest) (*schema.Upload, error)
+// IDService creates new upload requests
+type IDService interface {
+	ID(req IDRequest) (*schema.Upload, error)
 }
 
-// createService implements the CreateService interface using
+// idService implements the IDService interface using
 // the dai services.
-type createService struct {
+type idService struct {
 	dirs     dai.Dirs
 	projects dai.Projects
 	uploads  dai.Uploads
 	access   domain.Access
 }
 
-// NewCreateService creates a new createService. It uses db.RSessionMust() to get
+// NewIDService creates a new idService. It uses db.RSessionMust() to get
 // a session to connect to the database. It will panic if it cannot connect to
 // the database.
-func NewCreateService() *createService {
+func NewIDService() *idService {
 	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
-	return &createService{
+	return &idService{
 		dirs:     dai.NewRDirs(session),
 		projects: dai.NewRProjects(session),
 		uploads:  dai.NewRUploads(session),
@@ -51,9 +51,9 @@ func NewCreateService() *createService {
 	}
 }
 
-// NewCreateServiceFrom creates a new instance of the createService using the passed in dai and access parameters.
-func NewCreateServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Uploads, access domain.Access) *createService {
-	return &createService{
+// NewIDServiceFrom creates a new instance of the idService using the passed in dai and access parameters.
+func NewIDServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Uploads, access domain.Access) *idService {
+	return &idService{
 		dirs:     dirs,
 		projects: projects,
 		uploads:  uploads,
@@ -61,9 +61,9 @@ func NewCreateServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Uplo
 	}
 }
 
-// Create will create a new Upload request. It validates and checks access to the given project
+// ID will create a new Upload request. It validates and checks access to the given project
 // and directory.
-func (s *createService) Create(req CreateRequest) (*schema.Upload, error) {
+func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 	proj, err := s.getProj(req.ProjectID, req.User)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (s *createService) Create(req CreateRequest) (*schema.Upload, error) {
 
 // getProj retrieves the project with the given projectID. It checks that the
 // given user has access to that project.
-func (s *createService) getProj(projectID, user string) (*schema.Project, error) {
+func (s *idService) getProj(projectID, user string) (*schema.Project, error) {
 	project, err := s.projects.ByID(projectID)
 	switch {
 	case err != nil:
@@ -102,7 +102,7 @@ func (s *createService) getProj(projectID, user string) (*schema.Project, error)
 
 // getDir retrieves the directory with the given directoryID. It checks access to the
 // directory and validates that the directory exists in the given project.
-func (s *createService) getDir(directoryID, projectID, user string) (*schema.Directory, error) {
+func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directory, error) {
 	dir, err := s.dirs.ByID(directoryID)
 	switch {
 	case err != nil:

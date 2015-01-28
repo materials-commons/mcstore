@@ -12,19 +12,19 @@ import (
 
 // An uploadResource handles all upload requests.
 type uploadResource struct {
-	uploader      *uploader
-	log           log15.Logger
-	factory       AssemblerFactory
-	createService uploads.CreateService
+	uploader  *uploader
+	log       log15.Logger
+	factory   AssemblerFactory
+	idService uploads.IDService
 }
 
 // NewResources creates a new upload resource
-func NewResource(uploader *uploader, factory AssemblerFactory, createService uploads.CreateService) rest.Service {
+func NewResource(uploader *uploader, factory AssemblerFactory, idService uploads.IDService) rest.Service {
 	return &uploadResource{
-		uploader:      uploader,
-		log:           app.NewLog("resource", "upload"),
-		factory:       factory,
-		createService: createService,
+		uploader:  uploader,
+		log:       app.NewLog("resource", "upload"),
+		factory:   factory,
+		idService: idService,
 	}
 }
 

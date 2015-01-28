@@ -21,16 +21,16 @@ var (
 
 func TestCreateHasAccess(t *testing.T) {
 	access := domain.NewAccess(groups, files, users)
-	s := NewCreateServiceFrom(dirs, projects, uploads, access)
+	s := NewIDServiceFrom(dirs, projects, uploads, access)
 
 	// Test with admin
-	cf := CreateRequest{
+	cf := IDRequest{
 		ProjectID:   "test",
 		DirectoryID: "test",
 		User:        "test@mc.org",
 		Host:        "host",
 	}
-	upload, err := s.Create(cf)
+	upload, err := s.ID(cf)
 	require.Nil(t, err)
 	require.NotNil(t, upload)
 	err = uploads.Delete(upload.ID)
@@ -38,7 +38,7 @@ func TestCreateHasAccess(t *testing.T) {
 
 	// Test with group access
 	cf.User = "test1@mc.org"
-	upload, err = s.Create(cf)
+	upload, err = s.ID(cf)
 	require.Nil(t, err)
 	require.NotNil(t, upload)
 	err = uploads.Delete(upload.ID)
@@ -47,16 +47,16 @@ func TestCreateHasAccess(t *testing.T) {
 
 func TestCreateNoAccess(t *testing.T) {
 	access := domain.NewAccess(groups, files, users)
-	s := NewCreateServiceFrom(dirs, projects, uploads, access)
+	s := NewIDServiceFrom(dirs, projects, uploads, access)
 
 	// Test with admin
-	cf := CreateRequest{
+	cf := IDRequest{
 		ProjectID:   "test",
 		DirectoryID: "test",
 		User:        "test2@mc.org",
 		Host:        "host",
 	}
-	upload, err := s.Create(cf)
+	upload, err := s.ID(cf)
 	require.NotNil(t, err)
 	require.Equal(t, err, app.ErrNoAccess)
 	require.Nil(t, upload)
@@ -64,16 +64,16 @@ func TestCreateNoAccess(t *testing.T) {
 
 func TestCreateInvalidRequest(t *testing.T) {
 	access := domain.NewAccess(groups, files, users)
-	s := NewCreateServiceFrom(dirs, projects, uploads, access)
+	s := NewIDServiceFrom(dirs, projects, uploads, access)
 
-	cf := CreateRequest{
+	cf := IDRequest{
 		ProjectID:   "test",
 		DirectoryID: "not-exist",
 		User:        "test@mc.org",
 		Host:        "host",
 	}
 
-	upload, err := s.Create(cf)
+	upload, err := s.ID(cf)
 	require.NotNil(t, err)
 	require.Nil(t, upload)
 }

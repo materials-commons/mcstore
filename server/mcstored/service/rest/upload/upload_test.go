@@ -233,7 +233,7 @@ func newSeparateItemAssemblerFactory(rw *separateItemRequestWriter, dest io.Writ
 	}
 }
 
-func (f *separateItemAssemblerFactory) Assembler(req *flow.Request) *Assembler {
+func (f *separateItemAssemblerFactory) Assembler(req *flow.Request, owner string) *Assembler {
 	f.called = true
 	itemSupplier := newSeparateItemSupplier(f.rw)
 	return NewAssembler(itemSupplier, f.dest, f.finisher)
