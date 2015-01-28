@@ -13,7 +13,7 @@ import (
 
 // A FinisherFactory creates a new Finisher for a given uploadID and fileID.
 type FinisherFactory interface {
-	Finisher(req *flow.Request) Finisher
+	Finisher(req *flow.Request, files dai.Files) Finisher
 }
 
 // A uploadFinisherFactory implements the actual finisher used by the upload service
@@ -30,13 +30,13 @@ func NewUploadFinisherFactory(tracker *uploadTracker) *uploadFinisherFactory {
 }
 
 // Finisher creates a new Finisher for the uploadFinisherFactory.
-func (f *uploadFinisherFactory) Finisher(req *flow.Request) Finisher {
-	return newUploadFinisher(req, f.tracker)
+func (f *uploadFinisherFactory) Finisher(req *flow.Request, files dai.Files) Finisher {
+	return newUploadFinisher(req, f.tracker, files)
 }
 
 // A Finisher implements the method to call when assembly has finished successfully.
 type Finisher interface {
-	Finish() error
+	Finish(fileID string) error
 }
 
 // uploadFinisher performs file cleanup, and database updates when a file has
@@ -49,10 +49,11 @@ type uploadFinisher struct {
 
 // newUploadFinisher creates a new Finisher for the given uploadID and fileID. It uses the
 // tracker to mark an upload as done by removing references to it.
-func newUploadFinisher(req *flow.Request, tracker *uploadTracker) *uploadFinisher {
+func newUploadFinisher(req *flow.Request, tracker *uploadTracker, files dai.Files) *uploadFinisher {
 	return &uploadFinisher{
 		tracker: tracker,
 		req:     req,
+		files:   files,
 	}
 }
 
@@ -89,7 +90,7 @@ Finish code:
 // Finish removes the temporary directory containing the chunks.
 // It also clears the uploadID from the tracker since the upload
 // has been completed and processed.
-func (f *uploadFinisher) Finish() error {
+func (f *uploadFinisher) Finish(fileID string) error {
 	current, parent := f.isCurrent()
 	fields := map[string]interface{}{
 		schema.FileFields.Current():  current,

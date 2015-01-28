@@ -65,7 +65,7 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 
 // assembler builds a new Assembler to assemble the pieces of the file.
 func (r *uploadResource) assembler(request *flow.Request) {
-	if assembler := r.factory.Assembler(request); assembler != nil {
+	if assembler := r.factory.Assembler(request, ""); assembler != nil {
 		assembler.Assemble()
 	}
 }
