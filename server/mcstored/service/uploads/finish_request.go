@@ -21,6 +21,8 @@ func newFinisher(files dai.Files) *finisher {
 	}
 }
 
+// TODO: refactor this method into a few separate methods that contain the
+// logical blocks.
 func (f *finisher) finish(req *UploadRequest, fileID, dirID string) error {
 	checksum, err := file.HashStr(md5.New(), app.MCDir.FilePath(fileID))
 	if err != nil {
@@ -39,8 +41,6 @@ func (f *finisher) finish(req *UploadRequest, fileID, dirID string) error {
 	if parent != nil {
 		parentID = parent.ID
 	}
-
-	// Should stat the file and make sure FlowTotalSize == fi.Size()
 
 	size := f.Size(fileID)
 
