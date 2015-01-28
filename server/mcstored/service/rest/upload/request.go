@@ -53,9 +53,12 @@ func (r *fileRequestWriter) Write(req *flow.Request) error {
 // If the size of the ondisk chunk is smaller than the request
 // chunk then that chunk is incomplete and we allow a write to it.
 func (r *fileRequestWriter) validateWrite(path string, req *flow.Request) error {
-	if err := os.MkdirAll(path, 0700); err != nil {
+	// Create directory where chunk will be written
+	dir := r.Dir(req)
+	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
+
 	finfo, err := os.Stat(path)
 	switch {
 	case os.IsNotExist(err):
