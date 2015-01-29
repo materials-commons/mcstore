@@ -11,7 +11,7 @@ type uploadTracker struct {
 }
 
 // NewUploadTracker creates a new uploadTracker.
-func NewUploadTracker() *uploadTracker {
+func newUploadTracker() *uploadTracker {
 	return &uploadTracker{
 		tracker: make(map[string]int32),
 	}
