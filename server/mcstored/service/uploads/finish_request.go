@@ -10,11 +10,15 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
+// A finisher finishes the rest of the book keeping
+// when a file has been successfully uploaded and
+// reconstructed.
 type finisher struct {
 	files dai.Files
 	dirs  dai.Dirs
 }
 
+// newFinisher creates a new finisher.
 func newFinisher(files dai.Files, dirs dai.Dirs) *finisher {
 	return &finisher{
 		files: files,
@@ -22,6 +26,9 @@ func newFinisher(files dai.Files, dirs dai.Dirs) *finisher {
 	}
 }
 
+// finish takes care of updating the file and directory pointers, determining
+// if a matching file (by checksum) has already been uploaded, and making the
+// file ready for the user to access.
 // TODO: refactor this method into a few separate methods that contain the
 // logical blocks.
 func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Upload) error {
@@ -84,6 +91,7 @@ func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Uplo
 	return f.files.UpdateFields(fileID, fields)
 }
 
+// Size gets the size of the reconstructed file.
 func (f *finisher) Size(fileID string) int64 {
 	finfo, err := os.Stat(app.MCDir.FilePath(fileID))
 	if err != nil {
@@ -92,6 +100,7 @@ func (f *finisher) Size(fileID string) int64 {
 	return finfo.Size()
 }
 
+// parentID returns the parent for this file (if any).
 func (f *finisher) parentID(fileName, dirID string) (parentID string, err error) {
 	parent, err := f.files.ByPath(fileName, dirID)
 
@@ -107,6 +116,8 @@ func (f *finisher) parentID(fileName, dirID string) (parentID string, err error)
 	return parentID, err
 }
 
+// fileInDir determines if this exact file has already been uploaded
+// to this directory.
 func (f *finisher) fileInDir(checksum, fileName, dirID string) bool {
 	files, err := f.dirs.Files(dirID)
 	if err != nil {
@@ -121,6 +132,8 @@ func (f *finisher) fileInDir(checksum, fileName, dirID string) bool {
 	return false
 }
 
+// deleteUploadedFile will completely delete the file from the system. This
+// happens when the file has already been uploaded to the given directory.
 func (f *finisher) deleteUploadedFile(fileID string, upload *schema.Upload) {
 	f.files.Delete(fileID, upload.DirectoryID, upload.ProjectID)
 	os.Remove(app.MCDir.FilePath(fileID))

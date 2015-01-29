@@ -11,15 +11,20 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
+// A UploadRequest contains the block to upload and the
+// information required to write that block.
 type UploadRequest struct {
 	*flow.Request
 	Owner string
 }
 
+// UploadService takes care of uploading blocks and constructing the
+// file when all blocks have been uploaded.
 type UploadService interface {
 	Upload(req *UploadRequest) error
 }
 
+// uploadService is an implementation of UploadService.
 type uploadService struct {
 	tracker *uploadTracker
 	files   dai.Files
@@ -27,6 +32,9 @@ type uploadService struct {
 	dirs    dai.Dirs
 }
 
+// NewUploadService creates a new uploadService connecting
+// to the default database. It will panic if it cannot
+// establish a connection to the database.
 func NewUploadService() *uploadService {
 	session := db.RSessionMust()
 	return &uploadService{
@@ -37,6 +45,9 @@ func NewUploadService() *uploadService {
 	}
 }
 
+// Upload takes care of uploading a block and constructing the file
+// after all blocks have been uploaded. It takes care of all the
+// details such as files that have already been uploaded.
 func (s *uploadService) Upload(req *UploadRequest) error {
 	dir := s.requestDir(req.Request)
 
@@ -49,6 +60,8 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 
 	if s.allBlocksUploaded(id, req.FlowTotalChunks) {
 		if file, err := s.assemble(req, dir); err != nil {
+			// assembly failed. If file isn't nil then
+			// there is some cleanup to do in the database.
 			if file != nil {
 				err2 := s.cleanup(req, file.ID)
 				app.Log.Errorf("Assembly failed for uploaded file: attempted cleanup of database entry returned: %s", err2)
@@ -60,11 +73,14 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 	return nil
 }
 
+// allBlocksUploaded checks if we have received all the blocks for a file.
 func (s *uploadService) allBlocksUploaded(id string, totalChunks int32) bool {
 	count := s.tracker.count(id)
 	return count == totalChunks
 }
 
+// assemble put the chunks for the file back together, create a database entry
+// and take care of all book keeping tasks to make the file accessible.
 func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, error) {
 	// Look up the upload
 	upload, err := s.uploads.ByID(req.FlowIdentifier)
@@ -107,6 +123,7 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 	return nil, nil
 }
 
+// createFile creates the database file entry.
 func (s *uploadService) createFile(req *UploadRequest, upload *schema.Upload) (*schema.File, error) {
 	file := schema.NewFile(upload.File.Name, req.Owner)
 
@@ -128,16 +145,20 @@ func (s *uploadService) createDest(fileID string) (io.Writer, error) {
 	return os.Create(app.MCDir.FilePath(fileID))
 }
 
+// requestDir returns the directory to write this requests chunks to.
 func (s *uploadService) requestDir(req *flow.Request) string {
 	requestPath := &mcdirRequestPath{}
 	return requestPath.Dir(req)
 }
 
+// Write will write a chunk to the given directory.
 func (s *uploadService) Write(dest string, req *flow.Request) error {
 	writer := &fileRequestWriter{}
 	return writer.Write(dest, req)
 }
 
+// cleanup is called when an error has occurred. It attempts to clean up
+// the state in the database for this particular entry.
 func (s *uploadService) cleanup(req *UploadRequest, fileID string) error {
 	upload, err := s.uploads.ByID(req.FlowIdentifier)
 	if err != nil {
