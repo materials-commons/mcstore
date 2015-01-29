@@ -18,10 +18,5 @@ func NewServicesContainer() *restful.Container {
 
 // uploadResource creates a new upload resource.
 func uploadResource() rest.Service {
-	tracker := upload.NewUploadTracker()
-	finisherFactory := upload.NewUploadFinisherFactory(tracker)
-	assemblerFactory := upload.NewMCDirAssemblerFactory(finisherFactory, nil)
-	rw := upload.NewFileRequestWriter(upload.NewMCDirRequestPath())
-	uploader := upload.NewUploader(rw, tracker)
-	return upload.NewResource(uploader, assemblerFactory, uploads.NewIDService())
+	return upload.NewResource(uploads.NewUploadService(), uploads.NewIDService())
 }
