@@ -7,9 +7,14 @@ import (
 	"github.com/inconshreveable/log15"
 )
 
+type log struct {
+	log15.Logger
+}
+
 var (
 	// Log Is the global log variable.
-	Log = log15.New()
+	//Log = log15.New()
+	Log = newLog()
 
 	// stdHandler is the log handler with level applied
 	stdHandler = log15.StreamHandler(os.Stdout, log15.LogfmtFormat())
@@ -17,6 +22,12 @@ var (
 	// Default handler used in the package.
 	defaultHandler log15.Handler
 )
+
+func newLog() *log {
+	return &log{
+		Logger: log15.New(),
+	}
+}
 
 func init() {
 	SetDefaultLogHandler(log15.LvlFilterHandler(log15.LvlInfo, stdHandler))
@@ -29,6 +40,31 @@ func NewLog(ctx ...interface{}) log15.Logger {
 	l := log15.New(ctx...)
 	l.SetHandler(defaultHandler)
 	return l
+}
+
+// Errorf will write a formatted Error to the default log.
+func (l *log) Errorf(format string, args ...interface{}) {
+	l.Error(fmt.Sprintf(format, args...))
+}
+
+// Debugf will write a formatted Debug to the default log.
+func (l *log) Debugf(format string, args ...interface{}) {
+	l.Debug(fmt.Sprintf(format, args...))
+}
+
+// Critf will write a formatted Crit to the default log.
+func (l *log) Critf(format string, args ...interface{}) {
+	l.Crit(fmt.Sprintf(format, args...))
+}
+
+// Infof will write a formatted Info to the default log.
+func (l *log) Infof(format string, args ...interface{}) {
+	l.Info(fmt.Sprintf(format, args...))
+}
+
+// Warnf will write a formatted Warn to the default log.
+func (l *log) Warnf(format string, args ...interface{}) {
+	l.Warn(fmt.Sprintf(format, args...))
 }
 
 // Logf is short hand to create a message string using fmt.Sprintf.
