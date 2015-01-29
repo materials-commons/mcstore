@@ -15,6 +15,7 @@ type Files interface {
 	Insert(file *schema.File, dirID string, projectID string) (*schema.File, error)
 	Update(file *schema.File) error
 	UpdateFields(fileID string, fields map[string]interface{}) error
+	Delete(fileID, directoryID, projectID string) (*schema.File, error)
 }
 
 // Groups allows manipulation and access to groups.
