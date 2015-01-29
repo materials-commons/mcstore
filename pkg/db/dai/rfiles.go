@@ -1,6 +1,8 @@
 package dai
 
 import (
+	"fmt"
+
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/model"
@@ -51,6 +53,22 @@ func (f rFiles) ByPath(name, dirID string) (*schema.File, error) {
 		return nil, err
 	}
 	return &file, nil
+}
+
+// Directories returns a list of all the directory ids this file belongs to
+func (f rFiles) Directories(fileID string) ([]string, error) {
+	fmt.Println("looking up directories for fileID", fileID)
+	var dirIDs []string
+	var dirs []schema.DataDir2DataFile
+	rql := r.Table("datadir2datafile").GetAllByIndex("datafile_id", fileID)
+	if err := model.DirFiles.Qs(f.session).Rows(rql, &dirs); err != nil {
+		return nil, err
+	}
+
+	for _, dirEntry := range dirs {
+		dirIDs = append(dirIDs, dirEntry.DataDirID)
+	}
+	return dirIDs, nil
 }
 
 // Insert adds a new file to the system.

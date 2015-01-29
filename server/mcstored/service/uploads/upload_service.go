@@ -64,8 +64,14 @@ func (s *uploadService) allBlocksUploaded(id string, totalChunks int32) bool {
 }
 
 func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, error) {
+	// Look up the upload
+	upload, err := s.uploads.ByID(req.FlowIdentifier)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create file entry in database
-	file, err := s.createFile(req)
+	file, err := s.createFile(req, upload)
 	if err != nil {
 		app.Log.Errorf("Assembly failed for request %s, couldn't create file in database: %s", req.FlowIdentifier, err)
 		return nil, err
@@ -86,28 +92,24 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 	}
 
 	// Finish updating the file state.
-	finisher := newFinisher(s.files)
-	if err := finisher.finish(req, file.ID, req.DirectoryID); err != nil {
+	finisher := newFinisher(s.files, s.uploads)
+	if err := finisher.finish(req, file.ID, upload); err != nil {
 		app.Log.Errorf("Assembly failed for request %s, couldn't finish request: %s", req.FlowIdentifier, err)
 		return file, err
 	}
 
-	app.Log.Infof("successfully upload fileID", file.ID)
+	app.Log.Infof("successfully upload fileID %s", file.ID)
 	// Remove upload request.
 	s.tracker.clear(req.UploadID())
 	s.uploads.Delete(req.UploadID())
 	return nil, nil
 }
 
-func (s *uploadService) createFile(req *UploadRequest) (*schema.File, error) {
-	upload, err := s.uploads.ByID(req.FlowIdentifier)
-	if err != nil {
-		return nil, err
-	}
+func (s *uploadService) createFile(req *UploadRequest, upload *schema.Upload) (*schema.File, error) {
 	file := schema.NewFile(upload.File.Name, req.Owner)
 
 	f, err := s.files.Insert(&file, upload.DirectoryID, upload.ProjectID)
-	app.Log.Infof("Created file %s, in %s %s\n", f.ID, upload.DirectoryID, upload.ProjectID)
+	app.Log.Infof("Created file %s, in %s %s", f.ID, upload.DirectoryID, upload.ProjectID)
 	if err != nil {
 		return nil, err
 	}
