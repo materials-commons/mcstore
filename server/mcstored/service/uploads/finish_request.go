@@ -2,7 +2,6 @@ package uploads
 
 import (
 	"crypto/md5"
-	"fmt"
 	"os"
 
 	"github.com/materials-commons/gohandy/file"
@@ -12,14 +11,14 @@ import (
 )
 
 type finisher struct {
-	files   dai.Files
-	uploads dai.Uploads
+	files dai.Files
+	dirs  dai.Dirs
 }
 
-func newFinisher(files dai.Files, uploads dai.Uploads) *finisher {
+func newFinisher(files dai.Files, dirs dai.Dirs) *finisher {
 	return &finisher{
-		files:   files,
-		uploads: uploads,
+		files: files,
+		dirs:  dirs,
 	}
 }
 
@@ -68,7 +67,7 @@ func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Uplo
 		// 2. The existing file is the file we uploaded.
 
 		// Is matching file, delete it completely.
-		if f.isSameFile(matchingFile, upload.File.Name, upload.DirectoryID) {
+		if f.fileInDir(checksum, upload.File.Name, upload.DirectoryID) {
 			app.Log.Infof("Found exact matching file (%s/%s) in same directory (%s), deleting", upload.File.Name, fileID, upload.DirectoryID)
 			f.deleteUploadedFile(fileID, upload)
 			return nil
@@ -108,20 +107,14 @@ func (f *finisher) parentID(fileName, dirID string) (parentID string, err error)
 	return parentID, err
 }
 
-func (f *finisher) isSameFile(matchingFile *schema.File, fileName, dirID string) bool {
-	fmt.Printf("isSameFile %#v, %s, %s\n", matchingFile, fileName, dirID)
-	if matchingFile.Name != fileName {
-		fmt.Println("isSameFile names don't match")
-		return false
-	}
-
-	dirs, err := f.files.Directories(matchingFile.ID)
-	fmt.Printf("isSameFile dirs %#v\n", dirs)
+func (f *finisher) fileInDir(checksum, fileName, dirID string) bool {
+	files, err := f.dirs.Files(dirID)
 	if err != nil {
 		return false
 	}
-	for _, entryID := range dirs {
-		if entryID == dirID {
+
+	for _, fileEntry := range files {
+		if fileEntry.Name == fileName && fileEntry.Checksum == checksum {
 			return true
 		}
 	}

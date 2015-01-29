@@ -24,6 +24,7 @@ type uploadService struct {
 	tracker *uploadTracker
 	files   dai.Files
 	uploads dai.Uploads
+	dirs    dai.Dirs
 }
 
 func NewUploadService() *uploadService {
@@ -32,6 +33,7 @@ func NewUploadService() *uploadService {
 		tracker: newUploadTracker(),
 		files:   dai.NewRFiles(session),
 		uploads: dai.NewRUploads(session),
+		dirs:    dai.NewRDirs(session),
 	}
 }
 
@@ -92,7 +94,7 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 	}
 
 	// Finish updating the file state.
-	finisher := newFinisher(s.files, s.uploads)
+	finisher := newFinisher(s.files, s.dirs)
 	if err := finisher.finish(req, file.ID, upload); err != nil {
 		app.Log.Errorf("Assembly failed for request %s, couldn't finish request: %s", req.FlowIdentifier, err)
 		return file, err
