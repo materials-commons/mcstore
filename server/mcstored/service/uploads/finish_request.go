@@ -30,22 +30,16 @@ func (f *finisher) finish(req *UploadRequest, fileID, dirID string) error {
 		return err
 	}
 
-	parent, err := f.files.ByPath(req.FlowFileName, dirID)
-
-	if err != nil && err != app.ErrNotFound {
-		// log error
+	parentID, err := f.parentID(req.FlowFileName, dirID)
+	if err != nil {
+		app.Log.Errorf("Looking up parentID for %s/%s returned unexpected error: %s.", req.FlowFileName, dirID, err)
 		return err
-	}
-
-	parentID := ""
-	if parent != nil {
-		parentID = parent.ID
 	}
 
 	size := f.Size(fileID)
 
 	if size != req.FlowTotalSize {
-		// log
+		app.Log.Errorf("Uploaded file (%s/%s) doesn't match the expected size. Expected:%d, Got: %d", req.FlowFileName, req.FlowIdentifier, req.FlowTotalSize, size)
 		return app.ErrInvalid
 	}
 
@@ -60,15 +54,18 @@ func (f *finisher) finish(req *UploadRequest, fileID, dirID string) error {
 	matchingFile, err := f.files.ByChecksum(checksum)
 	switch {
 	case err != nil && err == app.ErrNotFound:
-		// Only set the checksum and not uses id
+		// Nothing to do, we already set the checksum and
+		// usesid is clear.
 	case err != nil:
 		// Some type of error accessing the database
-		// log error
+		app.Log.Errorf("Looking up file by checksum for %s/%s returned unexpected error: %s.", checksum, req.FlowFileName, err)
 		return err
 	default:
-		// Found a matching checksum
+		// Found a matching checksum so set file entry
+		// to point at this file and remove the file that
+		// was just constructed.
 		fields[schema.FileFields.UsesID()] = matchingFile.ID
-		os.Remove(app.MCDir.FilePath(fileID)) // Remove uploaded file
+		os.Remove(app.MCDir.FilePath(fileID))
 	}
 
 	return f.files.UpdateFields(fileID, fields)
@@ -80,4 +77,19 @@ func (f *finisher) Size(fileID string) int64 {
 		return 0
 	}
 	return finfo.Size()
+}
+
+func (f *finisher) parentID(fileName, dirID string) (parentID string, err error) {
+	parent, err := f.files.ByPath(fileName, dirID)
+
+	if parent != nil {
+		parentID = parent.ID
+	}
+
+	if err != nil && err != app.ErrNotFound {
+		// log error
+		return parentID, nil
+	}
+
+	return parentID, err
 }
