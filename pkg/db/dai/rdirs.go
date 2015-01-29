@@ -26,3 +26,14 @@ func (d rDirs) ByID(id string) (*schema.Directory, error) {
 	}
 	return &dir, nil
 }
+
+// Files returns the files for the given directory id.
+func (d rDirs) Files(dirID string) ([]schema.File, error) {
+	var files []schema.File
+	rql := r.Table("datadir2datafile").GetAllByIndex("datadir_id", dirID).
+		EqJoin("datafile_id", r.Table("datafiles")).Zip()
+	if err := model.Files.Qs(d.session).Rows(rql, &files); err != nil {
+		return nil, err
+	}
+	return files, nil
+}
