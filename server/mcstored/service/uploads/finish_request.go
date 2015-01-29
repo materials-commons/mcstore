@@ -11,8 +11,7 @@ import (
 )
 
 type finisher struct {
-	files       dai.Files
-	requestPath RequestPath
+	files dai.Files
 }
 
 func newFinisher(files dai.Files) *finisher {
@@ -86,7 +85,7 @@ func (f *finisher) parentID(fileName, dirID string) (parentID string, err error)
 		parentID = parent.ID
 	}
 
-	if err != nil && err != app.ErrNotFound {
+	if err != nil && err == app.ErrNotFound {
 		// log error
 		return parentID, nil
 	}
