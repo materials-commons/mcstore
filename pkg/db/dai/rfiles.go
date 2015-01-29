@@ -162,6 +162,7 @@ func (f rFiles) Delete(fileID, directoryID, projectID string) (*schema.File, err
 	return file, firstError
 }
 
+// getProjects returns a list of all the projects containing this fileID.
 func (f rFiles) getProjects(fileID string) ([]schema.Project2DataFile, error) {
 	rql := model.ProjectFiles.T().GetAllByIndex("datafile_id", fileID)
 	var projects []schema.Project2DataFile
@@ -171,6 +172,7 @@ func (f rFiles) getProjects(fileID string) ([]schema.Project2DataFile, error) {
 	return projects, nil
 }
 
+// getDirs returns a list of all the directories containing this fileID.
 func (f rFiles) getDirs(fileID string) ([]schema.DataDir2DataFile, error) {
 	rql := model.DirFiles.T().GetAllByIndex("datafile_id", fileID)
 	var dirs []schema.DataDir2DataFile
@@ -180,6 +182,7 @@ func (f rFiles) getDirs(fileID string) ([]schema.DataDir2DataFile, error) {
 	return dirs, nil
 }
 
+// getUsedBy returns all the files that point at this file.
 func (f rFiles) getUsedBy(fileID string) ([]schema.File, error) {
 	rql := model.Files.T().GetAllByIndex("usesid", fileID)
 	var files []schema.File
@@ -189,6 +192,7 @@ func (f rFiles) getUsedBy(fileID string) ([]schema.File, error) {
 	return files, nil
 }
 
+// deleteFromDir will delete the given file from the directory.
 func (f rFiles) deleteFromDir(fileID, directoryID string) error {
 	rql := model.DirFiles.T().GetAllByIndex("datafile_id", fileID).
 		Filter(r.Row.Field("datadir_id").Eq(directoryID)).Delete()
@@ -205,6 +209,7 @@ func (f rFiles) deleteFromDir(fileID, directoryID string) error {
 	}
 }
 
+// deleteFromProject will delete the given file from the project.
 func (f rFiles) deleteFromProject(fileID, projectID string) error {
 	rql := model.ProjectFiles.T().GetAllByIndex("datafile_id", fileID).
 		Filter(r.Row.Field("project_id").Eq(projectID)).Delete()
