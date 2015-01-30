@@ -23,6 +23,7 @@ type Upload struct {
 	DirectoryID   string     `gorethink:"directory_id"`   // Directory to upload to
 	DirectoryName string     `gorethink:"directory_name"` // Name of directory
 	ProjectID     string     `gorethink:"project_id"`     // Project to upload to
+	ProjectOwner  string     `gorethink:"project_owner"`  // Owner of project
 	ProjectName   string     `gorethink:"project_name"`   // Name of project
 	Birthtime     time.Time  `gorethink:"birthtime"`      // When was upload started
 	Host          string     `gorethink:"host"`           // Host requesting the upload
@@ -62,6 +63,12 @@ func (c *uploadCreater) Directory(id, name string) *uploadCreater {
 func (c *uploadCreater) Project(id, name string) *uploadCreater {
 	c.upload.ProjectID = id
 	c.upload.ProjectName = name
+	return c
+}
+
+// ProjectOnwer sets the Upload ProjectOwner field.
+func (c *uploadCreater) ProjectOwner(owner string) *uploadCreater {
+	c.upload.ProjectOwner = owner
 	return c
 }
 
