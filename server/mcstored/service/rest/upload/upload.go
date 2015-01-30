@@ -51,7 +51,6 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 
 	req := uploads.UploadRequest{
 		Request: flowRequest,
-		Owner:   "jfadams@umich.edu",
 	}
 	return r.uploadService.Upload(&req)
 }
