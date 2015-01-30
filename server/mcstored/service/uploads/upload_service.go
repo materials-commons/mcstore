@@ -15,7 +15,6 @@ import (
 // information required to write that block.
 type UploadRequest struct {
 	*flow.Request
-	Owner string
 }
 
 // UploadService takes care of uploading blocks and constructing the
@@ -117,15 +116,14 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 	}
 
 	app.Log.Infof("successfully upload fileID %s", file.ID)
-	// Remove upload request.
-	s.tracker.clear(req.UploadID())
-	s.uploads.Delete(req.UploadID())
+
+	s.cleanupUploadRequest(req.UploadID())
 	return nil, nil
 }
 
 // createFile creates the database file entry.
 func (s *uploadService) createFile(req *UploadRequest, upload *schema.Upload) (*schema.File, error) {
-	file := schema.NewFile(upload.File.Name, req.Owner)
+	file := schema.NewFile(upload.File.Name, upload.ProjectOwner)
 
 	f, err := s.files.Insert(&file, upload.DirectoryID, upload.ProjectID)
 	app.Log.Infof("Created file %s, in %s %s", f.ID, upload.DirectoryID, upload.ProjectID)
@@ -166,4 +164,12 @@ func (s *uploadService) cleanup(req *UploadRequest, fileID string) error {
 	}
 	_, err = s.files.Delete(fileID, upload.DirectoryID, upload.ProjectID)
 	return err
+}
+
+//cleanupUploadRequest removes the upload request and file chunks.
+func (s *uploadService) cleanupUploadRequest(uploadID string) {
+
+	s.tracker.clear(uploadID)
+	s.uploads.Delete(uploadID)
+	os.RemoveAll(app.MCDir.UploadDir(uploadID))
 }
