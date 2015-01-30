@@ -1,6 +1,7 @@
 package uploads
 
 import (
+	"os"
 	"time"
 
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -26,6 +27,7 @@ type IDRequest struct {
 // IDService creates new upload requests
 type IDService interface {
 	ID(req IDRequest) (*schema.Upload, error)
+	Delete(requestID, user string) error
 }
 
 // idService implements the IDService interface using
@@ -77,6 +79,7 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 	upload := schema.CUpload().
 		Owner(req.User).
 		Project(req.ProjectID, proj.Name).
+		ProjectOwner(proj.Owner).
 		Directory(req.DirectoryID, dir.Name).
 		Host(req.Host).
 		FName(req.FileName).
@@ -113,5 +116,37 @@ func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directo
 		return nil, app.ErrInvalid
 	default:
 		return dir, nil
+	}
+}
+
+func (s *idService) Delete(requestID, user string) error {
+	upload, err := s.uploads.ByID(requestID)
+	if err != nil {
+		return err
+	}
+
+	if !s.canDelete(upload, user) {
+		return app.ErrNoAccess
+	}
+
+	if err := s.uploads.Delete(requestID); err != nil {
+		return err
+	}
+
+	// Delete the directory where chunks were being written
+	os.RemoveAll(app.MCDir.UploadDir(requestID))
+	return nil
+}
+
+func (s *idService) canDelete(upload *schema.Upload, user string) bool {
+	switch {
+	case upload.Owner == user:
+		// The owner of the upload request can delete their request
+		return true
+	case upload.ProjectOwner == user:
+		// Let project owners delete upload requests
+		return true
+	default:
+		return false
 	}
 }
