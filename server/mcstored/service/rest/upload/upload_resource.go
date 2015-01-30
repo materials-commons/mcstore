@@ -39,6 +39,9 @@ func (r *uploadResource) WebService() *restful.WebService {
 	ws.Route(ws.POST("/chunk").To(rest.RouteHandler1(r.uploadFileChunk)).
 		Consumes("multipart/form-data").
 		Doc("Upload a file chunk"))
+	ws.Route(ws.DELETE("{id}").To(rest.RouteHandler1(r.deleteUploadRequest)).
+		Doc("Deletes an existing upload request").
+		Param(ws.PathParameter("id", "upload request to delete").DataType("string")))
 
 	return ws
 }
@@ -107,4 +110,15 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		RequestID: upload.ID,
 	}
 	return &resp, nil
+}
+
+// deleteUploadRequest will delete an existing upload request. It validates that
+// the requesting user has access to delete the request.
+func (r *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
+	uploadID := request.PathParameter("id")
+	if uploadID == "" {
+		return app.ErrInvalid
+	}
+
+	return r.idService.Delete(uploadID, user.ID)
 }
