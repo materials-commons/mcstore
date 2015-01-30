@@ -38,8 +38,9 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 	if err != nil {
 		return nil, err
 	}
+
 	cr := uploads.IDRequest{
-		User:        req.UserID,
+		User:        user.ID,
 		DirectoryID: req.DirectoryID,
 		ProjectID:   req.ProjectID,
 		FileName:    req.FileName,
