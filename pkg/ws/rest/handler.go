@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/emicklei/go-restful"
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws"
 )
@@ -30,7 +31,7 @@ type Handler func(request *restful.Request, response *restful.Response)
 // methods to return errors and have them handled correctly.
 func RouteHandler(f RouteFunc) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
-		user := schema.User{} //request.Attribute("user").(schema.User)
+		user := request.Attribute("user").(schema.User)
 		val, err := f(request, response, user)
 		switch {
 		case err != nil:
@@ -39,7 +40,7 @@ func RouteHandler(f RouteFunc) restful.RouteFunction {
 		case val != nil:
 			err = response.WriteEntity(val)
 			if err != nil {
-				// log the error here
+				app.Log.Errorf("response.WriteEntity failed: %s", err)
 			}
 		default:
 			// Nothing to do
