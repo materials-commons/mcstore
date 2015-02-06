@@ -1,0 +1,76 @@
+{
+	"ImportPath": "github.com/materials-commons/mcstore",
+	"GoVersion": "go1.3.3",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/goprotobuf/proto",
+			"Comment": "go.r60-163",
+			"Rev": "9352842ae63ee1d7e74e074ce7bb10370c4b6b9e"
+		},
+		{
+			"ImportPath": "github.com/dancannon/gorethink",
+			"Comment": "v0.5.x-9-g16b174b",
+			"Rev": "16b174b489ff37d396a9fa202536c08171717883"
+		},
+		{
+			"ImportPath": "github.com/emicklei/go-restful",
+			"Comment": "v1.1.2-42-g4b02481",
+			"Rev": "4b0248154311ad3611493ed41e43eaad64712c84"
+		},
+		{
+			"ImportPath": "github.com/inconshreveable/log15",
+			"Comment": "v1.2-1-g5c91687",
+			"Rev": "5c91687df1898c7964dbc17b99c061672fe1de0b"
+		},
+		{
+			"ImportPath": "github.com/jessevdk/go-flags",
+			"Comment": "v1-154-gcee4db9",
+			"Rev": "cee4db96aec1f7382a0b09d8249c09a8bb8d160b"
+		},
+		{
+			"ImportPath": "github.com/materials-commons/config",
+			"Rev": "248b4377a303195d8090421794213b1f7394a3d9"
+		},
+		{
+			"ImportPath": "github.com/materials-commons/gohandy/file",
+			"Comment": "v0.1-46-g0909d5a",
+			"Rev": "0909d5a1b7511acbfeca3e7a7a9dda748ffafbe1"
+		},
+		{
+			"ImportPath": "github.com/materials-commons/testify/mock",
+			"Rev": "69ceda2cdc257c72b8d718ecf0ce0ec200fa15e8"
+		},
+		{
+			"ImportPath": "github.com/spf13/cast",
+			"Rev": "99f1223ff64ed0c6a1dd9c850474f5fecba6e0a4"
+		},
+		{
+			"ImportPath": "github.com/spf13/jwalterweatherman",
+			"Rev": "bd90d9f5d6eaeab52a8be0b13382ec840fdaf9fd"
+		},
+		{
+			"ImportPath": "github.com/stretchr/objx",
+			"Rev": "cbeaeb16a013161a98496fad62933b1d21786672"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/assert",
+			"Rev": "2160c81a963bc827f650a9d420263d05d35bb97e"
+		},
+		{
+			"ImportPath": "github.com/stretchr/testify/require",
+			"Rev": "2160c81a963bc827f650a9d420263d05d35bb97e"
+		},
+		{
+			"ImportPath": "gopkg.in/fatih/pool.v2",
+			"Rev": "dae43b8a8a190d1f2b5908e2f6dd02481e7d59e9"
+		},
+		{
+			"ImportPath": "gopkg.in/inconshreveable/log15.v1/term",
+			"Comment": "v1.2",
+			"Rev": "a127215f557c6b7b673e4bcf12ecf3c093ead09a"
+		}
+	]
+}
