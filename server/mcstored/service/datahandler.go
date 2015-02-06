@@ -114,6 +114,8 @@ func isConvertedImage(mime string) bool {
 		return true
 	case "image/x-ms-bmp":
 		return true
+	case "image/bmp":
+		return true
 	default:
 		return false
 	}
