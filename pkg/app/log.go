@@ -13,7 +13,6 @@ type log struct {
 
 var (
 	// Log Is the global log variable.
-	//Log = log15.New()
 	Log = newLog()
 
 	// stdHandler is the log handler with level applied
