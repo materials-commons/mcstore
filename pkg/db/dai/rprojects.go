@@ -47,9 +47,18 @@ func (p rProjects) HasDirectory(projectID, dirID string) bool {
 
 // Files returns the files for a project
 func (p rProjects) Files(projectID string) ([]schema.Directory, error) {
-	// rql := r.Table("project2datadir").GetAll("project_id", projectID).
-	// 	EqJoin("datadir_id", r.Table("datadirs")).
-	// 	Zip().
-	// 	Merge()
-	return nil, nil
+	rql := r.Table("project2datadir").GetAllByIndex("project_id", projectID).
+		EqJoin("datadir_id", r.Table("datadirs")).
+		Zip().
+		Merge(map[string]interface{}{
+		"datafiles": r.Table("datadir2datafile").
+			GetAllByIndex("datadir_id", r.Row.Field("id")).
+			EqJoin("datafile_id", r.Table("datafiles")).
+			Zip().CoerceTo("ARRAY"),
+	})
+	var dirs []schema.Directory
+	if err := model.Dirs.Qs(p.session).Rows(rql, &dirs); err != nil {
+		return nil, err
+	}
+	return dirs, nil
 }
