@@ -44,3 +44,12 @@ func (p rProjects) HasDirectory(projectID, dirID string) bool {
 
 	return false
 }
+
+// Files returns the files for a project
+func (p rProjects) Files(projectID string) ([]schema.Directory, error) {
+	// rql := r.Table("project2datadir").GetAll("project_id", projectID).
+	// 	EqJoin("datadir_id", r.Table("datadirs")).
+	// 	Zip().
+	// 	Merge()
+	return nil, nil
+}
