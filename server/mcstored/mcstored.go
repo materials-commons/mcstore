@@ -13,8 +13,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/domain"
-	"github.com/materials-commons/mcstore/server/mcstored/service"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest"
+	"github.com/materials-commons/mcstore/server/mcstored/service/web/content"
 )
 
 // Options for server startup
@@ -95,7 +95,7 @@ func server(port uint) {
 
 	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
-	dataHandler := service.NewDataHandler(access)
+	dataHandler := content.NewDataHandler(access)
 	http.Handle("/datafiles/static/", dataHandler)
 
 	app.Log.Crit("http Server failed", "error", http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
