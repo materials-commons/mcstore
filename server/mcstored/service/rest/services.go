@@ -5,15 +5,15 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
-	"github.com/materials-commons/mcstore/server/mcstored/service/rest/filters"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest/upload"
 	"github.com/materials-commons/mcstore/server/mcstored/service/uploads"
+	"github.com/materials-commons/mcstore/server/pkg/rest/filters"
 )
 
 // NewServicesContainer creates a new restful.Container made up of all
 // the rest resources handled by the server.
 func NewServicesContainer() *restful.Container {
-	apikeyFilter := filters.NewAPIKeyFilter(dai.NewRUsers(db.RSessionMust()))
+	apikeyFilter := filters.APIKey(dai.NewRUsers(db.RSessionMust()))
 	container := restful.NewContainer()
 	container.Filter(apikeyFilter.Filter)
 	uploadResource := uploadResource()
