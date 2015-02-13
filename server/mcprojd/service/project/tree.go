@@ -1,8 +1,6 @@
 package project
 
 import (
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/materials-commons/mcstore/pkg/db"
@@ -25,7 +23,7 @@ type Node struct {
 	DisplayName string    `json:"displayname"`
 	Fullname    string    `json:"fullname"`
 	Type        string    `json:"type"`
-	Children    []*Node   `json:"children"`
+	Children    []Node    `json:"children"`
 	Level       int       `json:"level"`
 	Tags        []string  `json:"tags"`
 }
@@ -47,65 +45,11 @@ func NewTreeService() *treeService {
 	}
 }
 
-func (s *treeService) Tree(req *TreeRequest) ([]*Node, error) {
+func (s *treeService) Tree(req *TreeRequest) ([]Node, error) {
 	files, err := s.projects.Files(req.ProjectID)
 	if err != nil {
 		return nil, nil
 	}
-	allDirs := make(map[string]*Node)
-	var topLevelDirs []*Node
-	var existingDir *Node
-	for _, dir := range files {
-		node := &Node{
-			ID:        dir.ID,
-			Name:      dir.Name,
-			Type:      "datadir",
-			Owner:     dir.Owner,
-			Birthtime: dir.Birthtime,
-			Size:      0,
-			Level:     strings.Count(dir.Name, "/"),
-		}
-		if n, found := allDirs[dir.Name]; found {
-			existingDir = n
-			node.Children = existingDir.Children
-		}
-		if node.Level == 0 {
-			topLevelDirs = append(topLevelDirs, node)
-		}
-		for _, file := range dir.Files {
-			if string(file.Name[0]) == "." {
-				continue
-			}
-			if !file.Current {
-				continue
-			}
-			fileNode := &Node{
-				ID:        file.ID,
-				Name:      file.Name,
-				Type:      "datafile",
-				Owner:     file.Owner,
-				Birthtime: file.Birthtime,
-				Size:      file.Size,
-			}
-			fileNode.Fullname = dir.Name + "/" + file.Name
-			if file.MediaType.Mime == "" {
-				fileNode.MediaType = "unknown"
-			} else {
-				fileNode.MediaType = file.MediaType.Mime
-			}
-			node.Children = append(node.Children, fileNode)
-		}
-		parentName := filepath.Dir(node.Name)
-		if n, found := allDirs[parentName]; found {
-			n.Children = append(n.Children, node)
-		} else {
-			parent := &Node{
-				Name: parentName,
-				Type: "datadir",
-			}
-			parent.Children = append(parent.Children, node)
-			allDirs[parentName] = parent
-		}
-	}
-	return topLevelDirs, nil
+	dirTree := newDirTree()
+	return dirTree.build(files), nil
 }
