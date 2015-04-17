@@ -168,7 +168,6 @@ func (s *uploadService) cleanup(req *UploadRequest, fileID string) error {
 
 //cleanupUploadRequest removes the upload request and file chunks.
 func (s *uploadService) cleanupUploadRequest(uploadID string) {
-
 	s.tracker.clear(uploadID)
 	s.uploads.Delete(uploadID)
 	os.RemoveAll(app.MCDir.UploadDir(uploadID))
