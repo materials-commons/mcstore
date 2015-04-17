@@ -18,7 +18,7 @@ type uploadResource struct {
 	uploadService uploads.UploadService
 }
 
-// NewResources creates a new upload resource
+// NewResource creates a new upload resource.
 func NewResource(uploadService uploads.UploadService, idService uploads.IDService) rest.Service {
 	return &uploadResource{
 		log:           app.NewLog("resource", "upload"),
@@ -44,20 +44,6 @@ func (r *uploadResource) WebService() *restful.WebService {
 		Param(ws.PathParameter("id", "upload request to delete").DataType("string")))
 
 	return ws
-}
-
-// uploadFileChunk uploads a new file chunk.
-func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) error {
-	flowRequest, err := form2FlowRequest(request)
-	if err != nil {
-		r.log.Error(app.Logf("Error converting form to flow.Request: %s", err))
-		return err
-	}
-
-	req := uploads.UploadRequest{
-		Request: flowRequest,
-	}
-	return r.uploadService.Upload(&req)
 }
 
 // uploadCreateRequest describes the JSON request a client will send
@@ -110,6 +96,20 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		RequestID: upload.ID,
 	}
 	return &resp, nil
+}
+
+// uploadFileChunk uploads a new file chunk.
+func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) error {
+	flowRequest, err := form2FlowRequest(request)
+	if err != nil {
+		r.log.Error(app.Logf("Error converting form to flow.Request: %s", err))
+		return err
+	}
+
+	req := uploads.UploadRequest{
+		Request: flowRequest,
+	}
+	return r.uploadService.Upload(&req)
 }
 
 // deleteUploadRequest will delete an existing upload request. It validates that
