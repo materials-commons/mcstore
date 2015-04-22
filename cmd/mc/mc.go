@@ -7,6 +7,7 @@ import (
 	"github.com/materials-commons/mcstore/cmd/mc/download"
 	"github.com/materials-commons/mcstore/cmd/mc/get"
 	"github.com/materials-commons/mcstore/cmd/mc/login"
+	"github.com/materials-commons/mcstore/cmd/mc/monitor"
 	"github.com/materials-commons/mcstore/cmd/mc/receive"
 	"github.com/materials-commons/mcstore/cmd/mc/send"
 	"github.com/materials-commons/mcstore/cmd/mc/set"
@@ -29,6 +30,7 @@ func main() {
 		set.Command,
 		upload.Command,
 		download.Command,
+		monitor.Command,
 		login.Command,
 	}
 
