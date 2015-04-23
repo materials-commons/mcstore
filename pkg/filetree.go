@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
@@ -12,7 +13,7 @@ type FileEntry struct {
 	Finfo os.FileInfo
 }
 
-type ProcessFunc func(done <-chan struct{}, f <-chan FileEntry, result <-chan string)
+type ProcessFunc func(done <-chan struct{}, f <-chan FileEntry, result chan<- string)
 
 func walkFiles(done <-chan struct{}, root string) (<-chan FileEntry, <-chan error) {
 	filesChan := make(chan FileEntry)
@@ -20,22 +21,28 @@ func walkFiles(done <-chan struct{}, root string) (<-chan FileEntry, <-chan erro
 	go func() {
 		defer close(filesChan)
 		errChan <- filepath.Walk(root, func(path string, finfo os.FileInfo, err error) error {
-			if err != nil {
+			switch {
+			case err != nil && os.IsPermission(err):
+				//fmt.Println("Got permission denied, continuing", path)
+				return nil
+			case err != nil:
+				fmt.Println("walk got error", err)
 				return err
-			}
-			if !finfo.Mode().IsRegular() {
+			case !finfo.Mode().IsRegular():
+				return nil
+			default:
+				entry := FileEntry{
+					Path:  path,
+					Finfo: finfo,
+				}
+				select {
+				case filesChan <- entry:
+				case <-done:
+					return errors.New("walk cancelled")
+				}
 				return nil
 			}
-			entry := FileEntry{
-				Path:  path,
-				Finfo: finfo,
-			}
-			select {
-			case filesChan <- entry:
-			case <-done:
-				return errors.New("walk cancelled")
-			}
-			return nil
+
 		})
 	}()
 	return filesChan, errChan
@@ -58,5 +65,8 @@ func PWalk(root string, n int, fn ProcessFunc) (<-chan string, <-chan error) {
 		wg.Wait()
 		close(results)
 	}()
+	for r := range results {
+		var _ = r
+	}
 	return results, errChan
 }
