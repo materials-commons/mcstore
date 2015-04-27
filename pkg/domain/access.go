@@ -39,6 +39,15 @@ func NewAccess(projects dai.Projects, files dai.Files, users dai.Users) *access 
 //    is included. If so then return true (has access).
 // 3. None of the above matched - return false (no access).
 func (a *access) AllowedByOwner(projectID, user string) bool {
+	u, err := a.users.ByID(user)
+	if err != nil {
+		return false
+	}
+
+	if u.Admin {
+		return true
+	}
+
 	accessList, err := a.projects.AccessList(projectID)
 	if err != nil {
 		return false
@@ -55,7 +64,7 @@ func (a *access) AllowedByOwner(projectID, user string) bool {
 // it takes an apikey and looks up the user. It returns the file if
 // access has been granted, otherwise it returns the erro ErrNoAccess.
 func (a *access) GetFile(apikey, fileID string) (*schema.File, error) {
-	_, err := a.users.ByAPIKey(apikey)
+	user, err := a.users.ByAPIKey(apikey)
 	if err != nil {
 		// log error here
 		app.Log.Error("User lookup failed", "error", err, "apikey", apikey)
@@ -68,16 +77,16 @@ func (a *access) GetFile(apikey, fileID string) (*schema.File, error) {
 		return nil, app.ErrNoAccess
 	}
 
-	/*
-		Need to lookup file by project. The table for this isn't populated, so for now
-		we will punt and fix this in a bit.
+	project, err := a.files.GetProject(fileID)
+	if err != nil {
+		app.Log.Error("Project lookup for file failed", "error", err, "fileid", fileID)
+		return nil, app.ErrNoAccess
+	}
 
-
-		           if !a.AllowedByOwner(file.Owner, user.ID) {
-		                   app.Log.Info("Access denied", "fileid", file.ID, "user", user.ID)
-		                   return nil, app.ErrNoAccess
-		           }
-	*/
+	if !a.AllowedByOwner(project.ID, user.ID) {
+		app.Log.Info("Access denied", "fileid", file.ID, "user", user.ID, "projectid", project.ID)
+		return nil, app.ErrNoAccess
+	}
 
 	return file, nil
 }

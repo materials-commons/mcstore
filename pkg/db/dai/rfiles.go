@@ -241,3 +241,21 @@ func (f rFiles) UpdateFields(fileID string, fields map[string]interface{}) error
 	}
 	return nil
 }
+
+func (f rFiles) GetProject(fileID string) (*schema.Project, error) {
+	rql := r.Table("datadir2datafile").
+		GetAllByIndex("datafile_id", fileID).
+		EqJoin("datadir_id", r.Table("project2datadir"), r.EqJoinOpts{Index: "datadir_id"}).
+		Zip().
+		EqJoin("project_id", r.Table("projects")).
+		Zip()
+	var projects []schema.Project
+	if err := model.Files.Qs(f.session).Rows(rql, &projects); err != nil {
+		return nil, err
+	}
+	if len(projects) == 0 {
+		return nil, app.ErrNotFound
+	}
+	// TODO: Fix this, only returns the first project
+	return &projects[0], nil
+}

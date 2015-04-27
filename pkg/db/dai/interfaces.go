@@ -4,6 +4,7 @@ import "github.com/materials-commons/mcstore/pkg/db/schema"
 
 // Users gives access to users.
 type Users interface {
+	ByID(id string) (*schema.User, error)
 	ByAPIKey(apikey string) (*schema.User, error)
 }
 
@@ -16,6 +17,7 @@ type Files interface {
 	Update(file *schema.File) error
 	UpdateFields(fileID string, fields map[string]interface{}) error
 	Delete(fileID, directoryID, projectID string) (*schema.File, error)
+	GetProject(fileID string) (*schema.Project, error)
 }
 
 // Groups allows manipulation and access to groups.

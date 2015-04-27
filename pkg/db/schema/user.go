@@ -8,6 +8,7 @@ import (
 type User struct {
 	ID          string    `gorethink:"id,omitempty"`
 	Email       string    `gorethink:"email"`
+	Admin       bool      `gorethink:"admin"`
 	Fullname    string    `gorethink:"fullname"`
 	Password    string    `gorethink:"password"`
 	APIKey      string    `gorethink:"apikey"`
