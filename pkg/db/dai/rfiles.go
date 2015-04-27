@@ -250,7 +250,7 @@ func (f rFiles) GetProject(fileID string) (*schema.Project, error) {
 		EqJoin("project_id", r.Table("projects")).
 		Zip()
 	var projects []schema.Project
-	if err := model.Files.Qs(f.session).Rows(rql, &projects); err != nil {
+	if err := model.Projects.Qs(f.session).Rows(rql, &projects); err != nil {
 		return nil, err
 	}
 	if len(projects) == 0 {
