@@ -6,28 +6,27 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
-// TODO: Group caching
-// TODO: cache reloading
+// TODO: Add Redis as a store for this
 
 type Access interface {
-	AllowedByOwner(owner, user string) bool
+	AllowedByOwner(projectID, user string) bool
 	GetFile(apikey, fileID string) (*schema.File, error)
 }
 
 // access validates access to data. It checks if a user
 // has been given permission to access a particular item.
 type access struct {
-	groups dai.Groups
-	files  dai.Files
-	users  dai.Users
+	projects dai.Projects
+	files    dai.Files
+	users    dai.Users
 }
 
 // NewAccess creates a new Access.
-func NewAccess(groups dai.Groups, files dai.Files, users dai.Users) *access {
+func NewAccess(projects dai.Projects, files dai.Files, users dai.Users) *access {
 	return &access{
-		groups: groups,
-		files:  files,
-		users:  users,
+		projects: projects,
+		files:    files,
+		users:    users,
 	}
 }
 
@@ -39,48 +38,16 @@ func NewAccess(groups dai.Groups, files dai.Files, users dai.Users) *access {
 //    For each user in the user group see if the requesting user
 //    is included. If so then return true (has access).
 // 3. None of the above matched - return false (no access).
-func (a *access) AllowedByOwner(owner, user string) bool {
-	// Check if user and file owner are the same, or the user is
-	// in the admin group.
-	if user == owner || a.isAdmin(user) {
-		return true
-	}
-
-	// Get the owners groups
-	groups, err := a.groups.ForOwner(owner)
-	if err != nil {
-		// Some sort of error occurred, assume no access
-		return false
-	}
-
-	// For each group go through its list of users and see if
-	// they match the requesting user. If there is a match
-	// then the owner has given access to the user.
-	for _, group := range groups {
-		users := group.Users
-		for _, u := range users {
-			if u == user {
-				return true
-			}
-		}
-	}
-
-	return false
-}
-
-// isAdmin checks if a user is in the admin group.
-func (a *access) isAdmin(user string) bool {
-	group, err := a.groups.ByID("admin")
+func (a *access) AllowedByOwner(projectID, user string) bool {
+	accessList, err := a.projects.AccessList(projectID)
 	if err != nil {
 		return false
 	}
-
-	for _, admin := range group.Users {
-		if admin == user {
+	for _, entry := range accessList {
+		if user == entry.UserID {
 			return true
 		}
 	}
-
 	return false
 }
 
@@ -88,7 +55,7 @@ func (a *access) isAdmin(user string) bool {
 // it takes an apikey and looks up the user. It returns the file if
 // access has been granted, otherwise it returns the erro ErrNoAccess.
 func (a *access) GetFile(apikey, fileID string) (*schema.File, error) {
-	user, err := a.users.ByAPIKey(apikey)
+	_, err := a.users.ByAPIKey(apikey)
 	if err != nil {
 		// log error here
 		app.Log.Error("User lookup failed", "error", err, "apikey", apikey)
@@ -101,10 +68,16 @@ func (a *access) GetFile(apikey, fileID string) (*schema.File, error) {
 		return nil, app.ErrNoAccess
 	}
 
-	if !a.AllowedByOwner(file.Owner, user.ID) {
-		app.Log.Info("Access denied", "fileid", file.ID, "user", user.ID)
-		return nil, app.ErrNoAccess
-	}
+	/*
+		Need to lookup file by project. The table for this isn't populated, so for now
+		we will punt and fix this in a bit.
+
+
+		           if !a.AllowedByOwner(file.Owner, user.ID) {
+		                   app.Log.Info("Access denied", "fileid", file.ID, "user", user.ID)
+		                   return nil, app.ErrNoAccess
+		           }
+	*/
 
 	return file, nil
 }

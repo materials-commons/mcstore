@@ -37,6 +37,7 @@ type Uploads interface {
 type Projects interface {
 	ByID(id string) (*schema.Project, error)
 	HasDirectory(projectID, directoryID string) bool
+	AccessList(projectID string) ([]schema.Access, error)
 }
 
 // Dirs is an interface describing access to directories in the system.

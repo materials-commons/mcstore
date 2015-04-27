@@ -44,7 +44,7 @@ type idService struct {
 // the database.
 func NewIDService() *idService {
 	session := db.RSessionMust()
-	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
+	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	return &idService{
 		dirs:     dai.NewRDirs(session),
 		projects: dai.NewRProjects(session),
@@ -96,7 +96,7 @@ func (s *idService) getProj(projectID, user string) (*schema.Project, error) {
 	switch {
 	case err != nil:
 		return nil, err
-	case !s.access.AllowedByOwner(project.Owner, user):
+	case !s.access.AllowedByOwner(projectID, user):
 		return nil, app.ErrNoAccess
 	default:
 		return project, nil
@@ -110,10 +110,10 @@ func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directo
 	switch {
 	case err != nil:
 		return nil, err
-	case !s.access.AllowedByOwner(dir.Owner, user):
-		return nil, app.ErrNoAccess
 	case !s.projects.HasDirectory(projectID, directoryID):
 		return nil, app.ErrInvalid
+	case !s.access.AllowedByOwner(projectID, user):
+		return nil, app.ErrNoAccess
 	default:
 		return dir, nil
 	}

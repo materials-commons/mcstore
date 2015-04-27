@@ -94,7 +94,7 @@ func server(port uint) {
 	http.Handle("/", container)
 
 	session := db.RSessionMust()
-	access := domain.NewAccess(dai.NewRGroups(session), dai.NewRFiles(session), dai.NewRUsers(session))
+	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	dataHandler := content.NewDataHandler(access)
 	http.Handle("/datafiles/static/", dataHandler)
 

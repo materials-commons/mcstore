@@ -44,3 +44,13 @@ func (p rProjects) HasDirectory(projectID, dirID string) bool {
 
 	return false
 }
+
+// Get the access list for this project.
+func (p rProjects) AccessList(projectID string) ([]schema.Access, error) {
+	rql := r.Table("access").Filter(r.Row.Field("project_id").Eq(projectID))
+	var access []schema.Access
+	if err := model.ProjectDirs.Qs(p.session).Rows(rql, &access); err != nil {
+		return nil, err
+	}
+	return access, nil
+}
