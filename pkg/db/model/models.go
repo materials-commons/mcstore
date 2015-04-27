@@ -57,3 +57,9 @@ var Uploads = &rModel{
 	schema: schema.Upload{},
 	table:  "uploads",
 }
+
+// Access
+var Access = &rModel{
+	schema: schema.Access{},
+	table:  "access",
+}

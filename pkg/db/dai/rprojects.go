@@ -49,7 +49,7 @@ func (p rProjects) HasDirectory(projectID, dirID string) bool {
 func (p rProjects) AccessList(projectID string) ([]schema.Access, error) {
 	rql := r.Table("access").Filter(r.Row.Field("project_id").Eq(projectID))
 	var access []schema.Access
-	if err := model.ProjectDirs.Qs(p.session).Rows(rql, &access); err != nil {
+	if err := model.Access.Qs(p.session).Rows(rql, &access); err != nil {
 		return nil, err
 	}
 	return access, nil
