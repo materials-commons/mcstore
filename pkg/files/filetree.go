@@ -38,7 +38,7 @@ func walkFiles(done <-chan struct{}, root string) (<-chan TreeEntry, <-chan erro
 				select {
 				case filesChan <- entry:
 				case <-done:
-					return errors.New("walk cancelled")
+					return errors.New("walk canceled")
 				}
 				return nil
 			}
