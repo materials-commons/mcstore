@@ -34,7 +34,6 @@ const twoMeg = oneMeg * 2
 const largeFileSize = oneMeg * 25
 
 var project string
-var numThreads int
 
 //var pbPool = &pb.Pool{}
 
@@ -47,9 +46,7 @@ func Cmd(c *cli.Context) {
 	}
 	dir := c.Args()[0]
 	project = c.String("project")
-	numThreads = c.Int("parallel")
-	fmt.Println(project)
-	fmt.Println(numThreads)
+	numThreads := c.Int("parallel")
 
 	_, errc := files.PWalk(dir, numThreads, processFiles)
 	if err := <-errc; err != nil {
