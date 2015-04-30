@@ -6,7 +6,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
-// TODO: Add Redis as a store for this
+// TODO: Add Redis as a store for the permissions
 
 type Access interface {
 	AllowedByOwner(projectID, user string) bool
@@ -31,13 +31,7 @@ func NewAccess(projects dai.Projects, files dai.Files, users dai.Users) *access 
 }
 
 // AllowedByOwner checks to see if the user making the request has access to the
-// particular item. Access is determined as follows:
-// 1. If the user and the owner of the item are the same
-//    or the user is in the admin group return true (has access).
-// 2. Get a list of all the users groups for the item's owner.
-//    For each user in the user group see if the requesting user
-//    is included. If so then return true (has access).
-// 3. None of the above matched - return false (no access).
+// particular item.
 func (a *access) AllowedByOwner(projectID, user string) bool {
 	u, err := a.users.ByID(user)
 	if err != nil {
