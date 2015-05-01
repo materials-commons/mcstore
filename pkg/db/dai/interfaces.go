@@ -45,5 +45,7 @@ type Projects interface {
 // Dirs is an interface describing access to directories in the system.
 type Dirs interface {
 	ByID(id string) (*schema.Directory, error)
+	ByPath(path, projectID string) (*schema.Directory, error)
 	Files(dirID string) ([]schema.File, error)
+	Insert(dir *schema.Directory) (*schema.Directory, error)
 }
