@@ -7,6 +7,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
+	"github.com/materials-commons/mcstore/server/mcstored/service/data"
 	"github.com/materials-commons/mcstore/server/mcstored/service/uploads"
 )
 
@@ -15,14 +16,16 @@ type uploadResource struct {
 	log           *app.Logger
 	idService     uploads.IDService
 	uploadService uploads.UploadService
+	dirService    data.DirService
 }
 
 // NewResources creates a new upload resource
-func NewResource(uploadService uploads.UploadService, idService uploads.IDService) rest.Service {
+func NewResource(uploadService uploads.UploadService, idService uploads.IDService, dirService data.DirService) rest.Service {
 	return &uploadResource{
 		log:           app.NewLog("resource", "upload"),
 		idService:     idService,
 		uploadService: uploadService,
+		dirService:    dirService,
 	}
 }
 
@@ -48,11 +51,12 @@ func (r *uploadResource) WebService() *restful.WebService {
 // CreateRequest describes the JSON request a client will send
 // to create a new upload request.
 type CreateRequest struct {
-	ProjectID   string `json:"project_id"`
-	DirectoryID string `json:"directory_id"`
-	FileName    string `json:"filename"`
-	FileSize    int64  `json:"filesize"`
-	FileMTime   string `json:"filemtime"`
+	ProjectID     string `json:"project_id"`
+	DirectoryID   string `json:"directory_id"`
+	DirectoryPath string `json:"directory_path"`
+	FileName      string `json:"filename"`
+	FileSize      int64  `json:"filesize"`
+	FileMTime     string `json:"filemtime"`
 }
 
 // uploadCreateResponse is the format of JSON sent back containing
@@ -75,9 +79,14 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		return nil, err
 	}
 
+	directoryID, err := r.getDirectoryID(req)
+	if err != nil {
+		return nil, err
+	}
+
 	cr := uploads.IDRequest{
 		User:        user.ID,
-		DirectoryID: req.DirectoryID,
+		DirectoryID: directoryID,
 		ProjectID:   req.ProjectID,
 		FileName:    req.FileName,
 		FileSize:    req.FileSize,
@@ -85,6 +94,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		Host:        request.Request.RemoteAddr,
 		Birthtime:   time.Now(),
 	}
+
 	upload, err := r.idService.ID(cr)
 	if err != nil {
 		return nil, err
@@ -94,6 +104,21 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		RequestID: upload.ID,
 	}
 	return &resp, nil
+}
+
+func (r *uploadResource) getDirectoryID(req CreateRequest) (directoryID string, err error) {
+	switch {
+	case req.DirectoryID == "" && req.DirectoryPath == "":
+		return "", app.ErrInvalid
+	case req.DirectoryID != "":
+		return req.DirectoryID, nil
+	default:
+		dir, err := r.dirService.CreateDir(req.ProjectID, req.DirectoryPath)
+		if err != nil {
+			return "", err
+		}
+		return dir.ID, nil
+	}
 }
 
 // uploadFileChunk uploads a new file chunk.

@@ -5,6 +5,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
+	"github.com/materials-commons/mcstore/server/mcstored/service/data"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest/filters"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest/upload"
 	"github.com/materials-commons/mcstore/server/mcstored/service/uploads"
@@ -23,5 +24,5 @@ func NewServicesContainer() *restful.Container {
 
 // uploadResource creates a new upload resource.
 func uploadResource() rest.Service {
-	return upload.NewResource(uploads.NewUploadService(), uploads.NewIDService())
+	return upload.NewResource(uploads.NewUploadService(), uploads.NewIDService(), data.NewDirService())
 }
