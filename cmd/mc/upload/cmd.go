@@ -6,6 +6,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/ezhttp"
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest/upload"
 )
@@ -26,7 +27,7 @@ var Command = cli.Command{
 			Usage: "Number of simultaneous uploads to perform, defaults to 5",
 		},
 	},
-	Action: Cmd,
+	Action: uploadCLI,
 }
 
 const oneMeg = 1024 * 1024
@@ -37,8 +38,8 @@ var project string
 
 //var pbPool = &pb.Pool{}
 
-// Cmd implements the cli command upload.
-func Cmd(c *cli.Context) {
+// uploadCLI implements the cli command upload.
+func uploadCLI(c *cli.Context) {
 	fmt.Println("upload: ", c.Args())
 	if len(c.Args()) != 1 {
 		fmt.Println("You must give the directory to walk")
@@ -55,17 +56,25 @@ func Cmd(c *cli.Context) {
 }
 
 func processFiles(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
+	u := &uploader{
+		client: ezhttp.NewClient(),
+	}
 	for entry := range entries {
 		select {
-		case result <- sendFile(entry):
+		case result <- u.sendFile(entry):
 		case <-done:
-			fmt.Println("Received done stopping...")
+			// Received done, so stop processing requests.
+			return
 		}
 	}
 }
 
-func sendFile(fileEntry files.TreeEntry) string {
-	createUploadRequest()
+type uploader struct {
+	client *ezhttp.EzClient
+}
+
+func (u *uploader) sendFile(fileEntry files.TreeEntry) string {
+	u.createUploadRequest()
 	// buf := make([]byte, twoMeg)
 	// f, err := os.Open(fileEntry.Path)
 	// if err != nil {
@@ -81,10 +90,10 @@ func sendFile(fileEntry files.TreeEntry) string {
 	// 	read, err := f.Read(buf)
 	// 	sendFlowChunk(buf)
 	// }
-	return ""
+	return fileEntry.Path
 }
 
-func createUploadRequest() {
+func (u *uploader) createUploadRequest() {
 	req := upload.CreateRequest{
 		ProjectID:   "9ead5bbf-f7eb-4010-bc1f-e4a063f56226",
 		DirectoryID: "c54a77d6-cd6d-4cd1-8f19-44facc761da6",
@@ -94,7 +103,7 @@ func createUploadRequest() {
 	}
 
 	var resp upload.CreateResponse
-	c := ezhttp.NewClient()
+	c := app.MCApi.MCClient()
 	s, err := c.JSON(&req).JSONPost("http://localhost:5013/upload?apikey=472abe203cd411e3a280ac162d80f1bf", &resp)
 	if err != nil {
 		fmt.Println("err =", err)
