@@ -80,12 +80,12 @@ func (f rFiles) updateDependencies(fileID, dirID, projectID string) error {
 	// system can do about a specific error, so we just want to communicate that a failure occured.
 	err := model.DirFiles.Qs(f.session).Insert(&dir2file, nil)
 	if err != nil {
-		app.Log.Error(app.Logf("Unable to update datadir2datafile for file %s, directory %s, error %s", fileID, dirID, err))
+		app.Log.Errorf("Unable to update datadir2datafile for file %s, directory %s, error %s", fileID, dirID, err)
 	}
 
 	err = model.ProjectFiles.Qs(f.session).Insert(&proj2file, nil)
 	if err != nil {
-		app.Log.Error(app.Logf("Unable to update project2datafile for file %s, project %s, error %s", fileID, projectID, err))
+		app.Log.Errorf("Unable to update project2datafile for file %s, project %s, error %s", fileID, projectID, err)
 	}
 
 	return err

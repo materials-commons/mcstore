@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/emicklei/go-restful"
-	"github.com/inconshreveable/log15"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
@@ -13,7 +12,7 @@ import (
 
 // An uploadResource handles all upload requests.
 type uploadResource struct {
-	log           log15.Logger
+	log           *app.Logger
 	idService     uploads.IDService
 	uploadService uploads.UploadService
 }
@@ -101,7 +100,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) error {
 	flowRequest, err := form2FlowRequest(request)
 	if err != nil {
-		r.log.Error(app.Logf("Error converting form to flow.Request: %s", err))
+		r.log.Errorf("Error converting form to flow.Request: %s", err)
 		return err
 	}
 
@@ -115,11 +114,9 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 // the requesting user has access to delete the request.
 func (r *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
 	uploadID := request.PathParameter("id")
-	r.log.Debug(app.Logf("uploadID = %s", uploadID))
 	if uploadID == "" {
 		return app.ErrInvalid
 	}
 
-	r.log.Debug(app.Logf("calling r.idService.Delete()"))
 	return r.idService.Delete(uploadID, user.ID)
 }

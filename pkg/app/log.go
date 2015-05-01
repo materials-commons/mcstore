@@ -7,7 +7,8 @@ import (
 	"github.com/inconshreveable/log15"
 )
 
-type log struct {
+// Logger holds the application logger
+type Logger struct {
 	log15.Logger
 }
 
@@ -22,8 +23,8 @@ var (
 	defaultHandler log15.Handler
 )
 
-func newLog() *log {
-	return &log{
+func newLog() *Logger {
+	return &Logger{
 		Logger: log15.New(),
 	}
 }
@@ -35,34 +36,34 @@ func init() {
 
 // NewLog creates a new instance of the logger using the current default handler
 // for its output.
-func NewLog(ctx ...interface{}) log15.Logger {
+func NewLog(ctx ...interface{}) *Logger {
 	l := log15.New(ctx...)
 	l.SetHandler(defaultHandler)
-	return l
+	return &Logger{Logger: l}
 }
 
 // Errorf will write a formatted Error to the default log.
-func (l *log) Errorf(format string, args ...interface{}) {
+func (l *Logger) Errorf(format string, args ...interface{}) {
 	l.Error(fmt.Sprintf(format, args...))
 }
 
 // Debugf will write a formatted Debug to the default log.
-func (l *log) Debugf(format string, args ...interface{}) {
+func (l *Logger) Debugf(format string, args ...interface{}) {
 	l.Debug(fmt.Sprintf(format, args...))
 }
 
 // Critf will write a formatted Crit to the default log.
-func (l *log) Critf(format string, args ...interface{}) {
+func (l *Logger) Critf(format string, args ...interface{}) {
 	l.Crit(fmt.Sprintf(format, args...))
 }
 
 // Infof will write a formatted Info to the default log.
-func (l *log) Infof(format string, args ...interface{}) {
+func (l *Logger) Infof(format string, args ...interface{}) {
 	l.Info(fmt.Sprintf(format, args...))
 }
 
 // Warnf will write a formatted Warn to the default log.
-func (l *log) Warnf(format string, args ...interface{}) {
+func (l *Logger) Warnf(format string, args ...interface{}) {
 	l.Warn(fmt.Sprintf(format, args...))
 }
 

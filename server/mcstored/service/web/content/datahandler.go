@@ -40,7 +40,7 @@ func (h *dataHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 // http.ServeFile method.
 func serveFile(writer http.ResponseWriter, req *http.Request, path, mediatype string) {
 	writer.Header().Set("Content-Type", mediatype)
-	app.Log.Debug(app.Logf("Set Content-Type to %s", mediatype))
+	app.Log.Debugf("Set Content-Type to %s", mediatype)
 	http.ServeFile(writer, req, path)
 }
 
@@ -56,15 +56,15 @@ func (h *dataHandler) serveData(writer http.ResponseWriter, req *http.Request) (
 	if apikey == "" {
 		return path, mediatype, app.ErrNoAccess
 	}
-	app.Log.Debug(app.Logf("serveData - Request for apikey %s", apikey))
+	app.Log.Debugf("serveData - Request for apikey %s", apikey)
 
 	// Is the original data requested, or can we serve the converted
 	// image data (if it exists)?
 	original := getOriginalFormValue(req)
-	app.Log.Debug(app.Logf("serveData - Original flag %t", original))
+	app.Log.Debugf("serveData - Original flag %t", original)
 
 	fileID := filepath.Base(req.URL.Path)
-	app.Log.Debug(app.Logf("serveData - fileID %s, URL %s", fileID, req.URL.Path))
+	app.Log.Debugf("serveData - fileID %s, URL %s", fileID, req.URL.Path)
 
 	// Get the file, checking its access.
 	file, err := h.access.GetFile(apikey, fileID)
@@ -73,7 +73,7 @@ func (h *dataHandler) serveData(writer http.ResponseWriter, req *http.Request) (
 	}
 
 	path = filePath(file, original)
-	app.Log.Debug(app.Logf("serveData - Serving path: %s\n", path))
+	app.Log.Debugf("serveData - Serving path: %s\n", path)
 
 	mediatype = file.MediaType.Mime
 

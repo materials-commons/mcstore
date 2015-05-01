@@ -73,7 +73,7 @@ func multipart2FlowRequest(reader *multipart.Reader) (*flow.Request, error) {
 		case "chunkData":
 			// Get the chunk bytes.
 			if r.Chunk, err = ioutil.ReadAll(part); err != nil {
-				app.Log.Info(app.Logf("Error reading chunk, ReadAll returned %s", err))
+				app.Log.Infof("Error reading chunk, ReadAll returned %s", err)
 			}
 		}
 		// Reset the buffer after each use.
@@ -91,7 +91,7 @@ func multipart2FlowRequest(reader *multipart.Reader) (*flow.Request, error) {
 func atoi64(str string) int64 {
 	i, err := strconv.ParseInt(str, 0, 64)
 	if err != nil {
-		app.Log.Error(app.Logf("Error converting %s to an int", str))
+		app.Log.Errorf("Error converting %s to an int", str)
 		return -1
 	}
 
