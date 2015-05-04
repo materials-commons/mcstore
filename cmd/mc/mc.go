@@ -30,6 +30,29 @@ func init() {
 	config.Init(handler)
 }
 
+func main() {
+	app := cli.NewApp()
+	app.Version = "0.0.1"
+	app.Authors = []cli.Author{
+		{
+			Name:  "V. Glenn Tarcea",
+			Email: "gtarcea@umich.edu",
+		},
+	}
+	app.Commands = []cli.Command{
+		send.Command,
+		receive.Command,
+		get.Command,
+		set.Command,
+		upload.Command,
+		download.Command,
+		monitor.Command,
+		login.Command,
+	}
+
+	app.Run(os.Args)
+}
+
 // createHandler creates the handler for the mc package. It sets up a
 // multi handler. If the user has setup a config.json in their .materialscommons
 // directory then it will add that to the handler list.
@@ -71,27 +94,4 @@ func getConfigLoader(configFile string) cfg.Loader {
 //     mcurl: https://materialscommons.org/api
 func loadDefaults(h cfg.Handler) {
 	h.Set("mcurl", "https://materialscommons.org/api")
-}
-
-func main() {
-	app := cli.NewApp()
-	app.Version = "0.0.1"
-	app.Authors = []cli.Author{
-		{
-			Name:  "V. Glenn Tarcea",
-			Email: "gtarcea@umich.edu",
-		},
-	}
-	app.Commands = []cli.Command{
-		send.Command,
-		receive.Command,
-		get.Command,
-		set.Command,
-		upload.Command,
-		download.Command,
-		monitor.Command,
-		login.Command,
-	}
-
-	app.Run(os.Args)
 }
