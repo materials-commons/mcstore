@@ -32,6 +32,7 @@ type Uploads interface {
 	Insert(upload *schema.Upload) (*schema.Upload, error)
 	Update(upload *schema.Upload) error
 	ForUser(user string) ([]schema.Upload, error)
+	ForProject(projectID string) ([]schema.Upload, error)
 	Delete(uploadID string) error
 }
 

@@ -19,6 +19,16 @@ type uploadResource struct {
 	dirService    data.DirService
 }
 
+type UploadEntry struct {
+	FileName    string    `gorethink:"filename"`
+	DirectoryID string    `gorethink:"directory_id"`
+	ProjectID   string    `gorethink:"project_id"`
+	Size        int64     `gorethink:"size"`
+	Host        string    `gorethink:"host"`
+	Checksum    string    `gorethink:"checksum"`
+	Birthtime   time.Time `gorethink:"birthtime"`
+}
+
 // NewResources creates a new upload resource
 func NewResource(uploadService uploads.UploadService, idService uploads.IDService, dirService data.DirService) rest.Service {
 	return &uploadResource{
@@ -44,6 +54,10 @@ func (r *uploadResource) WebService() *restful.WebService {
 	ws.Route(ws.DELETE("{id}").To(rest.RouteHandler1(r.deleteUploadRequest)).
 		Doc("Deletes an existing upload request").
 		Param(ws.PathParameter("id", "upload request to delete").DataType("string")))
+	ws.Route(ws.GET("{project}").To(rest.RouteHandler(r.listProjectUploadRequests)).
+		Param(ws.PathParameter("project", "project id").DataType("string")).
+		Doc("Lists upload requests for project").
+		Writes([]UploadEntry{}))
 
 	return ws
 }
@@ -144,4 +158,35 @@ func (r *uploadResource) deleteUploadRequest(request *restful.Request, response 
 	}
 
 	return r.idService.Delete(uploadID, user.ID)
+}
+
+// listProjectUploadRequests returns the upload requests for the project if the requestor
+// has access to the project.
+func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	projectID := request.PathParameter("project")
+	if projectID == "" {
+		return nil, app.ErrInvalid
+	}
+	entries, err := r.idService.ListForProject(projectID, user.ID)
+	if err != nil {
+		return nil, err
+	}
+	return uploads2uploadEntries(entries), nil
+}
+
+// uploads2uploadEntries converts schema.Upload array into an array of UploadEntry.
+func uploads2uploadEntries(projectUploads []schema.Upload) []UploadEntry {
+	entries := make([]UploadEntry, len(projectUploads))
+	for i, entry := range projectUploads {
+		entries[i] = UploadEntry{
+			FileName:    entry.File.Name,
+			DirectoryID: entry.DirectoryID,
+			ProjectID:   entry.ProjectID,
+			Size:        entry.File.Size,
+			Host:        entry.Host,
+			Checksum:    entry.File.Checksum,
+			Birthtime:   entry.Birthtime,
+		}
+	}
+	return entries
 }
