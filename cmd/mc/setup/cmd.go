@@ -2,6 +2,7 @@ package setup
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -19,22 +20,28 @@ import (
 	"golang.org/x/crypto/ssh/terminal"
 )
 
+// Command contains the options to configure the setup command.
 var Command = cli.Command{
 	Name:   "setup",
 	Usage:  "Set up the configuration",
 	Action: setupCLI,
 }
 
+// userConfigSetup contains all the configuration entries needed for the
+// mc command.
 type userConfigSetup struct {
 	APIKey string `json:"apikey"`
 }
 
+// userLogin contains the user password used to retrieve the users apikey.
 type userLogin struct {
 	Password string `json:"password"`
 }
 
+// setupCLI implements the setup cli command. Setup will initialize a users account on the
+// local system so that they can use the mc cli.
 func setupCLI(c *cli.Context) {
-	fmt.Println("Setting up configuration...")
+	fmt.Println("Setting up mc configuration...")
 	username, password := getUsernameAndPassword()
 	apikey, err := getAPIKey(username, password)
 	if err != nil {
@@ -47,17 +54,23 @@ func setupCLI(c *cli.Context) {
 	fmt.Println("Done.")
 }
 
+// getUsernameAndPassword prompts for the current users materials commons
+// username and password.
 func getUsernameAndPassword() (username, password string) {
 	reader := bufio.NewReader(os.Stdin)
+
 	fmt.Print("Your MaterialsCommons Username: ")
 	username, _ = reader.ReadString('\n')
 	username = strings.TrimSpace(username)
+
 	fmt.Print("Your MaterialsCommons Password: ")
 	pw, _ := terminal.ReadPassword(0)
-	fmt.Println("Contacting MaterialsCommons...")
+
 	return username, string(pw)
 }
 
+// getAPIKey communicates with the materials commons api to retrieve
+// the users application apikey.
 func getAPIKey(username, password string) (string, error) {
 	var u schema.User
 	l := userLogin{
@@ -79,6 +92,8 @@ func getAPIKey(username, password string) (string, error) {
 	return u.APIKey, nil
 }
 
+// writeConfigFile writes the created config.json file. It also creates
+// the $HOME/.materialscommons directory.
 func writeConfigFile(configSetup userConfigSetup) {
 	if err := os.MkdirAll(user.ConfigDir(), 0700); err != nil {
 		panic(fmt.Sprintf("Couldn't create dir: %s", err))
@@ -87,5 +102,7 @@ func writeConfigFile(configSetup userConfigSetup) {
 	if err != nil {
 		panic(fmt.Sprintf("Can't marshal: %s", err))
 	}
-	ioutil.WriteFile(user.ConfigFile(), b, 0700)
+	var out bytes.Buffer
+	json.Indent(&out, b, "", "  ")
+	ioutil.WriteFile(user.ConfigFile(), out.Bytes(), 0700)
 }
