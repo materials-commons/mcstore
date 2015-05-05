@@ -51,7 +51,7 @@ func setupCLI(c *cli.Context) {
 		APIKey: apikey,
 	}
 	writeConfigFile(configSetup)
-	fmt.Println("Done.")
+	fmt.Println("\nYou have successfully completed the setup.")
 }
 
 // getUsernameAndPassword prompts for the current users materials commons
@@ -59,11 +59,11 @@ func setupCLI(c *cli.Context) {
 func getUsernameAndPassword() (username, password string) {
 	reader := bufio.NewReader(os.Stdin)
 
-	fmt.Print("Your MaterialsCommons Username: ")
+	fmt.Print("  Please enter your MaterialsCommons username: ")
 	username, _ = reader.ReadString('\n')
 	username = strings.TrimSpace(username)
 
-	fmt.Print("Your MaterialsCommons Password: ")
+	fmt.Print("  Please enter your MaterialsCommons password: ")
 	pw, _ := terminal.ReadPassword(0)
 
 	return username, string(pw)
