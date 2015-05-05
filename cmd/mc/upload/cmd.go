@@ -1,14 +1,15 @@
 package upload
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest/upload"
+	"github.com/parnurzeal/gorequest"
 )
 
 // Command contains the arguments and functions for the cli upload command.
@@ -57,7 +58,7 @@ func uploadCLI(c *cli.Context) {
 
 func processFiles(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 	u := &uploader{
-		client: ezhttp.NewClient(),
+		client: gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
 	}
 	for entry := range entries {
 		select {
@@ -70,7 +71,7 @@ func processFiles(done <-chan struct{}, entries <-chan files.TreeEntry, result c
 }
 
 type uploader struct {
-	client *ezhttp.EzClient
+	client *gorequest.SuperAgent
 }
 
 func (u *uploader) sendFile(fileEntry files.TreeEntry) string {
@@ -103,12 +104,11 @@ func (u *uploader) createUploadRequest() {
 	}
 
 	var resp upload.CreateResponse
-	c := app.MCApi.MCClient()
-	s, err := c.JSON(&req).JSONPost("http://localhost:5013/upload?apikey=472abe203cd411e3a280ac162d80f1bf", &resp)
-	if err != nil {
-		fmt.Println("err =", err)
+	r, body, errs := u.client.Post(app.MCApi.APIUrl("/upload")).Send(&req).End()
+	if err := app.MCApi.APIError(r, errs); err != nil {
+		return
 	}
-	fmt.Println("s =", s)
+	app.MCApi.ToJSON(body, &resp)
 	fmt.Printf("%#v\n", resp)
 }
 
