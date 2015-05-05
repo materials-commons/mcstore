@@ -1,8 +1,10 @@
 package handler
 
 import (
-	"github.com/materials-commons/config/cfg"
+	"fmt"
 	"strings"
+
+	"github.com/materials-commons/config/cfg"
 )
 
 // KeyFunc is the type of a function to apply to a key to produce a transformed one.
@@ -37,7 +39,7 @@ func (h *applyHandler) Init() error {
 }
 
 // Get first transforms the key by calling the KeyFunc if it is not nil. It then
-// calls the underlying handler with this (optionally) transformed key.
+// calls the underlying handler with the (optionally) transformed key.
 func (h *applyHandler) Get(key string, args ...interface{}) (interface{}, error) {
 	var err error
 	if h.keyFunc != nil {
@@ -50,7 +52,7 @@ func (h *applyHandler) Get(key string, args ...interface{}) (interface{}, error)
 }
 
 // Set first tranforms the key, and the value if one or both of the KeyFunc and
-// ValueFunc funcs aren't nil. It then calls the underlying handler this the
+// ValueFunc funcs aren't nil. It then calls the underlying handler with the
 // (optionally) transformed key and value.
 func (h *applyHandler) Set(key string, value interface{}, args ...interface{}) error {
 	var err error
@@ -85,12 +87,17 @@ func ApplyValue(valueFunc ValueFunc, handler cfg.Handler) cfg.Handler {
 	return Apply(nil, valueFunc, handler)
 }
 
-// LowercaseKey creates a new Apply handler that lower cases all keys.
+// LowercaseKey creates a new Apply handler that will lowercase keys.
 func LowercaseKey(handler cfg.Handler) cfg.Handler {
 	return Apply(func(key string) (string, error) { return strings.ToLower(key), nil }, nil, handler)
 }
 
-// UppercaseKey creates a new Apply handler that upper cases all keys.
+// UppercaseKey creates a new Apply handler that will uppercase keys.
 func UppercaseKey(handler cfg.Handler) cfg.Handler {
 	return Apply(func(key string) (string, error) { return strings.ToUpper(key), nil }, nil, handler)
+}
+
+// PrefixKey will prefix all keys with the given prefix string.
+func PrefixKey(handler cfg.Handler, prefix string) cfg.Handler {
+	return Apply(func(key string) (string, error) { return fmt.Sprintf("%s%s", prefix, key), nil }, nil, handler)
 }
