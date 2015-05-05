@@ -18,3 +18,10 @@ Content-Type: application/json
 
 DELETE http://localhost:5013/upload/d8d1d87b-03f9-441a-8341-2a206263cd74?apikey=:apikey
 
+###
+
+PUT http://mctest.localhost/api/user/gtarcea@umich.edu/apikey
+Content-Type: application/json
+{
+        "password": "password"
+}
