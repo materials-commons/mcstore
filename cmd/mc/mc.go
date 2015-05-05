@@ -21,6 +21,7 @@ import (
 	"github.com/materials-commons/mcstore/cmd/mc/receive"
 	"github.com/materials-commons/mcstore/cmd/mc/send"
 	"github.com/materials-commons/mcstore/cmd/mc/set"
+	"github.com/materials-commons/mcstore/cmd/mc/setup"
 	"github.com/materials-commons/mcstore/cmd/mc/upload"
 )
 
@@ -48,6 +49,7 @@ func main() {
 		download.Command,
 		monitor.Command,
 		login.Command,
+		setup.Command,
 	}
 
 	app.Run(os.Args)
