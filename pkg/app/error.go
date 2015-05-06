@@ -68,3 +68,9 @@ func Errorf(err error, message string, args ...interface{}) *Error {
 	msg := fmt.Sprintf(message, args...)
 	return newError(err, msg)
 }
+
+// Panicf will format the message and call panic.
+func Panicf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	panic(msg)
+}
