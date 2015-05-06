@@ -25,3 +25,7 @@ Content-Type: application/json
 {
         "password": "password"
 }
+
+###
+
+GET :url/?apikey=:apikey
