@@ -120,6 +120,10 @@ func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directo
 	}
 }
 
+// Delete will delete the given requestID if the user has access
+// to delete that request. Owners of requests can delete their
+// own requests. Project owners can delete any request, even if
+// they don't own the request.
 func (s *idService) Delete(requestID, user string) error {
 	upload, err := s.uploads.ByID(requestID)
 	if err != nil {
@@ -139,19 +143,23 @@ func (s *idService) Delete(requestID, user string) error {
 	return nil
 }
 
+// canDelete checks if the user is allowed to delete an upload request.
+// The request owner can always delete their own request. Additionally
+// project owners can delete any upload request.
 func (s *idService) canDelete(upload *schema.Upload, user string) bool {
 	switch {
 	case upload.Owner == user:
-		// The owner of the upload request can delete their request
 		return true
+
 	case upload.ProjectOwner == user:
-		// Let project owners delete upload requests
 		return true
+
 	default:
 		return false
 	}
 }
 
+// ListForProject will return all the uploads associated with a project.
 func (s *idService) ListForProject(projectID, user string) ([]schema.Upload, error) {
 	// getProj will validate the project and access.
 	_, err := s.getProj(projectID, user)

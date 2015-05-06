@@ -19,14 +19,15 @@ type uploadResource struct {
 	dirService    data.DirService
 }
 
+// UploadEntry is a client side representation of an upload.
 type UploadEntry struct {
-	FileName    string    `gorethink:"filename"`
-	DirectoryID string    `gorethink:"directory_id"`
-	ProjectID   string    `gorethink:"project_id"`
-	Size        int64     `gorethink:"size"`
-	Host        string    `gorethink:"host"`
-	Checksum    string    `gorethink:"checksum"`
-	Birthtime   time.Time `gorethink:"birthtime"`
+	FileName    string    `json:"filename"`
+	DirectoryID string    `json:"directory_id"`
+	ProjectID   string    `json:"project_id"`
+	Size        int64     `json:"size"`
+	Host        string    `json:"host"`
+	Checksum    string    `json:"checksum"`
+	Birthtime   time.Time `json:"birthtime"`
 }
 
 // NewResources creates a new upload resource
@@ -120,6 +121,10 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 	return &resp, nil
 }
 
+// getDirectoryID returns the directoryID. A user can pass either a directoryID
+// or a directory path. If a directory path is passed in, then the method will
+// get the directoryID associated with that path in the project. If the path
+// doesn't exist it will create it.
 func (r *uploadResource) getDirectoryID(req CreateRequest) (directoryID string, err error) {
 	switch {
 	case req.DirectoryID == "" && req.DirectoryPath == "":
