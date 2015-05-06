@@ -84,30 +84,9 @@ type CreateResponse struct {
 // the given request, and ensures that the returned upload id is unique. Upload
 // requests are persisted until deleted or a successful upload occurs.
 func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	var req CreateRequest
-	if err := request.ReadEntity(&req); err != nil {
-		return nil, err
-	}
-
-	fileMTime, err := time.Parse(time.RFC1123, req.FileMTime)
+	cr, err := r.makeIDRequest(request, user.ID)
 	if err != nil {
 		return nil, err
-	}
-
-	directoryID, err := r.getDirectoryID(req)
-	if err != nil {
-		return nil, err
-	}
-
-	cr := uploads.IDRequest{
-		User:        user.ID,
-		DirectoryID: directoryID,
-		ProjectID:   req.ProjectID,
-		FileName:    req.FileName,
-		FileSize:    req.FileSize,
-		FileMTime:   fileMTime,
-		Host:        request.Request.RemoteAddr,
-		Birthtime:   time.Now(),
 	}
 
 	upload, err := r.idService.ID(cr)
@@ -119,6 +98,40 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		RequestID: upload.ID,
 	}
 	return &resp, nil
+}
+
+// makeIDRequest fills out an id request to send to the idService. It handles request parameter errors.
+func (r *uploadResource) makeIDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
+	var req CreateRequest
+	var cr uploads.IDRequest
+
+	if err := request.ReadEntity(&req); err != nil {
+		return cr, err
+	}
+
+	fileMTime, err := time.Parse(time.RFC1123, req.FileMTime)
+	if err != nil {
+		return cr, err
+	}
+
+	directoryID, err := r.getDirectoryID(req)
+	if err != nil {
+		return cr, err
+	}
+
+	cr = uploads.IDRequest{
+		User:        userID,
+		DirectoryID: directoryID,
+		ProjectID:   req.ProjectID,
+		FileName:    req.FileName,
+		FileSize:    req.FileSize,
+		FileMTime:   fileMTime,
+		Host:        request.Request.RemoteAddr,
+		Birthtime:   time.Now(),
+	}
+
+	return cr, nil
+
 }
 
 // getDirectoryID returns the directoryID. A user can pass either a directoryID
@@ -158,10 +171,6 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 // the requesting user has access to delete the request.
 func (r *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
 	uploadID := request.PathParameter("id")
-	if uploadID == "" {
-		return app.ErrInvalid
-	}
-
 	return r.idService.Delete(uploadID, user.ID)
 }
 
@@ -169,9 +178,6 @@ func (r *uploadResource) deleteUploadRequest(request *restful.Request, response 
 // has access to the project.
 func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	projectID := request.PathParameter("project")
-	if projectID == "" {
-		return nil, app.ErrInvalid
-	}
 	entries, err := r.idService.ListForProject(projectID, user.ID)
 	if err != nil {
 		return nil, err
