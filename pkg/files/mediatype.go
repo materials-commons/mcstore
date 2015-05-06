@@ -64,17 +64,20 @@ func init() {
 	}
 }
 
-// MediaType determines the mime media type for the given file
-func MediaType(path string) schema.MediaType {
-	mtype := determineMediaType(path)
+// MediaType determines the mime media type for the given file. Because
+// MaterialsCommons stores the file by id, which is different from the
+// filename, the name and the path are passed. The name allows us to
+// try and determine the file type by its extension.
+func MediaType(name, path string) schema.MediaType {
+	mtype := determineMediaType(name, path)
 	return filloutMediaType(mtype)
 }
 
 // determineMediaType determines the file mediatype first by checking
 // its extension mime type, and then if that fails with libmagic. It
 // returns "unknown" if the mediatype cannot be determined.
-func determineMediaType(path string) string {
-	mtype := mediaTypeByExtension(path)
+func determineMediaType(name, path string) string {
+	mtype := mediaTypeByExtension(name)
 	if mtype != "unknown" {
 		return mtype
 	}

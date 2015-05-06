@@ -59,7 +59,7 @@ func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Uplo
 		schema.FileFields.Uploaded():  req.FlowTotalSize,
 		schema.FileFields.Size():      req.FlowTotalSize,
 		schema.FileFields.Checksum():  checksum,
-		schema.FileFields.MediaType(): files.MediaType(filePath),
+		schema.FileFields.MediaType(): files.MediaType(upload.File.Name, filePath),
 	}
 
 	matchingFile, err := f.files.ByChecksum(checksum)
