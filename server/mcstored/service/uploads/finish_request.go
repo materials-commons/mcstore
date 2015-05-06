@@ -8,6 +8,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
+	"github.com/materials-commons/mcstore/pkg/files"
 )
 
 // A finisher finishes the rest of the book keeping
@@ -32,9 +33,10 @@ func newFinisher(files dai.Files, dirs dai.Dirs) *finisher {
 // TODO: refactor this method into a few separate methods that contain the
 // logical blocks.
 func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Upload) error {
-	checksum, err := file.HashStr(md5.New(), app.MCDir.FilePath(fileID))
+	filePath := app.MCDir.FilePath(fileID)
+	checksum, err := file.HashStr(md5.New(), filePath)
 	if err != nil {
-		// log
+		app.Log.Errorf("Failed creating checksum for '%s': %s", filePath, err)
 		return err
 	}
 
@@ -52,11 +54,12 @@ func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Uplo
 	}
 
 	fields := map[string]interface{}{
-		schema.FileFields.Current():  true,
-		schema.FileFields.Parent():   parentID,
-		schema.FileFields.Uploaded(): req.FlowTotalSize,
-		schema.FileFields.Size():     req.FlowTotalSize,
-		schema.FileFields.Checksum(): checksum,
+		schema.FileFields.Current():   true,
+		schema.FileFields.Parent():    parentID,
+		schema.FileFields.Uploaded():  req.FlowTotalSize,
+		schema.FileFields.Size():      req.FlowTotalSize,
+		schema.FileFields.Checksum():  checksum,
+		schema.FileFields.MediaType(): files.MediaType(filePath),
 	}
 
 	matchingFile, err := f.files.ByChecksum(checksum)
@@ -70,22 +73,24 @@ func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Uplo
 		return err
 	default:
 		// Found a matching checksum. There are two cases
-		// 1. The existing file is not the file we uploaded
-		// 2. The existing file is the file we uploaded.
+		// 1. The existing file is the file we uploaded.
+		// 2. The existing file is not the file we uploaded
 
-		// Is matching file, delete it completely.
+		// Case 1: Is matching file. Delete it completely.
 		if f.fileInDir(checksum, upload.File.Name, upload.DirectoryID) {
 			app.Log.Infof("Found exact matching file (%s/%s) in same directory (%s), deleting", upload.File.Name, fileID, upload.DirectoryID)
 			f.deleteUploadedFile(fileID, upload)
 			return nil
 		}
 
-		// Not matching file so set file entry to point
-		// at this file and remove the file that was
-		// just constructed.
+		// Case 2: Existing file is not the file we uploaded:
+		// File found is not the file we uploaded, so we need to do a couple of things:
+		// First set file entry to point this file (set UsesID) and secondly
+		// remove the file (on the file system) that was just uploaded since we don't
+		// keep duplicates.
 
 		fields[schema.FileFields.UsesID()] = matchingFile.ID
-		os.Remove(app.MCDir.FilePath(fileID))
+		os.Remove(filePath)
 	}
 
 	return f.files.UpdateFields(fileID, fields)
