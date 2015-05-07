@@ -152,6 +152,8 @@ func (f rFiles) Delete(fileID, directoryID, projectID string) (*schema.File, err
 		f.Update(file)
 	}
 
+	// file that was deleted had a parent (another version). Set the previous
+	// version (ie, its parent) as the current file.
 	if file.Parent != "" {
 		fields := map[string]interface{}{
 			schema.FileFields.Current(): true,
