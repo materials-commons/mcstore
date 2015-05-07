@@ -4,8 +4,8 @@ import (
 	"mime"
 	"path/filepath"
 
-	"github.com/materials-commons/mcfs/base/schema"
 	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/rakyll/magicmime"
 )
 
