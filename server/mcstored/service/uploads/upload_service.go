@@ -44,13 +44,12 @@ func NewUploadService() *uploadService {
 	}
 }
 
-// Upload takes care of uploading a block and constructing the file
-// after all blocks have been uploaded. It takes care of all the
-// details such as files that have already been uploaded.
+// Upload performs uploading a block and constructing the file
+// after all blocks have been uploaded.
 func (s *uploadService) Upload(req *UploadRequest) error {
 	dir := s.requestDir(req.Request)
 
-	if err := s.Write(dir, req.Request); err != nil {
+	if err := s.write(dir, req.Request); err != nil {
 		return err
 	}
 
@@ -58,17 +57,21 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 	s.tracker.increment(id)
 
 	if s.allBlocksUploaded(id, req.FlowTotalChunks) {
-		if file, err := s.assemble(req, dir); err != nil {
-			// assembly failed. If file isn't nil then
-			// there is some cleanup to do in the database.
-			if file != nil {
-				err2 := s.cleanup(req, file.ID)
-				app.Log.Errorf("Assembly failed for uploaded file: attempted cleanup of database entry returned: %s", err2)
+		// assembling the file, and performing any processing may take a while, especially
+		// on large uploads, so we perform this step in the background.
+		go func(req *UploadRequest, dir string) {
+			if file, err := s.assemble(req, dir); err != nil {
+				app.Log.Errorf("Assembly failed for request %s: %s", req.FlowIdentifier, err)
+				// Assembly failed. If file isn't nil then
+				// there is some cleanup to do in the database.
+				if file != nil {
+					if err := s.cleanup(req, file.ID); err != nil {
+						app.Log.Errorf("Attempted cleanup of failed assembly %s errored with: %s", req.FlowIdentifier, err)
+					}
+				}
 			}
-			return err
-		}
+		}(req, dir)
 	}
-
 	return nil
 }
 
@@ -150,7 +153,7 @@ func (s *uploadService) requestDir(req *flow.Request) string {
 }
 
 // Write will write a chunk to the given directory.
-func (s *uploadService) Write(dest string, req *flow.Request) error {
+func (s *uploadService) write(dest string, req *flow.Request) error {
 	writer := &fileRequestWriter{}
 	return writer.Write(dest, req)
 }
