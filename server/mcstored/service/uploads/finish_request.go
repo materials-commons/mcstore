@@ -9,6 +9,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/files"
+	"github.com/materials-commons/mcstore/server/mcstored/service/uploads/processor"
 )
 
 // A finisher finishes the rest of the book keeping
@@ -46,27 +47,30 @@ func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Uplo
 		return err
 	}
 
-	size := f.Size(fileID)
+	size := f.size(fileID)
 
 	if size != req.FlowTotalSize {
 		app.Log.Errorf("Uploaded file (%s/%s) doesn't match the expected size. Expected:%d, Got: %d", upload.File.Name, req.FlowIdentifier, req.FlowTotalSize, size)
 		return app.ErrInvalid
 	}
 
+	mediatype := files.MediaType(upload.File.Name, filePath)
 	fields := map[string]interface{}{
 		schema.FileFields.Current():   true,
 		schema.FileFields.Parent():    parentID,
 		schema.FileFields.Uploaded():  req.FlowTotalSize,
 		schema.FileFields.Size():      req.FlowTotalSize,
 		schema.FileFields.Checksum():  checksum,
-		schema.FileFields.MediaType(): files.MediaType(upload.File.Name, filePath),
+		schema.FileFields.MediaType(): mediatype,
 	}
 
 	matchingFile, err := f.files.ByChecksum(checksum)
 	switch {
 	case err != nil && err == app.ErrNotFound:
-		// Nothing to do, we already set the checksum and
-		// usesid is clear.
+		// This is a brand new upload for a file we haven't seen before. There are processing
+		// steps that may need to be done on the file. For example we convert tif and bmp
+		// image files so they can be displayed in the browser.
+		f.processFile(fileID, mediatype)
 	case err != nil:
 		// Some type of error accessing the database
 		app.Log.Errorf("Looking up file by checksum for %s/%s returned unexpected error: %s.", checksum, req.FlowFileName, err)
@@ -97,7 +101,7 @@ func (f *finisher) finish(req *UploadRequest, fileID string, upload *schema.Uplo
 }
 
 // Size gets the size of the reconstructed file.
-func (f *finisher) Size(fileID string) int64 {
+func (f *finisher) size(fileID string) int64 {
 	finfo, err := os.Stat(app.MCDir.FilePath(fileID))
 	if err != nil {
 		return 0
@@ -119,6 +123,12 @@ func (f *finisher) parentID(fileName, dirID string) (parentID string, err error)
 	}
 
 	return parentID, err
+}
+
+// processFile will process the file on disk.
+func (f *finisher) processFile(fileID string, mediatype schema.MediaType) {
+	fp := processor.New(fileID, mediatype)
+	fp.Process()
 }
 
 // fileInDir determines if this exact file has already been uploaded
