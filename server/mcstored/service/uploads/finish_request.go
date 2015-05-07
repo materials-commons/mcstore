@@ -147,8 +147,8 @@ func (f *finisher) fileInDir(checksum, fileName, dirID string) bool {
 	return false
 }
 
-// deleteUploadedFile will completely delete the file from the system. This
-// happens when the file has already been uploaded to the given directory.
+// deleteUploadedFile will completely delete the file from the system. Completely
+// means it also deletes the database entries for the file.
 func (f *finisher) deleteUploadedFile(fileID string, upload *schema.Upload) {
 	f.files.Delete(fileID, upload.DirectoryID, upload.ProjectID)
 	os.Remove(app.MCDir.FilePath(fileID))
