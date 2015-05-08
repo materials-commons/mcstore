@@ -106,16 +106,21 @@ func (r *uploadResource) makeIDRequest(request *restful.Request, userID string) 
 	var cr uploads.IDRequest
 
 	if err := request.ReadEntity(&req); err != nil {
+		app.Log.Debugf("makeIDRequest ReadEntity failed: %s", err)
 		return cr, err
 	}
 
+	app.Log.Debugf("%#v", req)
+
 	fileMTime, err := time.Parse(time.RFC1123, req.FileMTime)
 	if err != nil {
+		app.Log.Debugf("makeIDRequest time.Parse failed on %s: %s", req.FileMTime, err)
 		return cr, err
 	}
 
 	directoryID, err := r.getDirectoryID(req)
 	if err != nil {
+		app.Log.Debugf("makeIDRequest getDirectoryID failed: %s", err)
 		return cr, err
 	}
 
@@ -141,12 +146,14 @@ func (r *uploadResource) makeIDRequest(request *restful.Request, userID string) 
 func (r *uploadResource) getDirectoryID(req CreateRequest) (directoryID string, err error) {
 	switch {
 	case req.DirectoryID == "" && req.DirectoryPath == "":
+		app.Log.Debugf("No directoryID or directoryPath specified")
 		return "", app.ErrInvalid
 	case req.DirectoryID != "":
 		return req.DirectoryID, nil
 	default:
 		dir, err := r.dirService.CreateDir(req.ProjectID, req.DirectoryPath)
 		if err != nil {
+			app.Log.Debugf("CreateDir %s %s failed: %s", req.ProjectID, req.DirectoryPath, err)
 			return "", err
 		}
 		return dir.ID, nil
