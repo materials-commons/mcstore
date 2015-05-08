@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/codegangsta/cli"
+	"github.com/inconshreveable/log15"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/config/cfg"
 	"github.com/materials-commons/config/handler"
@@ -23,12 +24,14 @@ import (
 	"github.com/materials-commons/mcstore/cmd/mc/set"
 	"github.com/materials-commons/mcstore/cmd/mc/setup"
 	"github.com/materials-commons/mcstore/cmd/mc/upload"
+	"github.com/materials-commons/mcstore/pkg/app"
 )
 
 // init sets up the package by loading and configuring the config package.
 func init() {
-	handler := createHandler()
+	handler := setupConfigHandler()
 	config.Init(handler)
+	setLoggingLevel()
 }
 
 func main() {
@@ -51,14 +54,13 @@ func main() {
 		login.Command,
 		setup.Command,
 	}
-
 	app.Run(os.Args)
 }
 
-// createHandler creates the handler for the mc package. It sets up a
+// setupConfigHandler creates the handler for the mc package. It sets up a
 // multi handler. If the user has setup a config.json in their .materialscommons
 // directory then it will add that to the handler list.
-func createHandler() cfg.Handler {
+func setupConfigHandler() cfg.Handler {
 	handlers := []cfg.Handler{
 		handler.Env(),
 	}
@@ -68,7 +70,7 @@ func createHandler() cfg.Handler {
 		panic(fmt.Sprintf("Couldn't determine current user: %s", err))
 	}
 	configFile := filepath.Join(u.HomeDir, ".materialscommons/config.json")
-	loader := getConfigLoader(configFile)
+	loader := getUserConfigLoader(configFile)
 	if loader != nil {
 		handlers = append(handlers, handler.Loader(loader))
 	}
@@ -79,9 +81,9 @@ func createHandler() cfg.Handler {
 	return handler.Sync(handler.Multi(handlers...))
 }
 
-// getConfigLoader returns a json loader if the $HOME/.materialscommons/config.json
+// getUserConfigLoader returns a json loader if the $HOME/.materialscommons/config.json
 // file exists. It will panic if the file exists but cannot be read.
-func getConfigLoader(configFile string) cfg.Loader {
+func getUserConfigLoader(configFile string) cfg.Loader {
 	if file.Exists(configFile) {
 		contents, err := ioutil.ReadFile(configFile)
 		if err != nil {
@@ -94,6 +96,20 @@ func getConfigLoader(configFile string) cfg.Loader {
 
 // loadDefaults sets up the default values for the following configuration keys:
 //     mcurl: https://materialscommons.org/api
+//     mclogging: info
 func loadDefaults(h cfg.Handler) {
 	h.Set("mcurl", "https://materialscommons.org/api")
+	h.Set("mclogging", "info")
+}
+
+// setLoggingLevel sets the apps logging level.
+func setLoggingLevel() {
+	level := config.GetString("mclogging")
+	if lvl, err := log15.LvlFromString(level); err != nil {
+		fmt.Printf("Invalid Log Level: %s, setting to info.\n", level)
+		fmt.Println("Valid logging levels are: debug, info, warn, error, crit. The default is info.")
+		app.SetLogLvl(log15.LvlInfo)
+	} else {
+		app.SetLogLvl(lvl)
+	}
 }
