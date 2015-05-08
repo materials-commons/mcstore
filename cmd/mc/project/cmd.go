@@ -5,6 +5,7 @@ import (
 	"github.com/materials-commons/mcstore/cmd/mc/project/upload"
 )
 
+// Command contains the project command and all its sub commands.
 var Command = cli.Command{
 	Name:    "project",
 	Aliases: []string{"proj", "p"},
