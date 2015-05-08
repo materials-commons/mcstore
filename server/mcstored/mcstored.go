@@ -79,7 +79,7 @@ func setupConfig(opts options) {
 	}
 
 	if lvl, err := log15.LvlFromString(opts.Server.LogLevel); err != nil {
-		fmt.Printf("Invalid Log Level: %s, setting to Info\n", opts.Server.LogLevel)
+		fmt.Printf("Invalid Log Level: %s, setting to info\n", opts.Server.LogLevel)
 		app.SetLogLvl(log15.LvlInfo)
 	} else {
 		fmt.Println("Log level set to:", opts.Server.LogLevel)
