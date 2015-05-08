@@ -4,8 +4,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/codegangsta/cli"
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest/upload"
@@ -18,10 +20,6 @@ var Command = cli.Command{
 	Aliases: []string{"up", "u"},
 	Usage:   "Upload data to MaterialsCommons",
 	Flags: []cli.Flag{
-		cli.StringFlag{
-			Name:  "project, p, proj",
-			Usage: "Project id to upload to",
-		},
 		cli.IntFlag{
 			Name:  "parallel, n",
 			Value: 3,
@@ -48,13 +46,14 @@ func uploadCLI(c *cli.Context) {
 		os.Exit(1)
 	}
 	dir := c.Args()[0]
-	project = c.String("project")
 	numThreads := getNumThreads(c)
 
-	_, errc := files.PWalk(dir, numThreads, processFiles)
-	if err := <-errc; err != nil {
-		fmt.Println("Got error: ", err)
+	if !file.IsDir(dir) {
+		fmt.Printf("Invalid directory: %s\n", dir)
+		os.Exit(1)
 	}
+
+	uploadToServer(dir, numThreads)
 }
 
 // getNumThreads ensures that the number of parallel downloads is valid.
@@ -72,10 +71,52 @@ func getNumThreads(c *cli.Context) int {
 	return numThreads
 }
 
+// uploadToServer
+func uploadToServer(dir string, numThreads int) {
+	project := findDotMCProject(dir)
+	fmt.Printf("project = '%s'\n", project)
+	// _, errc := files.PWalk(dir, numThreads, processFiles)
+	// if err := <-errc; err != nil {
+	// 	fmt.Println("Got error: ", err)
+	// }
+}
+
+// findDotMCProject will walk up from directory looking for the .mcproject
+// directory. If it cannot find it, then the directory isn't in a
+// known project. findProject will call os.Exit on any errors or if
+// it cannot find a .mcproject directory.
+func findDotMCProject(dir string) string {
+	// Normalize the directory path, and convert all path separators to a
+	// forward slash (/).
+	dirPath, err := filepath.Abs(dir)
+	if err != nil {
+		fmt.Printf("Bad directory %s: %s", dir, err)
+		os.Exit(1)
+	}
+
+	dirPath = filepath.ToSlash(dirPath)
+	for {
+		if dirPath == "/" {
+			// Projects at root level not allowed
+			fmt.Println("Your directory is not in a project.")
+			fmt.Println("Upload a directory in a project or create a project by running the create-project command.")
+			os.Exit(1)
+		}
+
+		mcprojectDir := filepath.Join(dirPath, ".mcproject")
+		if file.IsDir(mcprojectDir) {
+			// found it
+			return mcprojectDir
+		}
+		dirPath = filepath.Dir(dirPath)
+	}
+}
+
 // processFiles is the callback passed into PWalk. It processes each file, determines
 // if it should be uploaded, and if so uploads the file. There can be a maxSimultaneous
 // processFiles routines running.
 func processFiles(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
+	fmt.Println("processFiles")
 	u := &uploader{
 		client: gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
 	}
@@ -114,6 +155,7 @@ func (u *uploader) sendFile(fileEntry files.TreeEntry) string {
 }
 
 func (u *uploader) createUploadRequest() {
+	fmt.Println("createUploadRequest")
 	req := upload.CreateRequest{
 		ProjectID:   "9ead5bbf-f7eb-4010-bc1f-e4a063f56226",
 		DirectoryID: "c54a77d6-cd6d-4cd1-8f19-44facc761da6",
@@ -123,8 +165,10 @@ func (u *uploader) createUploadRequest() {
 	}
 
 	var resp upload.CreateResponse
-	r, body, errs := u.client.Post(app.MCApi.APIUrl("/upload")).Send(&req).End()
+	fmt.Println("url =", app.MCApi.APIUrl("/upload"))
+	r, body, errs := u.client.Post(app.MCApi.APIUrl("/upload")).Send(req).End()
 	if err := app.MCApi.APIError(r, errs); err != nil {
+		fmt.Println("got err from Post:", err)
 		return
 	}
 	app.MCApi.ToJSON(body, &resp)

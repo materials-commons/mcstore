@@ -17,13 +17,12 @@ import (
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/cmd/mc/download"
 	"github.com/materials-commons/mcstore/cmd/mc/get"
-	"github.com/materials-commons/mcstore/cmd/mc/login"
 	"github.com/materials-commons/mcstore/cmd/mc/monitor"
+	"github.com/materials-commons/mcstore/cmd/mc/project"
 	"github.com/materials-commons/mcstore/cmd/mc/receive"
 	"github.com/materials-commons/mcstore/cmd/mc/send"
 	"github.com/materials-commons/mcstore/cmd/mc/set"
 	"github.com/materials-commons/mcstore/cmd/mc/setup"
-	"github.com/materials-commons/mcstore/cmd/mc/upload"
 	"github.com/materials-commons/mcstore/pkg/app"
 )
 
@@ -48,10 +47,9 @@ func main() {
 		receive.Command,
 		get.Command,
 		set.Command,
-		upload.Command,
+		project.Command,
 		download.Command,
 		monitor.Command,
-		login.Command,
 		setup.Command,
 	}
 	app.Run(os.Args)
