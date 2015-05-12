@@ -174,6 +174,19 @@ func (u *uploader) sendFile(fileEntry files.TreeEntry) string {
 	return fileEntry.Path
 }
 
+func fileChanged(oinfo, ninfo file.ExFileInfo) bool {
+	switch {
+	case oinfo.Size() != ninfo.Size():
+		return true
+	case oinfo.CTime().Before(ninfo.CTime()):
+		return true
+	case oinfo.ModTime().Before(ninfo.ModTime()):
+		return true
+	default:
+		return false
+	}
+}
+
 func (u *uploader) createUploadRequest() {
 	fmt.Println("createUploadRequest")
 	req := upload.CreateRequest{
