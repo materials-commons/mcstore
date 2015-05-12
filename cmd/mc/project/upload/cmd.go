@@ -156,6 +156,8 @@ type uploader struct {
 //
 func (u *uploader) sendFile(fileEntry files.TreeEntry) string {
 	u.createUploadRequest()
+	//s1 := file.ExInfoFrom(20, time.Now(), time.Now(), time.Now(), file.FID{})
+	//fileChanged(s1, s1)
 	// buf := make([]byte, twoMeg)
 	// f, err := os.Open(fileEntry.Path)
 	// if err != nil {
