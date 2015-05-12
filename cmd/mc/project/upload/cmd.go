@@ -140,11 +140,8 @@ type uploader struct {
 	client *gorequest.SuperAgent
 }
 
-// sendFile needs to:
-//   if file is not on server then
-//       send file up and send hash up at end
-//           -- here we are computing hash as we send blocks up
-//   else
+// sendFile logic:
+// if file has changed || file not in local database then
 //       compute hash
 //       if hash is on server then
 //          tell server to create a new entry pointing to
