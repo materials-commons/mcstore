@@ -43,10 +43,11 @@ func TestCreateDB(t *testing.T) {
 
 func TestInsertDir(t *testing.T) {
 	db := mcproject.db
+	now := time.Now()
 	dir := &Directory{
 		DirectoryID: "abc123",
 		Path:        "/tmp/dir",
-		LastUpload:  time.Now(),
+		LastUpload:  now,
 	}
 
 	var err error
@@ -60,6 +61,7 @@ func TestInsertDir(t *testing.T) {
 	require.Equal(t, 1, len(dirs), "Expected only 1 dir, got %d", len(dirs))
 	require.Equal(t, "abc123", dirs[0].DirectoryID, "Got wrong directory id: %s", dirs[0].DirectoryID)
 	require.True(t, dir.ID == dirs[0].ID, "Got unexpected id: %d", dirs[0].ID)
+	require.True(t, dir.LastUpload == now, "Got unexpected last upload. Expected %#v, got %#v", dir.LastUpload, now)
 }
 
 func TestInsertFile(t *testing.T) {
