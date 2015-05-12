@@ -8,6 +8,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/file"
+	"github.com/materials-commons/mcstore/cmd/pkg/project"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest/upload"
@@ -34,7 +35,7 @@ const twoMeg = oneMeg * 2
 const largeFileSize = oneMeg * 25
 const maxSimultaneous = 5
 
-var project string
+var proj *project.MCProject
 
 //var pbPool = &pb.Pool{}
 
@@ -73,8 +74,13 @@ func getNumThreads(c *cli.Context) int {
 
 // uploadToServer
 func uploadToServer(dir string, numThreads int) {
-	project := findDotMCProject(dir)
-	fmt.Printf("project = '%s'\n", project)
+	var err error
+	proj, err = project.Find(dir)
+	if err != nil {
+		fmt.Println("Unable to locate project dir is in.")
+		os.Exit(1)
+	}
+	fmt.Printf("project = '%s'\n", proj.ID)
 	// _, errc := files.PWalk(dir, numThreads, processFiles)
 	// if err := <-errc; err != nil {
 	// 	fmt.Println("Got error: ", err)
@@ -134,6 +140,20 @@ type uploader struct {
 	client *gorequest.SuperAgent
 }
 
+// sendFile needs to:
+//   if file is not on server then
+//       send file up and send hash up at end
+//           -- here we are computing hash as we send blocks up
+//   else
+//       compute hash
+//       if hash is on server then
+//          tell server to create a new entry pointing to
+//          the already uploaded file
+//       else
+//          upload the file
+//       end
+//  end
+//
 func (u *uploader) sendFile(fileEntry files.TreeEntry) string {
 	u.createUploadRequest()
 	// buf := make([]byte, twoMeg)

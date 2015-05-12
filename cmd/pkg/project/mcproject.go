@@ -2,6 +2,7 @@ package project
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/jmoiron/sqlx"
@@ -41,7 +42,7 @@ func Find(dir string) (*MCProject, error) {
 }
 
 func Open(dir string) (*MCProject, error) {
-	db, err := openDB(dir)
+	db, err := openDB(dir, true)
 	if err != nil {
 		return nil, err
 	}
@@ -54,21 +55,51 @@ func Open(dir string) (*MCProject, error) {
 	return mcproject, nil
 }
 
-func openDB(dir string) (*sqlx.DB, error) {
+func openDB(dir string, mustExist bool) (*sqlx.DB, error) {
 	dbpath := filepath.Join(dir, "project.db")
-	dbExists := file.Exists(dbpath)
+	if mustExist && !file.Exists(dbpath) {
+		return nil, app.ErrNotFound
+	}
 	dbargs := fmt.Sprintf("file:%s?cached=shared&mode=rwc", dbpath)
 	db, err := sqlx.Open("sqlite3", dbargs)
 	if err != nil {
 		return nil, err
 	}
-	if !dbExists {
-		if err := createSchema(db); err != nil {
-			db.Close()
-			return nil, err
-		}
-	}
+
 	return db, nil
+}
+
+func Create(path, name, projectID string) (*MCProject, error) {
+	projPath := filepath.Join(path, ".mcproject")
+	if err := os.MkdirAll(projPath, 0700); err != nil {
+		return nil, err
+	}
+
+	db, err := openDB(projPath, false)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := createSchema(db); err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	mcproject := &MCProject{
+		db: db,
+		// Dir of location.
+		Dir: filepath.Dir(path),
+	}
+	proj := &Project{
+		ProjectID: projectID,
+		Name:      name,
+	}
+	proj, err = mcproject.InsertProject(proj)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+	return mcproject, nil
 }
 
 func (p *MCProject) InsertDirectory(dir *Directory) (*Directory, error) {
@@ -98,4 +129,17 @@ func (p *MCProject) InsertFile(f *File) (*File, error) {
 	}
 	f.ID, _ = res.LastInsertId()
 	return f, err
+}
+
+func (p *MCProject) InsertProject(proj *Project) (*Project, error) {
+	sql := `
+           insert into project(name, projectid, lastupload, lastdownload)
+                       values(:name, :projectid, :lastupload, :lastdownload)
+        `
+	res, err := p.db.Exec(sql, proj.Name, proj.ProjectID, proj.LastUpload, proj.LastDownload)
+	if err != nil {
+		return nil, err
+	}
+	proj.ID, _ = res.LastInsertId()
+	return proj, err
 }

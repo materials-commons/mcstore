@@ -27,9 +27,18 @@ func teardown() {
 
 func TestCreateDB(t *testing.T) {
 	var err error
-	mcproject, err = Open(".mcproject")
+	mcproject, err = Create(".mcproject", "proj1", "proj1id")
 	require.Nil(t, err, "Open failed: %s", err)
 	require.NotNil(t, mcproject, "mcproject is nil")
+	db := mcproject.db
+
+	var projects []Project
+	err = db.Select(&projects, "select * from project")
+	require.Nil(t, err, "Select failed: %s", err)
+	require.Equal(t, len(projects), 1, "Expected one project got %d", len(projects))
+	proj := projects[0]
+	require.Equal(t, proj.ProjectID, "proj1id", "Got wrong projectID: %s", proj.ProjectID)
+	require.Equal(t, proj.Name, "proj1", "Got wrote name: %s", proj.Name)
 }
 
 func TestInsertDir(t *testing.T) {

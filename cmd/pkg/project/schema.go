@@ -7,6 +7,14 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 )
 
+type Project struct {
+	ID           int64
+	Name         string
+	ProjectID    string
+	LastUpload   time.Time
+	LastDownload time.Time
+}
+
 type Directory struct {
 	ID           int64
 	DirectoryID  string
@@ -40,6 +48,19 @@ type schemaCommand struct {
 }
 
 var schemas = []schemaCommand{
+	{
+		description: "Create the project table",
+		sql: `
+                     create table project(
+                        id integer primary key,
+                        name text,
+                        projectid varchar(40),
+                        lastupload datetime,
+                        lastdownload datetime
+                     )
+                `,
+		indices: []schemaIndex{},
+	},
 	{
 		description: "Create the directories table that holds all known directories",
 		sql: `
