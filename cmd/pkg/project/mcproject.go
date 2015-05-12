@@ -11,12 +11,17 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// MCProject is a materials commons project on the local system.
 type MCProject struct {
 	ID  string
 	Dir string
 	db  *sqlx.DB
 }
 
+// Find will attempt to locate the project that a directory is in. It does
+// this by going up the directory tree looking for a .mcproject directory
+// that contains a project.db in it. If it cannot find one it returns
+// the error app.ErrNotFound
 func Find(dir string) (*MCProject, error) {
 	// Normalize the directory path, and convert all path separators to a
 	// forward slash (/).
@@ -41,6 +46,9 @@ func Find(dir string) (*MCProject, error) {
 	}
 }
 
+// Open will open a project database in the specified .mcproject
+// directory. The project.db must exist. If it doesn't exist
+// it will return the error app.ErrNotFound.
 func Open(dir string) (*MCProject, error) {
 	db, err := openDB(dir, true)
 	if err != nil {
@@ -55,6 +63,8 @@ func Open(dir string) (*MCProject, error) {
 	return mcproject, nil
 }
 
+// openDB will attempt to open the project.db file. The mustExist
+// flag specifies whether or not the database file must exist.
 func openDB(dir string, mustExist bool) (*sqlx.DB, error) {
 	dbpath := filepath.Join(dir, "project.db")
 	if mustExist && !file.Exists(dbpath) {
@@ -69,6 +79,8 @@ func openDB(dir string, mustExist bool) (*sqlx.DB, error) {
 	return db, nil
 }
 
+// Create will create a new .mcproject directory in path and
+// populate the database with the given project.
 func Create(path, name, projectID string) (*MCProject, error) {
 	projPath := filepath.Join(path, ".mcproject")
 	if err := os.MkdirAll(projPath, 0700); err != nil {
@@ -94,7 +106,7 @@ func Create(path, name, projectID string) (*MCProject, error) {
 		ProjectID: projectID,
 		Name:      name,
 	}
-	proj, err = mcproject.InsertProject(proj)
+	proj, err = mcproject.insertProject(proj)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -102,6 +114,7 @@ func Create(path, name, projectID string) (*MCProject, error) {
 	return mcproject, nil
 }
 
+// InsertDirectory will insert a new directory entry into the project database.
 func (p *MCProject) InsertDirectory(dir *Directory) (*Directory, error) {
 	sql := `
            insert into directories(directoryid, path, lastupload, lastdownload)
@@ -115,6 +128,7 @@ func (p *MCProject) InsertDirectory(dir *Directory) (*Directory, error) {
 	return dir, nil
 }
 
+// InsertFile will insert a new file entry into the project database.
 func (p *MCProject) InsertFile(f *File) (*File, error) {
 	sql := `
            insert into files(fileid, name, checksum, size, mtime,
@@ -131,7 +145,8 @@ func (p *MCProject) InsertFile(f *File) (*File, error) {
 	return f, err
 }
 
-func (p *MCProject) InsertProject(proj *Project) (*Project, error) {
+// insertProject will insert a new project entry into the project database.
+func (p *MCProject) insertProject(proj *Project) (*Project, error) {
 	sql := `
            insert into project(name, projectid, lastupload, lastdownload)
                        values(:name, :projectid, :lastupload, :lastdownload)
