@@ -2,6 +2,7 @@ package project
 
 import (
 	"github.com/codegangsta/cli"
+	"github.com/materials-commons/mcstore/cmd/mc/project/create"
 	"github.com/materials-commons/mcstore/cmd/mc/project/upload"
 )
 
@@ -12,5 +13,6 @@ var Command = cli.Command{
 	Usage:   "Project commands",
 	Subcommands: []cli.Command{
 		upload.Command,
+		create.Command,
 	},
 }
