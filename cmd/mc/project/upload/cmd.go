@@ -4,10 +4,10 @@ import (
 	"crypto/tls"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/file"
+	"github.com/materials-commons/mcstore/cmd/pkg/opts"
 	"github.com/materials-commons/mcstore/cmd/pkg/project"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/files"
@@ -33,7 +33,6 @@ var Command = cli.Command{
 const oneMeg = 1024 * 1024
 const twoMeg = oneMeg * 2
 const largeFileSize = oneMeg * 25
-const maxSimultaneous = 5
 
 var proj *project.MCProject
 
@@ -43,33 +42,18 @@ var proj *project.MCProject
 func uploadCLI(c *cli.Context) {
 	fmt.Println("upload: ", c.Args())
 	if len(c.Args()) != 1 {
-		fmt.Println("You must give the directory to walk")
+		fmt.Println("You must give a directory to upload.")
 		os.Exit(1)
 	}
 	dir := c.Args()[0]
-	numThreads := getNumThreads(c)
+	numThreads := opts.GetNumThreads(c)
 
 	if !file.IsDir(dir) {
-		fmt.Printf("Invalid directory: %s\n", dir)
+		fmt.Printf("Invalid directory: %s.\n", dir)
 		os.Exit(1)
 	}
 
 	uploadToServer(dir, numThreads)
-}
-
-// getNumThreads ensures that the number of parallel downloads is valid.
-func getNumThreads(c *cli.Context) int {
-	numThreads := c.Int("parallel")
-
-	if numThreads < 1 {
-		fmt.Println("Simultaneous downloads must be positive: ", numThreads)
-		os.Exit(1)
-	} else if numThreads > maxSimultaneous {
-		fmt.Printf("You may not set simultaneous downloads greater than %d: %d\n", maxSimultaneous, numThreads)
-		os.Exit(1)
-	}
-
-	return numThreads
 }
 
 // uploadToServer
@@ -85,37 +69,6 @@ func uploadToServer(dir string, numThreads int) {
 	// if err := <-errc; err != nil {
 	// 	fmt.Println("Got error: ", err)
 	// }
-}
-
-// findDotMCProject will walk up from directory looking for the .mcproject
-// directory. If it cannot find it, then the directory isn't in a
-// known project. findProject will call os.Exit on any errors or if
-// it cannot find a .mcproject directory.
-func findDotMCProject(dir string) string {
-	// Normalize the directory path, and convert all path separators to a
-	// forward slash (/).
-	dirPath, err := filepath.Abs(dir)
-	if err != nil {
-		fmt.Printf("Bad directory %s: %s", dir, err)
-		os.Exit(1)
-	}
-
-	dirPath = filepath.ToSlash(dirPath)
-	for {
-		if dirPath == "/" {
-			// Projects at root level not allowed
-			fmt.Println("Your directory is not in a project.")
-			fmt.Println("Upload a directory in a project or create a project by running the create-project command.")
-			os.Exit(1)
-		}
-
-		mcprojectDir := filepath.Join(dirPath, ".mcproject")
-		if file.IsDir(mcprojectDir) {
-			// found it
-			return mcprojectDir
-		}
-		dirPath = filepath.Dir(dirPath)
-	}
 }
 
 // processFiles is the callback passed into PWalk. It processes each file, determines
