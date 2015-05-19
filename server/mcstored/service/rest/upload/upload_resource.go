@@ -30,7 +30,7 @@ type UploadEntry struct {
 	Birthtime   time.Time `json:"birthtime"`
 }
 
-// NewResources creates a new upload resource
+// NewResource creates a new upload resource
 func NewResource(uploadService uploads.UploadService, idService uploads.IDService, dirService data.DirService) rest.Service {
 	return &uploadResource{
 		log:           app.NewLog("resource", "upload"),
