@@ -8,21 +8,28 @@ import (
 	"github.com/materials-commons/mcstore/server/mcstored/service/data"
 )
 
+// An projectsResource holds the state and services needed for the
+// projects REST resource.
 type projectsResource struct {
 	log        *app.Logger
 	dirService data.DirService
 }
 
+// getDirectoryRequest is a request to get a directory for a project. The
+// directory lookup is by path within the context of the given project.
 type getDirectoryRequest struct {
 	Path      string
 	ProjectID string
 }
 
+// getDirectoryResponse returns the directory id for a directory
+// path for a given project.
 type getDirectoryResponse struct {
 	DirectoryID string `json:"directory_id"`
 	Path        string `json:"path"`
 }
 
+// NewResource creates a new projects resource.
 func NewResource(dirService data.DirService) *projectsResource {
 	return &projectsResource{
 		log:        app.NewLog("resource", "projects"),
@@ -30,6 +37,7 @@ func NewResource(dirService data.DirService) *projectsResource {
 	}
 }
 
+// WebService creates an instance of the projects web service.
 func (r *projectsResource) WebService() *restful.WebService {
 	ws := new(restful.WebService)
 
@@ -43,6 +51,9 @@ func (r *projectsResource) WebService() *restful.WebService {
 	return ws
 }
 
+// getDirectory services request to get a directory for a project. It accepts directories
+// by their path relative to the project. The getDirectory service will create a directory
+// that doesn't exist.
 func (r *projectsResource) getDirectory(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	var req getDirectoryRequest
 	if err := request.ReadEntity(&req); err != nil {
