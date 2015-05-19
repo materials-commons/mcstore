@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/gtarcea/1DevDayTalk2014/app"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/gohandy/ezhttp"
 	"gnd.la/net/urlutil"
@@ -40,7 +39,7 @@ func (a mcapi) APIUrl(path string) string {
 func (a mcapi) APIError(resp *http.Response, errs []error) error {
 	switch {
 	case len(errs) != 0:
-		return app.ErrInvalid
+		return ErrInvalid
 	case resp.StatusCode > 299:
 		return fmt.Errorf("HTTP Error: %s", resp.Status)
 	default:
