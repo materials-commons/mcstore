@@ -45,16 +45,20 @@ func (r *uploadResource) WebService() *restful.WebService {
 	ws := new(restful.WebService)
 
 	ws.Path("/upload").Produces(restful.MIME_JSON).Consumes(restful.MIME_JSON)
+
 	ws.Route(ws.POST("").To(rest.RouteHandler(r.createUploadRequest)).
 		Doc("Creates a new upload request").
 		Reads(CreateRequest{}).
 		Writes(CreateResponse{}))
+
 	ws.Route(ws.POST("/chunk").To(rest.RouteHandler1(r.uploadFileChunk)).
 		Consumes("multipart/form-data").
 		Doc("Upload a file chunk"))
+
 	ws.Route(ws.DELETE("{id}").To(rest.RouteHandler1(r.deleteUploadRequest)).
 		Doc("Deletes an existing upload request").
 		Param(ws.PathParameter("id", "upload request to delete").DataType("string")))
+
 	ws.Route(ws.GET("{project}").To(rest.RouteHandler(r.listProjectUploadRequests)).
 		Param(ws.PathParameter("project", "project id").DataType("string")).
 		Doc("Lists upload requests for project").
