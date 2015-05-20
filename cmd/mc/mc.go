@@ -51,14 +51,15 @@ func main() {
 // setupConfig sets up config for the process. It creates a cascade
 // of config handlers to search.
 func setupConfig() {
-	handlers := []cfg.Handler{
-		handler.Env(),
-	}
-
 	u, err := user.Current()
 	if err != nil {
 		panic(fmt.Sprintf("Couldn't determine current user: %s", err))
 	}
+
+	handlers := []cfg.Handler{
+		handler.Env(),
+	}
+
 	configFile := filepath.Join(u.HomeDir, ".materialscommons/config.json")
 	loader := getConfigLoader(configFile)
 	if loader != nil {
