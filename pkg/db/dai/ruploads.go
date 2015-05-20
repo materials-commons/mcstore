@@ -54,6 +54,15 @@ func (u rUploads) ForUser(user string) ([]schema.Upload, error) {
 	return uploads, nil
 }
 
+func (u rUploads) ForProject(projectID string) ([]schema.Upload, error) {
+	rql := model.Uploads.T().GetAllByIndex("project_id", projectID)
+	var uploads []schema.Upload
+	if err := model.Uploads.Qs(u.session).Rows(rql, &uploads); err != nil {
+		return nil, err
+	}
+	return uploads, nil
+}
+
 // Delete deletes the given upload id
 func (u rUploads) Delete(uploadID string) error {
 	return model.Uploads.Qs(u.session).Delete(uploadID)

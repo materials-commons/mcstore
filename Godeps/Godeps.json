@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/materials-commons/mcstore",
-	"GoVersion": "go1.3.3",
+	"GoVersion": "go1.4.2",
 	"Packages": [
 		"./..."
 	],
@@ -11,14 +11,46 @@
 			"Rev": "9352842ae63ee1d7e74e074ce7bb10370c4b6b9e"
 		},
 		{
+			"ImportPath": "github.com/BurntSushi/toml",
+			"Comment": "v0.1.0-9-g3883ac1",
+			"Rev": "3883ac1ce943878302255f538fce319d23226223"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/cli",
+			"Comment": "1.2.0-95-g9b2bd2b",
+			"Rev": "9b2bd2b3489748d4d0a204fa4eb2ee9e89e0ebc6"
+		},
+		{
+			"ImportPath": "github.com/coreos/go-etcd/etcd",
+			"Comment": "v2.0.0-7-g73a8ef7",
+			"Rev": "73a8ef737e8ea002281a28b4cb92a1de121ad4c6"
+		},
+		{
 			"ImportPath": "github.com/dancannon/gorethink",
 			"Comment": "v0.5.x-9-g16b174b",
 			"Rev": "16b174b489ff37d396a9fa202536c08171717883"
 		},
 		{
+			"ImportPath": "github.com/dmotylev/goproperties",
+			"Rev": "7cbffbaada472bc302cbaca51c1d5ed2682eb509"
+		},
+		{
 			"ImportPath": "github.com/emicklei/go-restful",
 			"Comment": "v1.1.2-42-g4b02481",
 			"Rev": "4b0248154311ad3611493ed41e43eaad64712c84"
+		},
+		{
+			"ImportPath": "github.com/gtarcea/1DevDayTalk2014/app",
+			"Rev": "5c7d83beebb5c9efe70cdb5f82926f02bbf98ecb"
+		},
+		{
+			"ImportPath": "github.com/gtarcea/1DevDayTalk2014/schema",
+			"Rev": "5c7d83beebb5c9efe70cdb5f82926f02bbf98ecb"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/consul/api",
+			"Comment": "v0.5.0-199-g205af6b",
+			"Rev": "205af6ba750b88863e6ee50c7c3d19edc180a6f6"
 		},
 		{
 			"ImportPath": "github.com/inconshreveable/log15",
@@ -32,16 +64,26 @@
 		},
 		{
 			"ImportPath": "github.com/materials-commons/config",
-			"Rev": "248b4377a303195d8090421794213b1f7394a3d9"
+			"Rev": "aa73a1105b10121b75fa60659f63b078e998d7f7"
+		},
+		{
+			"ImportPath": "github.com/materials-commons/gohandy/ezhttp",
+			"Comment": "v0.1-48-gaad3faa",
+			"Rev": "aad3faac8dcb8256e82692c9e4d0b9662d79bae3"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/gohandy/file",
-			"Comment": "v0.1-46-g0909d5a",
-			"Rev": "0909d5a1b7511acbfeca3e7a7a9dda748ffafbe1"
+			"Comment": "v0.1-48-gaad3faa",
+			"Rev": "aad3faac8dcb8256e82692c9e4d0b9662d79bae3"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/testify/mock",
 			"Rev": "69ceda2cdc257c72b8d718ecf0ce0ec200fa15e8"
+		},
+		{
+			"ImportPath": "github.com/parnurzeal/gorequest",
+			"Comment": "v0.2.4",
+			"Rev": "30f504965773bcd6855e423fabea0fc75cdfefef"
 		},
 		{
 			"ImportPath": "github.com/spf13/cast",
@@ -64,6 +106,20 @@
 			"Rev": "2160c81a963bc827f650a9d420263d05d35bb97e"
 		},
 		{
+			"ImportPath": "gnd.la/net/urlutil",
+			"Rev": "576eb72d675575f927f7f276f9846214ef81989e"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
+			"Comment": "null-236",
+			"Rev": "69e2a90ed92d03812364aeb947b7068dc42e561e"
+		},
+		{
+			"ImportPath": "golang.org/x/net/publicsuffix",
+			"Comment": "null-223",
+			"Rev": "5dedbdc181629d2f3557caf2667e60eb82c5e6d7"
+		},
+		{
 			"ImportPath": "gopkg.in/fatih/pool.v2",
 			"Rev": "dae43b8a8a190d1f2b5908e2f6dd02481e7d59e9"
 		},
@@ -71,6 +127,10 @@
 			"ImportPath": "gopkg.in/inconshreveable/log15.v1/term",
 			"Comment": "v1.2",
 			"Rev": "a127215f557c6b7b673e4bcf12ecf3c093ead09a"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v1",
+			"Rev": "b0c168ac0cf9493da1f9bb76c34b26ffef940b4a"
 		}
 	]
 }

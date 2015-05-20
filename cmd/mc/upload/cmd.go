@@ -1,14 +1,15 @@
 package upload
 
 import (
+	"crypto/tls"
 	"fmt"
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstored/service/rest/upload"
+	"github.com/parnurzeal/gorequest"
 )
 
 // Command contains the arguments and functions for the cli upload command.
@@ -23,8 +24,8 @@ var Command = cli.Command{
 		},
 		cli.IntFlag{
 			Name:  "parallel, n",
-			Value: 5,
-			Usage: "Number of simultaneous uploads to perform, defaults to 5",
+			Value: 3,
+			Usage: "Number of simultaneous uploads to perform, defaults to 3",
 		},
 	},
 	Action: uploadCLI,
@@ -33,6 +34,7 @@ var Command = cli.Command{
 const oneMeg = 1024 * 1024
 const twoMeg = oneMeg * 2
 const largeFileSize = oneMeg * 25
+const maxSimultaneous = 5
 
 var project string
 
@@ -47,7 +49,7 @@ func uploadCLI(c *cli.Context) {
 	}
 	dir := c.Args()[0]
 	project = c.String("project")
-	numThreads := c.Int("parallel")
+	numThreads := getNumThreads(c)
 
 	_, errc := files.PWalk(dir, numThreads, processFiles)
 	if err := <-errc; err != nil {
@@ -55,9 +57,27 @@ func uploadCLI(c *cli.Context) {
 	}
 }
 
+// getNumThreads ensures that the number of parallel downloads is valid.
+func getNumThreads(c *cli.Context) int {
+	numThreads := c.Int("parallel")
+
+	if numThreads < 1 {
+		fmt.Println("Simultaneous downloads must be positive: ", numThreads)
+		os.Exit(1)
+	} else if numThreads > maxSimultaneous {
+		fmt.Printf("You may not set simultaneous downloads greater than %d: %d\n", maxSimultaneous, numThreads)
+		os.Exit(1)
+	}
+
+	return numThreads
+}
+
+// processFiles is the callback passed into PWalk. It processes each file, determines
+// if it should be uploaded, and if so uploads the file. There can be a maxSimultaneous
+// processFiles routines running.
 func processFiles(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 	u := &uploader{
-		client: ezhttp.NewClient(),
+		client: gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
 	}
 	for entry := range entries {
 		select {
@@ -70,7 +90,7 @@ func processFiles(done <-chan struct{}, entries <-chan files.TreeEntry, result c
 }
 
 type uploader struct {
-	client *ezhttp.EzClient
+	client *gorequest.SuperAgent
 }
 
 func (u *uploader) sendFile(fileEntry files.TreeEntry) string {
@@ -103,12 +123,11 @@ func (u *uploader) createUploadRequest() {
 	}
 
 	var resp upload.CreateResponse
-	c := app.MCApi.MCClient()
-	s, err := c.JSON(&req).JSONPost("http://localhost:5013/upload?apikey=472abe203cd411e3a280ac162d80f1bf", &resp)
-	if err != nil {
-		fmt.Println("err =", err)
+	r, body, errs := u.client.Post(app.MCApi.APIUrl("/upload")).Send(&req).End()
+	if err := app.MCApi.APIError(r, errs); err != nil {
+		return
 	}
-	fmt.Println("s =", s)
+	app.MCApi.ToJSON(body, &resp)
 	fmt.Printf("%#v\n", resp)
 }
 

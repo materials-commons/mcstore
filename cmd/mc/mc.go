@@ -21,8 +21,15 @@ import (
 	"github.com/materials-commons/mcstore/cmd/mc/receive"
 	"github.com/materials-commons/mcstore/cmd/mc/send"
 	"github.com/materials-commons/mcstore/cmd/mc/set"
+	"github.com/materials-commons/mcstore/cmd/mc/setup"
 	"github.com/materials-commons/mcstore/cmd/mc/upload"
 )
+
+// init sets up the package by loading and configuring the config package.
+func init() {
+	handler := createHandler()
+	config.Init(handler)
+}
 
 func main() {
 	app := cli.NewApp()
@@ -42,15 +49,20 @@ func main() {
 		download.Command,
 		monitor.Command,
 		login.Command,
+		setup.Command,
 	}
 
-	setupConfig()
 	app.Run(os.Args)
 }
 
-// setupConfig sets up config for the process. It creates a cascade
-// of config handlers to search.
-func setupConfig() {
+// createHandler creates the handler for the mc package. It sets up a
+// multi handler. If the user has setup a config.json in their .materialscommons
+// directory then it will add that to the handler list.
+func createHandler() cfg.Handler {
+	handlers := []cfg.Handler{
+		handler.Env(),
+	}
+
 	u, err := user.Current()
 	if err != nil {
 		panic(fmt.Sprintf("Couldn't determine current user: %s", err))
@@ -69,8 +81,7 @@ func setupConfig() {
 	defaultHandler := handler.Map()
 	loadDefaults(defaultHandler)
 	handlers = append(handlers, defaultHandler)
-
-	config.Init(handler.Sync(handler.Multi(handlers...)))
+	return handler.Sync(handler.Multi(handlers...))
 }
 
 // getConfigLoader returns a json loader if the $HOME/.materialscommons/config.json

@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/materials-commons/config",
-	"GoVersion": "go1.2.1",
+	"GoVersion": "go1.4.2",
 	"Packages": [
 		"./..."
 	],
@@ -10,8 +10,18 @@
 			"Rev": "494b3ad22acb3467978419879b4ed227924df9cb"
 		},
 		{
+			"ImportPath": "github.com/coreos/go-etcd/etcd",
+			"Comment": "v2.0.0-7-g73a8ef7",
+			"Rev": "73a8ef737e8ea002281a28b4cb92a1de121ad4c6"
+		},
+		{
 			"ImportPath": "github.com/dmotylev/goproperties",
 			"Rev": "03c369aaf5615d405c2dd116ce138b170d5246a3"
+		},
+		{
+			"ImportPath": "github.com/hashicorp/consul/api",
+			"Comment": "v0.5.0-199-g205af6b",
+			"Rev": "205af6ba750b88863e6ee50c7c3d19edc180a6f6"
 		},
 		{
 			"ImportPath": "github.com/spf13/cast",

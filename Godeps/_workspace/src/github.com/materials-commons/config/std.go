@@ -113,11 +113,3 @@ func SetErrorHandler(f cfg.ErrorFunc) {
 func Set(key string, value interface{}, args ...interface{}) error {
 	return std.Set(key, value, args...)
 }
-
-// SetKeyPrefix sets the string to prefix keys with. This simplifies key naming
-// by allowing standard names separated only by a prefix. For example if you set
-// the prefix to "KEY_", then all your key look ups will have KEY_ appended to
-// their keyname unless it already exists.
-func SetKeyPrefix(prefix string) {
-	std.SetKeyPrefix(prefix)
-}
