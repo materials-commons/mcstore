@@ -39,6 +39,8 @@ type Uploads interface {
 // Projects is an interface describing access to projects in the system.
 type Projects interface {
 	ByID(id string) (*schema.Project, error)
+	ByName(name string, owner string) (*schema.Project, error)
+	Insert(project *schema.Project) (*schema.Project, error)
 	HasDirectory(projectID, directoryID string) bool
 	AccessList(projectID string) ([]schema.Access, error)
 }
