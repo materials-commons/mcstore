@@ -30,15 +30,6 @@ var (
 				Name:  "directory, dir, d",
 				Usage: "The base directory for the project",
 			},
-			cli.StringFlag{
-				Name:  "projectid, pid, p",
-				Usage: "The projectid on Materials Commons",
-			},
-			cli.IntFlag{
-				Name:  "parallel, n",
-				Value: 3,
-				Usage: "Number of simultaneous uploads to perform, defaults to 3",
-			},
 			cli.IntFlag{
 				Name:  "parallel, n",
 				Value: 3,
@@ -77,8 +68,7 @@ func validateArgs(c *cli.Context) error {
 	}
 	args.projectName = c.Args()[0]
 
-	args.projectID = c.String("projectid")
-	if err := validateProject(args.projectID); err != nil {
+	if err := createProject(args.projectName); err != nil {
 		return err
 	}
 
@@ -93,10 +83,8 @@ func validateArgs(c *cli.Context) error {
 }
 
 // validateProject ensures that the projectID exists and the user has access.
-func validateProject(projectID string) error {
-	if projectID == "" {
-		return fmt.Errorf("You must specify a project id from Materials Commons.")
-	}
+func createProject(projectName string) error {
+
 	return nil
 }
 
