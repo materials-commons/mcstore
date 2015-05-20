@@ -23,9 +23,6 @@ var (
 
 	// ErrCreate Create of object failed
 	ErrCreate = errors.New("unable to create")
-
-	// ErrInUse object is locked and in use by someone else
-	ErrInUse = errors.New("in use")
 )
 
 // Error holds the error code and additional messages.
