@@ -32,5 +32,5 @@ func createUploadsResource() rest.Service {
 
 // projectsResource creates a new projects resource.
 func createProjectsResource() rest.Service {
-	return newProjectsResource(newDirService(), NewProjectService())
+	return newProjectsResource(newDirService(), newProjectService())
 }

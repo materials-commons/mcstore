@@ -84,7 +84,7 @@ func (r *projectsResource) createProject(request *restful.Request, response *res
 		return nil, err
 	}
 
-	proj, existing, err := r.projectService.CreateProject(req.Name, user.ID, req.MustNotExist)
+	proj, existing, err := r.projectService.createProject(req.Name, user.ID, req.MustNotExist)
 	switch {
 	case err != nil:
 		return nil, err
