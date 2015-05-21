@@ -15,7 +15,7 @@ type apikeyFilter struct {
 	apikeys map[string]*schema.User
 }
 
-// NewAPIKeyFilter creates a new apikeyFilter instance.
+// newAPIKeyFilter creates a new apikeyFilter instance.
 func newAPIKeyFilter(users dai.Users) *apikeyFilter {
 	return &apikeyFilter{
 		users:   users,

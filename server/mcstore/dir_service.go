@@ -23,7 +23,7 @@ type dirService struct {
 	access   domain.Access
 }
 
-// NewDirService creates a new dirService. It uses db.RSessionMust() to
+// newDirService creates a new dirService. It uses db.RSessionMust() to
 // create a session for the database. It will panic if it cannot connect
 // to the database.
 func newDirService() *dirService {
@@ -37,7 +37,7 @@ func newDirService() *dirService {
 	}
 }
 
-// CreateDir will look up a given directory path for a project. If that
+// createDir will look up a given directory path for a project. If that
 // path exists it will return the directory. If the path doesn't exist
 // then it will create the directory and return it. CreateDir validates
 // the path and returns an error if the path is not valid for the project.
