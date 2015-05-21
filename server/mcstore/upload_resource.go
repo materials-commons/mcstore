@@ -154,7 +154,7 @@ func (r *uploadResource) getDirectoryID(req CreateRequest) (directoryID string, 
 	case req.DirectoryID != "":
 		return req.DirectoryID, nil
 	default:
-		dir, err := r.dirService.CreateDir(req.ProjectID, req.DirectoryPath)
+		dir, err := r.dirService.createDir(req.ProjectID, req.DirectoryPath)
 		if err != nil {
 			app.Log.Debugf("CreateDir %s %s failed: %s", req.ProjectID, req.DirectoryPath, err)
 			return "", err

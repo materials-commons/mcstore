@@ -13,7 +13,7 @@ import (
 func NewServicesContainer() *restful.Container {
 	container := restful.NewContainer()
 
-	apikeyFilter := NewAPIKeyFilter(dai.NewRUsers(db.RSessionMust()))
+	apikeyFilter := newAPIKeyFilter(dai.NewRUsers(db.RSessionMust()))
 	container.Filter(apikeyFilter.Filter)
 
 	uploadResource := createUploadsResource()
@@ -27,10 +27,10 @@ func NewServicesContainer() *restful.Container {
 
 // uploadResource creates a new upload resource.
 func createUploadsResource() rest.Service {
-	return newUploadResource(uploads.NewUploadService(), uploads.NewIDService(), NewDirService())
+	return newUploadResource(uploads.NewUploadService(), uploads.NewIDService(), newDirService())
 }
 
 // projectsResource creates a new projects resource.
 func createProjectsResource() rest.Service {
-	return newProjectsResource(NewDirService(), NewProjectService())
+	return newProjectsResource(newDirService(), NewProjectService())
 }

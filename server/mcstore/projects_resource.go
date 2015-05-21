@@ -107,7 +107,7 @@ func (r *projectsResource) getDirectory(request *restful.Request, response *rest
 		return nil, err
 	}
 
-	dir, err := r.dirService.CreateDir(req.ProjectID, req.Path)
+	dir, err := r.dirService.createDir(req.ProjectID, req.Path)
 	switch {
 	case err != nil:
 		return nil, err
