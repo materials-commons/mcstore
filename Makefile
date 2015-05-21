@@ -20,4 +20,4 @@ libs:
 	-godep go install ./...
 
 deploy: server
-	-cp server/mcstored/mcstored $$GOPATH/bin
+	-cp server/mcstore/main/mcstored $$GOPATH/bin
