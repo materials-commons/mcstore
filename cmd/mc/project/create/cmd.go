@@ -159,9 +159,9 @@ type indexer struct {
 // processes done channel events by exiting the go routine.
 func indexEntries(proj *project.MCProject, done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 	i := &indexer{
-		client: gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
-		proj:   proj.Clone(),
-		dirs:   make(map[string]*project.Directory),
+		client:   gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
+		proj:     proj.Clone(),
+		dirs:     make(map[string]*project.Directory),
 		ezclient: ezhttp.NewSSLClient(),
 	}
 	for entry := range entries {
