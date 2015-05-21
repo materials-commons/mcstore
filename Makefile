@@ -5,7 +5,7 @@ all: fmt bin
 bin: server cli
 
 server:
-	(cd ./server/mcstored; godep go build mcstored.go)
+	(cd ./server/mcstore/main; godep go build mcstored.go)
 
 cli:
 	(cd ./cmd/mc; godep go build mc.go)
