@@ -141,7 +141,7 @@ func fileChanged(oinfo, ninfo file.ExFileInfo) bool {
 
 func (u *uploader) createUploadRequest() {
 	fmt.Println("createUploadRequest")
-	req := mcstore.CreateRequest{
+	req := mcstore.CreateUploadRequest{
 		ProjectID:   "9ead5bbf-f7eb-4010-bc1f-e4a063f56226",
 		DirectoryID: "c54a77d6-cd6d-4cd1-8f19-44facc761da6",
 		FileName:    "abc.txt",
@@ -149,7 +149,7 @@ func (u *uploader) createUploadRequest() {
 		FileMTime:   "Thu, 30 Apr 2015 13:10:04 EST",
 	}
 
-	var resp mcstore.CreateResponse
+	var resp mcstore.CreateUploadResponse
 	fmt.Println("url =", app.MCApi.APIUrl("/upload"))
 	r, body, errs := u.client.Post(app.MCApi.APIUrl("/upload")).Send(req).End()
 	if err := app.MCApi.APIError(r, errs); err != nil {

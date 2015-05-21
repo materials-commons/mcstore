@@ -17,32 +17,32 @@ type projectsResource struct {
 
 //////////////////////// Request/Response Definitions /////////////////////
 
-// createProjectRequest requests that a project be created. If MustNotExist
+// CreateProjectRequest requests that a project be created. If MustNotExist
 // is true, then the given project must not already exist. Existence is
 // determined by the project name for that user.
-type createProjectRequest struct {
+type CreateProjectRequest struct {
 	Name         string `json:"name"`
 	MustNotExist bool   `json:"must_not_exist"`
 }
 
-// createProjectResponse returns the created project. If the project was an
+// CreateProjectResponse returns the created project. If the project was an
 // existing project and no new project was created then the Existing flag
 // will be set to false.
-type createProjectResponse struct {
+type CreateProjectResponse struct {
 	ProjectID string `json:"project_id"`
 	Existing  bool   `json:"existing"`
 }
 
-// getDirectoryRequest is a request to get a directory for a project. The
+// GetDirectoryRequest is a request to get a directory for a project. The
 // directory lookup is by path within the context of the given project.
-type getDirectoryRequest struct {
+type GetDirectoryRequest struct {
 	Path      string
 	ProjectID string
 }
 
-// getDirectoryResponse returns the directory id for a directory
+// GetDirectoryResponse returns the directory id for a directory
 // path for a given project.
-type getDirectoryResponse struct {
+type GetDirectoryResponse struct {
 	DirectoryID string `json:"directory_id"`
 	Path        string `json:"path"`
 }
@@ -64,13 +64,13 @@ func (r *projectsResource) WebService() *restful.WebService {
 
 	ws.Route(ws.POST("").To(rest.RouteHandler(r.createProject)).
 		Doc("Creates a new project for user. If project exists it returns the existing project.").
-		Reads(createProjectRequest{}).
-		Writes(createProjectResponse{}))
+		Reads(CreateProjectRequest{}).
+		Writes(CreateProjectResponse{}))
 
 	ws.Route(ws.POST("directory").To(rest.RouteHandler(r.getDirectory)).
 		Doc("Gets or creates a directory by its directory path").
-		Reads(getDirectoryRequest{}).
-		Writes(getDirectoryResponse{}))
+		Reads(GetDirectoryRequest{}).
+		Writes(GetDirectoryResponse{}))
 
 	return ws
 }
@@ -78,7 +78,7 @@ func (r *projectsResource) WebService() *restful.WebService {
 // createProject services the create project request. It will ensure that the user
 // doesn't have a project matching the given project name.
 func (r *projectsResource) createProject(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	var req createProjectRequest
+	var req CreateProjectRequest
 	if err := request.ReadEntity(&req); err != nil {
 		app.Log.Debugf("createProject ReadEntity failed: %s", err)
 		return nil, err
@@ -89,7 +89,7 @@ func (r *projectsResource) createProject(request *restful.Request, response *res
 	case err != nil:
 		return nil, err
 	default:
-		resp := &createProjectResponse{
+		resp := &CreateProjectResponse{
 			ProjectID: proj.ID,
 			Existing:  existing,
 		}
@@ -101,7 +101,7 @@ func (r *projectsResource) createProject(request *restful.Request, response *res
 // by their path relative to the project. The getDirectory service will create a directory
 // that doesn't exist.
 func (r *projectsResource) getDirectory(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	var req getDirectoryRequest
+	var req GetDirectoryRequest
 	if err := request.ReadEntity(&req); err != nil {
 		app.Log.Debugf("getDirectory ReadEntity failed: %s", err)
 		return nil, err
@@ -112,7 +112,7 @@ func (r *projectsResource) getDirectory(request *restful.Request, response *rest
 	case err != nil:
 		return nil, err
 	default:
-		resp := &getDirectoryResponse{
+		resp := &GetDirectoryResponse{
 			DirectoryID: dir.ID,
 			Path:        req.Path,
 		}

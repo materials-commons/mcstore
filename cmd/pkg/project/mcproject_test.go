@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/stretchr/testify/require"
 )
 
@@ -62,6 +63,16 @@ func TestInsertDir(t *testing.T) {
 	require.Equal(t, "abc123", dirs[0].DirectoryID, "Got wrong directory id: %s", dirs[0].DirectoryID)
 	require.True(t, dir.ID == dirs[0].ID, "Got unexpected id: %d", dirs[0].ID)
 	require.True(t, dir.LastUpload == now, "Got unexpected last upload. Expected %#v, got %#v", dir.LastUpload, now)
+}
+
+func TestFindDirectoryByPath(t *testing.T) {
+	dir, err := mcproject.FindDirectoryByPath("/tmp/dir")
+	require.Nil(t, err, "lookup failed %s", err)
+	require.NotNil(t, dir, "Lookup failed for directory")
+	require.Equal(t, "abc123", dir.DirectoryID, "Got wrong directory id %s", dir.DirectoryID)
+
+	dir, err = mcproject.FindDirectoryByPath("/does/not/exist")
+	require.Equal(t, err, app.ErrNotFound, "Got wrong error: %s", err)
 }
 
 func TestInsertFile(t *testing.T) {

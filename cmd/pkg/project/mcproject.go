@@ -1,6 +1,7 @@
 package project
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +17,18 @@ type MCProject struct {
 	ID  string
 	Dir string
 	db  *sqlx.DB
+}
+
+// Clone will create a new instance of MCProject from and existing one. This can
+// be used to create separate MCProjects for different go routines.
+func (p *MCProject) Clone() *MCProject {
+	mcprojectDir := filepath.Join(p.Dir, ".mcproject")
+	db, _ := openDB(mcprojectDir, true)
+	return &MCProject{
+		ID:  p.ID,
+		Dir: p.Dir,
+		db:  db,
+	}
 }
 
 // Find will attempt to locate the project that a directory is in. It does
@@ -126,6 +139,22 @@ func (p *MCProject) InsertDirectory(dir *Directory) (*Directory, error) {
 	}
 	dir.ID, _ = res.LastInsertId()
 	return dir, nil
+}
+
+// FindDirectoryByPath looks up a directory by its path.
+func (p *MCProject) FindDirectoryByPath(path string) (*Directory, error) {
+	query := `select * from directories where path = $1`
+	var dir Directory
+
+	err := p.db.Get(&dir, query, path)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, app.ErrNotFound
+	case err != nil:
+		return nil, err
+	default:
+		return &dir, nil
+	}
 }
 
 // InsertFile will insert a new file entry into the project database.

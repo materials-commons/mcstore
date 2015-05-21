@@ -5,19 +5,35 @@ import (
 	"fmt"
 	"os"
 
+	"strings"
+
+	"path/filepath"
+
+	"io"
+
+	"time"
+
 	"github.com/codegangsta/cli"
+	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/cmd/pkg/opts"
 	"github.com/materials-commons/mcstore/cmd/pkg/project"
+	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/files"
+	"github.com/materials-commons/mcstore/server/mcstore"
 	"github.com/parnurzeal/gorequest"
 )
 
+// createCommandArgs holds values that won't change and are
+// needed during the upload process.
 type createCommandArgs struct {
 	projectName   string
 	projectID     string
 	directoryPath string
 	n             int
 }
+
+const twoMeg = 1024 * 1024 * 2
 
 var (
 	// Command contains the arguments and function for the cli project create command.
@@ -39,6 +55,8 @@ var (
 		Action: createCLI,
 	}
 
+	// args contains global values, including arguments from the cli
+	// that are needed to create and upload a project.
 	args createCommandArgs
 )
 
@@ -82,9 +100,21 @@ func validateArgs(c *cli.Context) error {
 	return nil
 }
 
-// validateProject ensures that the projectID exists and the user has access.
+// createProject creates the new project for the user.
 func createProject(projectName string) error {
+	req := mcstore.CreateProjectRequest{
+		Name:         projectName,
+		MustNotExist: true,
+	}
 
+	var resp mcstore.CreateProjectResponse
+	client := gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	if err := sendRequest(client, "/projects", req, &resp); err != nil {
+		fmt.Println("Unable to create project:", err)
+		return err
+	}
+
+	args.projectID = resp.ProjectID
 	return nil
 }
 
@@ -115,24 +145,147 @@ func indexProject(path string, proj *project.MCProject) error {
 	return nil
 }
 
+// indexer holds state information for the different go routines used when
+// indexing a project. It also caches directories so that the database
+// isn't being hammered looking for directory entries.
+type indexer struct {
+	client   *gorequest.SuperAgent
+	dirs     map[string]*project.Directory
+	proj     *project.MCProject
+	ezclient *ezhttp.EzClient
+}
+
 // indexEntries processes the entries sent along the entries channel. It also
 // processes done channel events by exiting the go routine.
 func indexEntries(proj *project.MCProject, done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
-	client := gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	i := &indexer{
+		client: gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
+		proj:   proj.Clone(),
+		dirs:   make(map[string]*project.Directory),
+		ezclient: ezhttp.NewSSLClient(),
+	}
 	for entry := range entries {
 		select {
-		case result <- indexEntry(proj, entry, client):
+		case result <- i.indexEntry(entry):
 		case <-done:
 			return
 		}
 	}
 }
 
-func indexEntry(proj *project.MCProject, entry files.TreeEntry, client *gorequest.SuperAgent) string {
+// indexEntry indexes a tree entry. It handles indexing directories and and files.
+func (i *indexer) indexEntry(entry files.TreeEntry) string {
 	switch {
 	case entry.Finfo.IsDir():
-
+		i.indexDirectory(entry)
 	default:
+		i.indexFile(entry)
 	}
 	return ""
+}
+
+// indexDirectory indexes a directory. It creates a new directory on the server and saves
+// the directory in the database. It also caches the directory entry to be used when indexing
+// the files in a directory.
+func (i *indexer) indexDirectory(entry files.TreeEntry) error {
+	req := mcstore.GetDirectoryRequest{
+		Path:      toProjectPath(entry.Path),
+		ProjectID: args.projectID,
+	}
+	var resp mcstore.GetDirectoryResponse
+	if err := sendRequest(i.client, "", req, &resp); err != nil {
+		return err
+	}
+	dir := &project.Directory{
+		DirectoryID: resp.DirectoryID,
+		Path:        entry.Path,
+	}
+	dir, _ = i.proj.InsertDirectory(dir)
+	i.dirs[entry.Path] = dir
+	return nil
+}
+
+func (i *indexer) indexFile(entry files.TreeEntry) error {
+	dir := i.findFileDirectory(entry)
+	uploadRequest, _ := i.createUploadRequest(entry, dir)
+
+	var n int
+	var err error
+	chunkNumber := 1
+
+	f, _ := os.Open(entry.Path)
+	defer f.Close()
+	buf := make([]byte, twoMeg)
+	for {
+		n, err = f.Read(buf)
+		if n != 0 {
+			// send bytes
+			req := &flow.Request{
+				FlowChunkNumber:  int32(chunkNumber),
+				FlowTotalChunks:  0,
+				FlowChunkSize:    int32(n),
+				FlowTotalSize:    entry.Finfo.Size(),
+				FlowIdentifier:   uploadRequest,
+				FlowFileName:     entry.Finfo.Name(),
+				FlowRelativePath: "",
+				ProjectID:        args.projectID,
+				DirectoryID:      dir.DirectoryID,
+			}
+			params := req.ToMultipartParams()
+			i.ezclient.PostFileBytes(app.MCApi.APIUrl("/chunk"), entry.Finfo.Name(), "chunkData", buf[:n], params)
+		}
+		if err != nil {
+			break
+		}
+	}
+
+	if err != nil && err != io.EOF {
+		// do something
+	}
+	return nil
+}
+
+func (i *indexer) findFileDirectory(entry files.TreeEntry) *project.Directory {
+	dirpath := filepath.Dir(entry.Path)
+	if dir, found := i.dirs[dirpath]; found {
+		return dir
+	}
+
+	// The directory is not in our cache, so go to database to get it.
+	dir, _ := i.proj.FindDirectoryByPath(dirpath)
+	i.dirs[dirpath] = dir
+	return dir
+}
+
+func (i *indexer) createUploadRequest(entry files.TreeEntry, dir *project.Directory) (string, error) {
+	req := mcstore.CreateUploadRequest{
+		ProjectID:     args.projectID,
+		DirectoryID:   dir.DirectoryID,
+		DirectoryPath: dir.Path,
+		FileName:      entry.Finfo.Name(),
+		FileSize:      entry.Finfo.Size(),
+		FileMTime:     entry.Finfo.ModTime().Format(time.RFC1123),
+	}
+	var resp mcstore.CreateUploadResponse
+	if err := sendRequest(i.client, "/upload", req, &resp); err != nil {
+		return "", err
+	}
+
+	return resp.RequestID, nil
+}
+
+func toProjectPath(dirpath string) string {
+	i := strings.Index(dirpath, args.projectName)
+	return dirpath[i:]
+}
+
+func sendRequest(client *gorequest.SuperAgent, path string, req interface{}, resp interface{}) error {
+	r, body, errs := client.Post(app.MCApi.APIUrl(path)).Send(req).End()
+	if err := app.MCApi.APIError(r, errs); err != nil {
+		fmt.Println("Unable to create project:", err)
+		return err
+	}
+
+	app.MCApi.ToJSON(body, resp)
+	return nil
 }

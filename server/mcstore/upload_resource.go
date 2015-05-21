@@ -47,8 +47,8 @@ func (r *uploadResource) WebService() *restful.WebService {
 
 	ws.Route(ws.POST("").To(rest.RouteHandler(r.createUploadRequest)).
 		Doc("Creates a new upload request").
-		Reads(CreateRequest{}).
-		Writes(CreateResponse{}))
+		Reads(CreateUploadRequest{}).
+		Writes(CreateUploadResponse{}))
 
 	ws.Route(ws.POST("/chunk").To(rest.RouteHandler1(r.uploadFileChunk)).
 		Consumes("multipart/form-data").
@@ -68,7 +68,7 @@ func (r *uploadResource) WebService() *restful.WebService {
 
 // CreateRequest describes the JSON request a client will send
 // to create a new upload request.
-type CreateRequest struct {
+type CreateUploadRequest struct {
 	ProjectID     string `json:"project_id"`
 	DirectoryID   string `json:"directory_id"`
 	DirectoryPath string `json:"directory_path"`
@@ -79,7 +79,7 @@ type CreateRequest struct {
 
 // uploadCreateResponse is the format of JSON sent back containing
 // the upload request ID.
-type CreateResponse struct {
+type CreateUploadResponse struct {
 	RequestID string `json:"request_id"`
 }
 
@@ -97,7 +97,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		return nil, err
 	}
 
-	resp := CreateResponse{
+	resp := CreateUploadResponse{
 		RequestID: upload.ID,
 	}
 	return &resp, nil
@@ -105,7 +105,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 
 // makeIDRequest fills out an id request to send to the idService. It handles request parameter errors.
 func (r *uploadResource) makeIDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
-	var req CreateRequest
+	var req CreateUploadRequest
 	var cr uploads.IDRequest
 
 	if err := request.ReadEntity(&req); err != nil {
@@ -146,7 +146,7 @@ func (r *uploadResource) makeIDRequest(request *restful.Request, userID string) 
 // or a directory path. If a directory path is passed in, then the method will
 // get the directoryID associated with that path in the project. If the path
 // doesn't exist it will create it.
-func (r *uploadResource) getDirectoryID(req CreateRequest) (directoryID string, err error) {
+func (r *uploadResource) getDirectoryID(req CreateUploadRequest) (directoryID string, err error) {
 	switch {
 	case req.DirectoryID == "" && req.DirectoryPath == "":
 		app.Log.Debugf("No directoryID or directoryPath specified")
