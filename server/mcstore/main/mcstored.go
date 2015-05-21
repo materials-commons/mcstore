@@ -13,8 +13,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/domain"
-	"github.com/materials-commons/mcstore/server/mcstored/service/rest"
-	"github.com/materials-commons/mcstore/server/mcstored/service/web/content"
+	"github.com/materials-commons/mcstore/server/mcstore"
 )
 
 // Options for server startup
@@ -90,12 +89,12 @@ func setupConfig(opts options) {
 // server implements the actual serve for mcstored. It sets up the http routes and handlers. This
 // method never returns.
 func server(port uint) {
-	container := rest.NewServicesContainer()
+	container := mcstore.NewServicesContainer()
 	http.Handle("/", container)
 
 	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
-	dataHandler := content.NewDataHandler(access)
+	dataHandler := mcstore.NewDataHandler(access)
 	http.Handle("/datafiles/static/", dataHandler)
 
 	app.Log.Crit("http Server failed", "error", http.ListenAndServe(fmt.Sprintf(":%d", port), nil))

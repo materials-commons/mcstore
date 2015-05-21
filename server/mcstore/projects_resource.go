@@ -1,19 +1,18 @@
-package projects
+package mcstore
 
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
-	"github.com/materials-commons/mcstore/server/mcstored/service/data"
 )
 
 // An projectsResource holds the state and services needed for the
 // projects REST resource.
 type projectsResource struct {
 	log            *app.Logger
-	dirService     data.DirService
-	projectService data.ProjectService
+	dirService     DirService
+	projectService ProjectService
 }
 
 //////////////////////// Request/Response Definitions /////////////////////
@@ -48,8 +47,8 @@ type getDirectoryResponse struct {
 	Path        string `json:"path"`
 }
 
-// NewResource creates a new projects resource.
-func NewResource(dirService data.DirService, projectService data.ProjectService) *projectsResource {
+// newProjectsResource creates a new projects resource.
+func newProjectsResource(dirService DirService, projectService ProjectService) *projectsResource {
 	return &projectsResource{
 		log:            app.NewLog("resource", "projects"),
 		dirService:     dirService,

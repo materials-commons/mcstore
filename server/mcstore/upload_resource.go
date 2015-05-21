@@ -1,4 +1,4 @@
-package upload
+package mcstore
 
 import (
 	"time"
@@ -7,8 +7,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
-	"github.com/materials-commons/mcstore/server/mcstored/service/data"
-	"github.com/materials-commons/mcstore/server/mcstored/service/uploads"
+	"github.com/materials-commons/mcstore/server/mcstore/uploads"
 )
 
 // An uploadResource handles all upload requests.
@@ -16,7 +15,7 @@ type uploadResource struct {
 	log           *app.Logger
 	idService     uploads.IDService
 	uploadService uploads.UploadService
-	dirService    data.DirService
+	dirService    DirService
 }
 
 // UploadEntry is a client side representation of an upload.
@@ -30,8 +29,8 @@ type UploadEntry struct {
 	Birthtime   time.Time `json:"birthtime"`
 }
 
-// NewResource creates a new upload resource
-func NewResource(uploadService uploads.UploadService, idService uploads.IDService, dirService data.DirService) rest.Service {
+// newUploadResource creates a new upload resource
+func newUploadResource(uploadService uploads.UploadService, idService uploads.IDService, dirService DirService) rest.Service {
 	return &uploadResource{
 		log:           app.NewLog("resource", "upload"),
 		idService:     idService,

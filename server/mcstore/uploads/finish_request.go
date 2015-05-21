@@ -9,7 +9,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/files"
-	"github.com/materials-commons/mcstore/server/mcstored/service/uploads/processor"
+	"github.com/materials-commons/mcstore/server/mcstore/uploads/processor"
 )
 
 // A finisher finishes the rest of the book keeping

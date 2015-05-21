@@ -1,4 +1,4 @@
-package data
+package mcstore
 
 import (
 	"path/filepath"

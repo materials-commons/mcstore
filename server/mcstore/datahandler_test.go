@@ -1,4 +1,4 @@
-package content
+package mcstore
 
 import (
 	"net/http"

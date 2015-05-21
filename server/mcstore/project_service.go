@@ -1,4 +1,4 @@
-package data
+package mcstore
 
 import (
 	"github.com/materials-commons/mcstore/pkg/app"
