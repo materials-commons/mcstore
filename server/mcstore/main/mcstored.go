@@ -65,17 +65,9 @@ func main() {
 
 // setupConfig sets up configuration overrides that were passed in on the command line.
 func setupConfig(opts options) {
-	if opts.Database.Connection != "" {
-		config.Set("MCDB_CONNECTION", opts.Database.Connection)
-	}
-
-	if opts.Database.Name != "" {
-		config.Set("MCDB_NAME", opts.Database.Name)
-	}
-
-	if opts.Server.MCDir != "" {
-		config.Set("MCDIR", opts.Server.MCDir)
-	}
+	configSetNotEmpty("MCDB_CONNECTION", opts.Database.Connection)
+	configSetNotEmpty("MCDB_NAME", opts.Database.Name)
+	configSetNotEmpty("MCDIR", opts.Server.MCDir)
 
 	if lvl, err := log15.LvlFromString(opts.Server.LogLevel); err != nil {
 		fmt.Printf("Invalid Log Level: %s, setting to info\n", opts.Server.LogLevel)
@@ -83,6 +75,13 @@ func setupConfig(opts options) {
 	} else {
 		fmt.Println("Log level set to:", opts.Server.LogLevel)
 		app.SetLogLvl(lvl)
+	}
+}
+
+// configSetNotEmpty sets key if to value only if value isn't equal to the empty string.
+func configSetNotEmpty(key, value string) {
+	if value != "" {
+		config.Set(key, value)
 	}
 }
 
