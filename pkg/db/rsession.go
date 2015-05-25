@@ -24,7 +24,7 @@ func RSessionMust() *r.Session {
 	return session
 }
 
-// RSessionUsing createa new RethinkDB session using the passed in parameters
+// RSessionUsing create a new RethinkDB session using the passed in parameters
 func RSessionUsing(address, db string) (*r.Session, error) {
 	return r.Connect(
 		r.ConnectOpts{
