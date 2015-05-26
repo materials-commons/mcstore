@@ -15,7 +15,6 @@ type Processor interface {
 // use to handle this file. By default it returns a processor that does
 // nothing to the file.
 func New(fileID string, mediatype schema.MediaType) Processor {
-
 	switch mediatype.Mime {
 	case "image/tiff":
 		return newImageFileProcessor(fileID)
