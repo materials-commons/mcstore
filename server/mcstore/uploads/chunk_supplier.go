@@ -16,6 +16,7 @@ type chunk interface {
 // A chunkSupplier supplies a list of chunks. Its useful for implementing
 // different ways to get a list of chunks.
 type chunkSupplier interface {
+	// chunks must return its list of chunks in sorted order.
 	chunks() ([]chunk, error)
 }
 
