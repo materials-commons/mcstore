@@ -188,7 +188,7 @@ func (r *uploadResource) deleteUploadRequest(request *restful.Request, response 
 // has access to the project.
 func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	projectID := request.PathParameter("project")
-	entries, err := r.idService.ListForProject(projectID, user.ID)
+	entries, err := r.idService.UploadsForProject(projectID, user.ID)
 	if err != nil {
 		return nil, err
 	}

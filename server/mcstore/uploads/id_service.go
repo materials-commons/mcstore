@@ -28,7 +28,7 @@ type IDRequest struct {
 type IDService interface {
 	ID(req IDRequest) (*schema.Upload, error)
 	Delete(requestID, user string) error
-	ListForProject(projectID, user string) ([]schema.Upload, error)
+	UploadsForProject(projectID, user string) ([]schema.Upload, error)
 }
 
 // idService implements the IDService interface using
@@ -142,7 +142,7 @@ func (s *idService) Delete(requestID, user string) error {
 }
 
 // ListForProject will return all the uploads associated with a project.
-func (s *idService) ListForProject(projectID, user string) ([]schema.Upload, error) {
+func (s *idService) UploadsForProject(projectID, user string) ([]schema.Upload, error) {
 	// getProj will validate the project and access.
 	_, err := s.getProj(projectID, user)
 	if err != nil {
