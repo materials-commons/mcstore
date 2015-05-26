@@ -232,7 +232,10 @@ func (i *indexer) indexFile(entry files.TreeEntry) error {
 				DirectoryID:      dir.DirectoryID,
 			}
 			params := req.ToMultipartParams()
-			i.ezclient.PostFileBytes(app.MCApi.APIUrl("/chunk"), entry.Finfo.Name(), "chunkData", buf[:n], params)
+			s, perr := i.ezclient.PostFileBytes(app.MCApi.APIUrl("/chunk"), entry.Finfo.Name(), "chunkData", buf[:n], params)
+			if perr != nil {
+				app.Log.Errorf("Posting file chunks failed: %d/%s", s, perr)
+			}
 		}
 		if err != nil {
 			break
