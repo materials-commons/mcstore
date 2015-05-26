@@ -28,17 +28,18 @@ var _ = Describe("IDService", func() {
 		if upload != nil {
 			err := uploads.Delete(upload.ID)
 			Expect(err).To(BeNil())
+			upload = nil
 		}
 	})
 
 	Describe("ID", func() {
 		Describe("Access permissions", func() {
 			var (
-				cf IDRequest
+				req IDRequest
 			)
 
 			BeforeEach(func() {
-				cf = IDRequest{
+				req = IDRequest{
 					ProjectID:   "test",
 					DirectoryID: "test",
 					Host:        "host",
@@ -47,15 +48,15 @@ var _ = Describe("IDService", func() {
 
 			Context("Access allowed", func() {
 				It("Should allow access admin user", func() {
-					cf.User = "admin@mc.org"
-					upload, err := s.ID(cf)
+					req.User = "admin@mc.org"
+					upload, err := s.ID(req)
 					Expect(err).To(BeNil(), "Unexpected error: %s", err)
 					Expect(upload).NotTo(BeNil(), "upload is nil")
 				})
 
 				It("Should allow access to user in project", func() {
-					cf.User = "test1@mc.org"
-					upload, err := s.ID(cf)
+					req.User = "test1@mc.org"
+					upload, err := s.ID(req)
 					Expect(err).To(BeNil(), "Unexpected error: %s", err)
 					Expect(upload).NotTo(BeNil())
 				})
@@ -63,8 +64,8 @@ var _ = Describe("IDService", func() {
 
 			Context("Access not allowed", func() {
 				It("Should not allow access for users not in project", func() {
-					cf.User = "test2@mc.org"
-					upload, err := s.ID(cf)
+					req.User = "test2@mc.org"
+					upload, err := s.ID(req)
 					Expect(err).NotTo(BeNil())
 					Expect(err).To(Equal(app.ErrNoAccess))
 					Expect(upload).To(BeNil())
@@ -73,9 +74,9 @@ var _ = Describe("IDService", func() {
 
 			Context("Invalid user", func() {
 				It("Should not allow access for non existent directory", func() {
-					cf.User = "test@mc.org" // valid user
-					cf.DirectoryID = "test@mc.org"
-					upload, err := s.ID(cf)
+					req.User = "test@mc.org" // valid user
+					req.DirectoryID = "test@mc.org"
+					upload, err := s.ID(req)
 					Expect(err).NotTo(BeNil())
 					Expect(upload).To(BeNil())
 				})
@@ -115,6 +116,85 @@ var _ = Describe("IDService", func() {
 					Expect(upload).To(BeNil())
 				})
 			})
+		})
+	})
+
+	Describe("Delete", func() {
+		Context("Access Permissions", func() {
+			var (
+				req IDRequest
+				u   *schema.Upload
+			)
+
+			BeforeEach(func() {
+				req = IDRequest{
+					ProjectID:   "test",
+					DirectoryID: "test",
+					Host:        "host",
+					User:        "test@mc.org",
+				}
+
+				u, _ = s.ID(req)
+			})
+
+			AfterEach(func() {
+				if u != nil {
+					s.Delete(u.ID, req.User)
+					u = nil
+				}
+			})
+
+			It("Should fail on user not in project", func() {
+				err := s.Delete(u.ID, "test2@mc.org")
+				Expect(err).NotTo(BeNil())
+				Expect(err).To(Equal(app.ErrNoAccess))
+			})
+
+			It("Should succeed on user in project", func() {
+				err := s.Delete(u.ID, "test@mc.org")
+				Expect(err).To(BeNil(), "Unexpected error: %s", err)
+			})
+
+			It("Should succeed on admin user", func() {
+				err := s.Delete(u.ID, "admin@mc.org")
+				Expect(err).To(BeNil(), "Unexpected error: %s", err)
+			})
+
+			It("Should fail on non-existant user", func() {
+				err := s.Delete(u.ID, "no-such-user@doesnot.exist.com")
+				Expect(err).NotTo(BeNil())
+				Expect(err).To(Equal(app.ErrNoAccess))
+			})
+		})
+
+		Context("request ID", func() {
+			It("Should fail on bad id", func() {
+				err := s.Delete("no-such-id", "admin@mc.org")
+				Expect(err).NotTo(BeNil())
+				Expect(err).To(Equal(app.ErrNotFound))
+			})
+
+			It("Should succeed on good id", func() {
+				req := IDRequest{
+					ProjectID:   "test",
+					DirectoryID: "test",
+					Host:        "host",
+					User:        "admin@mc.org",
+				}
+
+				upload, err := s.ID(req)
+				Expect(err).To(BeNil(), "Unexpected error: %s", err)
+				Expect(upload).NotTo(BeNil())
+
+				err = s.Delete(upload.ID, "admin@mc.org")
+				Expect(err).To(BeNil(), "Unexpected error: %s", err)
+			})
+		})
+	})
+
+	PDescribe("ListForProject", func() {
+		PContext("Access Permissions", func() {
+
 		})
 	})
 })
