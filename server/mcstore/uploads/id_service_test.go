@@ -192,9 +192,71 @@ var _ = Describe("IDService", func() {
 		})
 	})
 
-	PDescribe("ListForProject", func() {
-		PContext("Access Permissions", func() {
+	Describe("UploadsForProject", func() {
+		var (
+			req IDRequest
+			u   *schema.Upload
+		)
 
+		BeforeEach(func() {
+			req = IDRequest{
+				ProjectID:   "test",
+				DirectoryID: "test",
+				Host:        "host",
+				User:        "test@mc.org",
+			}
+
+			u, _ = s.ID(req)
+		})
+
+		AfterEach(func() {
+			if u != nil {
+				s.Delete(u.ID, req.User)
+				u = nil
+			}
+		})
+
+		Context("Access Permissions", func() {
+			It("Should fail on user not in project", func() {
+				uploads, err := s.UploadsForProject("test", "test2@mc.org")
+				Expect(err).NotTo(BeNil())
+				Expect(err).To(Equal(app.ErrNoAccess))
+				Expect(uploads).To(BeNil())
+			})
+
+			It("Should succeed on user in project", func() {
+				uploads, err := s.UploadsForProject("test", "test@mc.org")
+				Expect(err).To(BeNil(), "Unexpected error: %s", err)
+				Expect(len(uploads)).To(BeNumerically(">", 0))
+			})
+
+			It("Should succeed on admin user", func() {
+				uploads, err := s.UploadsForProject("test", "admin@mc.org")
+				Expect(err).To(BeNil(), "Unexpected error: %s", err)
+				Expect(len(uploads)).To(BeNumerically(">", 0))
+			})
+
+			It("Should fail on non-existent user", func() {
+				uploads, err := s.UploadsForProject("test", "no-such-user@doesnot.exist.com")
+				Expect(err).NotTo(BeNil())
+				Expect(err).To(Equal(app.ErrNoAccess))
+				Expect(uploads).To(BeNil())
+			})
+		})
+
+		Context("Project", func() {
+			It("Should fail on bad project", func() {
+				uploads, err := s.UploadsForProject("no-such-project", "test@mc.org")
+				Expect(err).NotTo(BeNil())
+				Expect(err).To(Equal(app.ErrNotFound))
+				Expect(uploads).To(BeNil())
+			})
+
+			It("Should succeed on good project", func() {
+				uploads, err := s.UploadsForProject("test", "test@mc.org")
+				Expect(err).To(BeNil(), "Unexpected error: %s", err)
+				Expect(len(uploads)).To(BeNumerically(">", 0))
+			})
 		})
 	})
 })
