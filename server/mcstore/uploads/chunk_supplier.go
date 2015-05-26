@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 )
 
 // A chunk contains a piece of the data to assemble.
@@ -44,7 +43,9 @@ func newDirChunkSupplier(dir string) *dirChunkSupplier {
 	}
 }
 
-// chunks returns a list of the files in a given directory as a set of chunks.
+// chunks returns a list of the files in a given directory as a set of chunks. Chunks are
+// returned in sorted order (ioutil.ReadDir will return the directory contents in sorted
+// order).
 func (s *dirChunkSupplier) chunks() ([]chunk, error) {
 	finfos, err := ioutil.ReadDir(s.dir)
 	if err != nil {
@@ -65,16 +66,4 @@ func (s *dirChunkSupplier) chunks() ([]chunk, error) {
 		}
 	}
 	return dirChunks, err
-}
-
-// byChunk provides sorting on chunk files. Chunk file names are numeric since
-// chunks are numeric in ascending order.
-type byChunk []chunk
-
-func (l byChunk) Len() int      { return len(l) }
-func (l byChunk) Swap(i, j int) { l[i], l[j] = l[j], l[i] }
-func (l byChunk) Less(i, j int) bool {
-	iName, _ := strconv.Atoi(l[i].Name())
-	jName, _ := strconv.Atoi(l[j].Name())
-	return iName < jName
 }
