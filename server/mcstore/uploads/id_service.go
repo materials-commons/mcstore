@@ -126,36 +126,18 @@ func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directo
 // they don't own the request.
 func (s *idService) Delete(requestID, user string) error {
 	upload, err := s.uploads.ByID(requestID)
-	if err != nil {
-		return err
-	}
-
-	if !s.canDelete(upload, user) {
-		return app.ErrNoAccess
-	}
-
-	if err := s.uploads.Delete(requestID); err != nil {
-		return err
-	}
-
-	// Delete the directory where chunks were being written
-	os.RemoveAll(app.MCDir.UploadDir(requestID))
-	return nil
-}
-
-// canDelete checks if the user is allowed to delete an upload request.
-// The request owner can always delete their own request. Additionally
-// project owners can delete any upload request.
-func (s *idService) canDelete(upload *schema.Upload, user string) bool {
 	switch {
-	case upload.Owner == user:
-		return true
-
-	case upload.ProjectOwner == user:
-		return true
-
+	case err != nil:
+		return err
+	case !s.access.AllowedByOwner(upload.ProjectID, user):
+		return app.ErrNoAccess
 	default:
-		return false
+		if err := s.uploads.Delete(requestID); err != nil {
+			return err
+		}
+		// Delete the directory where chunks were being written
+		os.RemoveAll(app.MCDir.UploadDir(requestID))
+		return nil
 	}
 }
 
