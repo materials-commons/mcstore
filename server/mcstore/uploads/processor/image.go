@@ -4,8 +4,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"os/exec"
+
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/quirkey/magick"
 )
 
 // imageFileProcessor processes image files. It converts
@@ -35,16 +36,21 @@ func (i *imageFileProcessor) Process() error {
 		return err
 	}
 
-	m, err := magick.NewFromFile(filePath)
-	if err != nil {
-		app.Log.Errorf("Image conversion for %s failed: %s", filePath, err)
-		return err
+	return convert(filePath, conversionFile)
+}
+
+func convert(file, conversionFile string) error {
+	var (
+		err error
+		out []byte
+	)
+	
+	cmd := "convert"
+	args := []string{file, conversionFile}
+	if out, err = exec.Command(cmd, args...).Output(); err != nil {
+		app.Log.Errorf("convert command failed: %s", err)
 	}
 
-	if err := m.ToFile(conversionFile); err != nil {
-		app.Log.Errorf("Image conversion for %s failed: %s", filePath, err)
-		return err
-	}
-
-	return nil
+	app.Log.Debugf("convert command output: %s", string(out))
+	return err
 }
