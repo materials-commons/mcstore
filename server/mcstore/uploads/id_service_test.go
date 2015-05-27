@@ -32,7 +32,7 @@ var _ = Describe("IDService", func() {
 		}
 	})
 
-	Describe("ID", func() {
+	Describe("ID Method Tests", func() {
 		Describe("Access permissions", func() {
 			var (
 				req IDRequest
@@ -119,7 +119,7 @@ var _ = Describe("IDService", func() {
 		})
 	})
 
-	Describe("Delete", func() {
+	Describe("Delete Method Tests", func() {
 		Context("Access Permissions", func() {
 			var (
 				req IDRequest
@@ -167,7 +167,7 @@ var _ = Describe("IDService", func() {
 			})
 		})
 
-		Context("request ID", func() {
+		Context("request ID Validation", func() {
 			It("Should fail on bad id", func() {
 				err := s.Delete("no-such-id", "admin@mc.org")
 				Expect(err).NotTo(BeNil())
@@ -192,7 +192,7 @@ var _ = Describe("IDService", func() {
 		})
 	})
 
-	Describe("UploadsForProject", func() {
+	Describe("UploadsForProject Method Tests", func() {
 		var (
 			req IDRequest
 			u   *schema.Upload
@@ -244,7 +244,7 @@ var _ = Describe("IDService", func() {
 			})
 		})
 
-		Context("Project", func() {
+		Context("Project ID Validation", func() {
 			It("Should fail on bad project", func() {
 				uploads, err := s.UploadsForProject("no-such-project", "test@mc.org")
 				Expect(err).NotTo(BeNil())
