@@ -44,7 +44,7 @@ func convert(file, conversionFile string) error {
 		err error
 		out []byte
 	)
-	
+
 	cmd := "convert"
 	args := []string{file, conversionFile}
 	if out, err = exec.Command(cmd, args...).Output(); err != nil {
