@@ -4,9 +4,12 @@ import (
 	"mime"
 	"path/filepath"
 
+	"fmt"
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/rakyll/magicmime"
+	"strings"
 )
 
 // maps media types to descriptions most people would recognize.
@@ -70,7 +73,11 @@ func init() {
 // try and determine the file type by its extension.
 func MediaType(name, path string) schema.MediaType {
 	mtype := determineMediaType(name, path)
-	return filloutMediaType(mtype)
+	m := schema.MediaType{
+		Mime:        mtype,
+		Description: getDescription(mtype),
+	}
+	return m
 }
 
 // determineMediaType determines the file mediatype first by checking
@@ -99,23 +106,23 @@ func mediaTypeByExtension(path string) string {
 // mediaTypeByFile determines the mediatype by using libmagic. It returns
 // "unknown" if libmagic cannot determine the type.
 func mediaTypeByFile(path string) string {
-	mtype, _ := magic.TypeByFile(path)
+	if !file.Exists(path) {
+		app.Log.Errorf("Bad path for mediaTypeByFile: %s", path)
+		return "unknown"
+	}
+
+	mtype, err := magic.TypeByFile(path)
+	fmt.Println("err", err)
 	if mtype == "" {
 		app.Log.Errorf("Unknown magic mediatype for file: %s", path)
 		return "unknown"
 	}
-	return mtype
-}
-
-// filloutMediaType creates a schema.MediaType and fills in its properties.
-func filloutMediaType(mtype string) schema.MediaType {
-	description := getDescription(mtype)
-	m := schema.MediaType{
-		Mime:        mtype,
-		Description: description,
+	i := strings.Index(mtype, ";")
+	if i == -1 {
+		return mtype
 	}
 
-	return m
+	return mtype[:i]
 }
 
 // getDescription looks up the mediatype in the mediaTypeDescriptions map.
