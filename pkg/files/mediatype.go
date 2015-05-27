@@ -3,13 +3,12 @@ package files
 import (
 	"mime"
 	"path/filepath"
+	"strings"
 
-	"fmt"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/rakyll/magicmime"
-	"strings"
 )
 
 // maps media types to descriptions most people would recognize.
@@ -111,8 +110,7 @@ func mediaTypeByFile(path string) string {
 		return "unknown"
 	}
 
-	mtype, err := magic.TypeByFile(path)
-	fmt.Println("err", err)
+	mtype, _ := magic.TypeByFile(path)
 	if mtype == "" {
 		app.Log.Errorf("Unknown magic mediatype for file: %s", path)
 		return "unknown"
