@@ -60,6 +60,11 @@ var _ = Describe("MediaType", func() {
 				mediatype := MediaType("xxxx-bmp123", "/does/not/exist/xxxx-bmp123")
 				Expect(mediatype.Mime).To(Equal("unknown"))
 			})
+
+			It("Should detect matlab files by their extension", func() {
+				mediatype := MediaType("abc.m", "")
+				Expect(mediatype.Mime).To(Equal("application/matlab"))
+			})
 		})
 	})
 })
