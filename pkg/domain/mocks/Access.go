@@ -12,8 +12,8 @@ func NewMAccess() *Access {
 	return &Access{}
 }
 
-func (m *Access) AllowedByOwner(owner, user string) bool {
-	ret := m.Called(owner, user)
+func (m *Access) AllowedByOwner(projectID, user string) bool {
+	ret := m.Called(projectID, user)
 
 	r0 := ret.Get(0).(bool)
 
