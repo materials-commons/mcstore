@@ -7,6 +7,9 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 
+	"net/http/httptest"
+
+	"github.com/materials-commons/mcstore/pkg/domain/mocks"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -138,86 +141,82 @@ var _ = Describe("DataHandler", func() {
 		})
 
 	})
-})
 
-//func TestServeData(t *testing.T) {
-//	mcdir := config.GetString("MCDIR")
-//	defer func() {
-//		// reset MCDIR to original value when this test ends.
-//		config.Set("MCDIR", mcdir)
-//	}()
-//
-//	// Set MCDIR so we know what to test against.
-//	config.Set("MCDIR", "/tmp/mcdir")
-//
-//	a := mocks.NewMAccess()
-//	dh := NewDataHandler(a)
-//	ts := httptest.NewServer(dh)
-//	defer ts.Close()
-//
-//	// Create response and request
-//	req, _ := http.NewRequest("GET", ts.URL, nil)
-//	rr := httptest.NewRecorder() // rr = response recorder
-//
-//	//
-//	// Test with no apikey specified
-//	//
-//	dhhandler := dh.(*dataHandler)
-//	path, mediatype, err := dhhandler.serveData(rr, req)
-//	require.Equal(t, err, app.ErrNoAccess, "Expected ErrNoAccess: %s ", err)
-//	require.Equal(t, path, "", "Got unexpected value for path %s", path)
-//	require.Equal(t, mediatype, "", "Got unexpected value for mediatype %s", mediatype)
-//
-//	fileURL := ts.URL + "/abc-defg-456"
-//
-//	//
-//	// Test with GetFile failing
-//	//
-//	req, _ = http.NewRequest("GET", fileURL+"?apikey=abc123", nil)
-//	var nilFile *schema.File = nil
-//	a.On("GetFile", "abc123", "abc-defg-456").Return(nilFile, app.ErrNoAccess)
-//	path, mediatype, err = dhhandler.serveData(rr, req)
-//	require.Equal(t, err, app.ErrNoAccess, "Expected ErrNoAccess: %s", err)
-//	require.Equal(t, path, "", "Got unexpected value for path %s", path)
-//	require.Equal(t, mediatype, "", "Got unexpected value for mediatype %s", mediatype)
-//
-//	//
-//	// Test with good key and fileID, get converted image
-//	//
-//	req, _ = http.NewRequest("GET", fileURL+"?apikey=abc123", nil)
-//	f := schema.File{
-//		ID: "abc-defg-456",
-//		MediaType: schema.MediaType{
-//			Mime: "image/tiff",
-//		},
-//	}
-//	a.On("GetFile", "abc123", "abc-defg-456").Return(&f, nil)
-//	path, mediatype, err = dhhandler.serveData(rr, req)
-//	require.Nil(t, err, "Error should have been nil: %s", err)
-//	require.Equal(t, mediatype, "image/jpeg", "Expected image/jpeg, got %s", mediatype)
-//	require.Equal(t, path, app.MCDir.FilePathImageConversion(f.FileID()), "Got unexpected value for path %s", path)
-//
-//	//
-//	// Test with good key and fileID, get original image
-//	//
-//	req, _ = http.NewRequest("GET", fileURL+"?apikey=abc123&original=true", nil)
-//	path, mediatype, err = dhhandler.serveData(rr, req)
-//	require.Nil(t, err, "Error should have been nil: %s", err)
-//	require.Equal(t, mediatype, "image/tiff", "Expected image/tiff, got %s", mediatype)
-//	require.Equal(t, path, app.MCDir.FilePath(f.FileID()), "Got unexpected value for path %s", path)
-//}
-//
-//func TestServeHTTP(t *testing.T) {
-//	a := mocks.NewMAccess()
-//	dh := NewDataHandler(a)
-//	ts := httptest.NewServer(dh)
-//	defer ts.Close()
-//
-//	// Create response and request
-//	req, _ := http.NewRequest("GET", ts.URL, nil)
-//	rr := httptest.NewRecorder() // rr = response recorder
-//
-//	// Test with no apikey specified
-//	dh.ServeHTTP(rr, req)
-//	require.Equal(t, rr.Code, http.StatusUnauthorized, "Expected StatusUnauthorized, got %d", rr.Code)
-//}
+	Describe("serveData Method Tests", func() {
+		var (
+			server      *httptest.Server
+			saved       string = config.GetString("MCDIR")
+			rr          *httptest.ResponseRecorder
+			datahandler http.Handler
+			access      *mocks.Access
+			dhhandler   *dataHandler
+		)
+
+		BeforeEach(func() {
+			access = mocks.NewMAccess()
+			datahandler = NewDataHandler(access)
+			dhhandler = datahandler.(*dataHandler)
+			server = httptest.NewServer(datahandler)
+			rr = httptest.NewRecorder()
+			config.Set("MCDIR", "/tmp/mcdir")
+		})
+
+		AfterEach(func() {
+			server.Close()
+			config.Set("MCDIR", saved)
+		})
+
+		It("Should fail if no apikey is specified", func() {
+			req, _ := http.NewRequest("GET", server.URL, nil)
+			path, mediatype, err := dhhandler.serveData(rr, req)
+			Expect(err).To(Equal(app.ErrNoAccess), "Expected ErrNoAccess, got: %s ", err)
+			Expect(path).To(Equal(""), "Got unexpected value for path %s", path)
+			Expect(mediatype).To(Equal(""), "Got unexpected value for mediatype %s", mediatype)
+		})
+
+		It("Should fail when user doesn't have access to the requested file", func() {
+			fileURL := server.URL + "/abc-defg-456?apikey=abc123"
+			req, _ := http.NewRequest("GET", fileURL, nil)
+			var nilFile *schema.File
+			access.On("GetFile", "abc123", "abc-defg-456").Return(nilFile, app.ErrNoAccess)
+			path, mediatype, err := dhhandler.serveData(rr, req)
+			Expect(err).To(Equal(app.ErrNoAccess), "Expected ErrNoAccess: %s", err)
+			Expect(path).To(Equal(""), "Got unexpected value for path %s", path)
+			Expect(mediatype).To(Equal(""), "Got unexpected value for mediatype %s", mediatype)
+		})
+
+		It("Should succeed with a good key and fileID and return converted image for a tiff", func() {
+			fileURL := server.URL + "/abc-defg-456?apikey=abc123"
+			req, _ := http.NewRequest("GET", fileURL, nil)
+			f := schema.File{
+				ID: "abc-defg-456",
+				MediaType: schema.MediaType{
+					Mime: "image/tiff",
+				},
+			}
+
+			access.On("GetFile", "abc123", "abc-defg-456").Return(&f, nil)
+			path, mediatype, err := dhhandler.serveData(rr, req)
+			Expect(err).To(BeNil())
+			Expect(mediatype).To(Equal("image/jpeg"), "Expected image/jpeg, got %s", mediatype)
+			Expect(path).To(Equal(app.MCDir.FilePathImageConversion(f.FileID())), "Got unexpected value for path %s", path)
+		})
+
+		It("Should succeed with a good key and fileID, and return the original image when original flag set for tiff", func() {
+			fileURL := server.URL + "/abc-defg-456?apikey=abc123&original=true"
+			req, _ := http.NewRequest("GET", fileURL, nil)
+			f := schema.File{
+				ID: "abc-defg-456",
+				MediaType: schema.MediaType{
+					Mime: "image/tiff",
+				},
+			}
+
+			access.On("GetFile", "abc123", "abc-defg-456").Return(&f, nil)
+			path, mediatype, err := dhhandler.serveData(rr, req)
+			Expect(err).To(BeNil())
+			Expect(mediatype).To(Equal("image/tiff"), "Expected image/tiff, got %s", mediatype)
+			Expect(path).To(Equal(app.MCDir.FilePath(f.FileID())), "Got unexpected value for path %s", path)
+		})
+	})
+})
