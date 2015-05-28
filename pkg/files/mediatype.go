@@ -30,11 +30,12 @@ var mediaTypeDescriptions = map[string]string{
 	"application/vnd.hp-PCL":                   "PCL",
 	"application/xslt+xml":                     "XSLT",
 	"image/gif":                                "GIF",
-	"application/matlab":                       "matlab",
+	"application/matlab":                       "Matlab",
 	"application/pdf":                          "PDF",
 	"application/xml":                          "XML",
 	"application/vnd.ms-excel":                 "MS-Excel",
 	"image/bmp":                                "BMP",
+	"image/x-ms-bmp":                           "BMP",
 	"image/tiff":                               "TIFF",
 	"image/vnd.adobe.photoshop":                "Photoshop",
 	"application/pkcs7-signature":              "PKCS",
@@ -57,7 +58,9 @@ var mediaTypeDescriptions = map[string]string{
 var magic *magicmime.Magic
 
 func init() {
-	mime.AddExtensionType(".m", "application/matlab")
+	if err := mime.AddExtensionType(".m", "application/matlab"); err != nil {
+		app.Log.Errorf("AddExtensionType failed:", err)
+	}
 
 	var err error
 	magic, err = magicmime.New(magicmime.MAGIC_MIME)
@@ -92,11 +95,11 @@ func determineMediaType(name, path string) string {
 
 // mediaTypeByExtension determines the mediatype by the files extension.
 // It returns "unknown" if this fails.
-func mediaTypeByExtension(path string) string {
-	ext := "." + filepath.Ext(path)
+func mediaTypeByExtension(name string) string {
+	ext := filepath.Ext(name)
 	mtype := mime.TypeByExtension(ext)
 	if mtype == "" {
-		app.Log.Errorf("Unknown mediatype for extension: %s", ext)
+		app.Log.Errorf("Unknown mediatype for extension: '%s'", ext)
 		return "unknown"
 	}
 	return mtype
