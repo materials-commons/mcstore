@@ -94,7 +94,7 @@ var _ = Describe("DataHandler", func() {
 			Expect(path).To(Equal(app.MCDir.FilePathImageConversion(f.FileID())))
 		})
 
-		It("Should return original with converted image when asking for original", func() {
+		It("Should return original even though converted is available when asking for original", func() {
 			f.MediaType.Mime = "image/tiff"
 			path := filePath(&f, true)
 			Expect(path).To(Equal(app.MCDir.FilePath(f.FileID())))
