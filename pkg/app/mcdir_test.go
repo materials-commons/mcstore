@@ -1,87 +1,127 @@
 package app
 
 import (
-	"testing"
-
 	"github.com/materials-commons/config"
-	"github.com/stretchr/testify/require"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-func TestPath(t *testing.T) {
-	// Test MCDIR not set
-	config.Set("MCDIR", "")
-	panicFunc := func() {
-		MCDir.Path()
-	}
-	require.Panics(t, panicFunc, "MCDIR not set and didn't panic")
-	config.Set("MCDIR", "/tmp/mcdir")
-	require.Equal(t, MCDir.Path(), "/tmp/mcdir", "Expected MCDir.Path to return /tmp/mcdir")
-}
+var _ = Describe("MCDir", func() {
+	var saved string
+	BeforeEach(func() {
+		saved = MCDir.Path()
+		config.Set("MCDIR", "/tmp/mcdir")
+	})
 
-func TestFileDir(t *testing.T) {
-	// Good file id
-	fileID := "abc-defg-ghi-jkl-mnopqr"
-	dir := MCDir.FileDir(fileID)
-	require.Equal(t, "/tmp/mcdir/de/fg", dir, "Expected /tmp/mcdir/de/fg got %s", dir)
+	AfterEach(func() {
+		config.Set("MCDIR", saved)
+	})
+	Describe("Path Method Tests", func() {
+		It("Should panic when MCDIR is not set", func() {
+			config.Set("MCDIR", "")
+			f := func() {
+				MCDir.Path()
+			}
+			Expect(f).To(Panic())
+		})
 
-	// Bad file id
-	fileID = "bad_file_id"
-	dir = MCDir.FileDir(fileID)
-	require.Equal(t, "", dir, "Expected '', got %s", dir)
+		It("Should return the value of setting MCDIR", func() {
+			Expect(MCDir.Path()).To(Equal("/tmp/mcdir"))
+		})
+	})
 
-	// Bad segment in file id
-	fileID = "abc-def-ghi-jkl"
-	dir = MCDir.FileDir(fileID)
-	require.Equal(t, "", dir, "Expected '', got %s", dir)
-}
+	Describe("FileDir Method Tests", func() {
+		It("Should return path for good file id", func() {
+			fileID := "abc-defg-ghi-jkl-mnopqr"
+			dir := MCDir.FileDir(fileID)
+			Expect(dir).To(Equal("/tmp/mcdir/de/fg"))
+		})
 
-func TestFilePath(t *testing.T) {
-	// Good file id
-	fileID := "abc-defg-ghi-jkl-mnopqr"
-	path := MCDir.FilePath(fileID)
-	require.Equal(t, "/tmp/mcdir/de/fg/abc-defg-ghi-jkl-mnopqr", path, "Expected /tmp/mcdir/de/fg/abc-defg-ghi-jkl-mnopqr, got %s", path)
+		It("Should return an empty string for a bad id", func() {
+			fileID := "bad_file_id"
+			dir := MCDir.FileDir(fileID)
+			Expect(dir).To(Equal(""))
+		})
 
-	// Bad file id
-	fileID = "bad_file_id"
-	path = MCDir.FilePath(fileID)
-	require.Equal(t, "", path, "Expected '', got %s", path)
+		It("Should return an empty string if there is a bad segment in the id", func() {
+			fileID := "abc-def-ghi-jkl"
+			dir := MCDir.FileDir(fileID)
+			Expect(dir).To(Equal(""))
+		})
+	})
 
-	// Bad segment in file id
-	fileID = "abc-def-ghi-jkl"
-	path = MCDir.FilePath(fileID)
-	require.Equal(t, "", path, "Expected '', got %s", path)
-}
+	Describe("FilePath Method Tests", func() {
+		It("Should return path for a good file id", func() {
+			fileID := "abc-defg-ghi-jkl-mnopqr"
+			path := MCDir.FilePath(fileID)
+			Expect(path).To(Equal("/tmp/mcdir/de/fg/abc-defg-ghi-jkl-mnopqr"))
+		})
 
-func TestFileConversionDir(t *testing.T) {
-	// Good file id
-	fileID := "abc-defg-ghi"
-	path := MCDir.FileConversionDir(fileID)
-	require.Equal(t, "/tmp/mcdir/de/fg/.conversion", path)
+		It("Should return an empty string for a bad id", func() {
+			fileID := "bad_file_id"
+			path := MCDir.FilePath(fileID)
+			Expect(path).To(Equal(""))
+		})
 
-	// Bad file id
-	fileID = "bad_file_id"
-	path = MCDir.FileConversionDir(fileID)
-	require.Equal(t, "", path, "Expected '', got %s", path)
+		It("Should return an empty string if there is a bad segment in the id", func() {
+			fileID := "abc-def-ghi-jkl"
+			path := MCDir.FilePath(fileID)
+			Expect(path).To(Equal(""))
+		})
+	})
 
-	// Bad segment in file id
-	fileID = "abc-def-ghi-jkl"
-	path = MCDir.FileConversionDir(fileID)
-	require.Equal(t, "", path, "Expected '', got %s", path)
-}
+	Describe("FileConversionDir Method Tests", func() {
+		It("Should return path for a good file id", func() {
+			fileID := "abc-defg-ghi"
+			path := MCDir.FileConversionDir(fileID)
+			Expect(path).To(Equal("/tmp/mcdir/de/fg/.conversion"))
+		})
 
-func TestFilePathImageConversion(t *testing.T) {
-	// Good file id
-	fileID := "abc-defg-ghi"
-	path := MCDir.FilePathImageConversion(fileID)
-	require.Equal(t, "/tmp/mcdir/de/fg/.conversion/abc-defg-ghi.jpg", path, "Expected /tmp/mcdir/de/fg/.conversion/abc-defg-ghi.jpg, got %s", path)
+		It("Should return an empty string for a bad id", func() {
+			fileID := "bad_file_id"
+			dir := MCDir.FileConversionDir(fileID)
+			Expect(dir).To(Equal(""))
+		})
 
-	// Bad file id
-	fileID = "bad_file_id"
-	path = MCDir.FilePathImageConversion(fileID)
-	require.Equal(t, "", path, "Expected '', got %s", path)
+		It("Should return an empty string if there is a bad segment in the id", func() {
+			fileID := "abc-def-ghi-jkl"
+			dir := MCDir.FileConversionDir(fileID)
+			Expect(dir).To(Equal(""))
+		})
+	})
 
-	// Bad segment in file id
-	fileID = "abc-def-ghi-jkl"
-	path = MCDir.FilePathImageConversion(fileID)
-	require.Equal(t, "", path, "Expected '', got %s", path)
-}
+	Describe("FilePathImageConversion Method Tests", func() {
+		It("Should return path for a good file id", func() {
+			fileID := "abc-defg-ghi"
+			path := MCDir.FilePathImageConversion(fileID)
+			Expect(path).To(Equal("/tmp/mcdir/de/fg/.conversion/abc-defg-ghi.jpg"))
+		})
+
+		It("Should return an empty string for a bad id", func() {
+			fileID := "bad_file_id"
+			path := MCDir.FilePathImageConversion(fileID)
+			Expect(path).To(Equal(""))
+		})
+
+		It("Should return an empty string if there is a bad segment in the id", func() {
+			fileID := "abc-def-ghi-jkl"
+			path := MCDir.FilePathImageConversion(fileID)
+			Expect(path).To(Equal(""))
+		})
+	})
+
+	Describe("UploadDir Method Tests", func() {
+		It("Should return path for a good upload id", func() {
+			uploadID := "abc-defg-ghi"
+			path := MCDir.UploadDir(uploadID)
+			Expect(path).To(Equal("/tmp/mcdir/upload/abc-defg-ghi"))
+		})
+
+		It("Should return a path even for malformed ids", func() {
+			uploadID := "bad_upload_id"
+			dir := MCDir.UploadDir(uploadID)
+			Expect(dir).To(Equal("/tmp/mcdir/upload/bad_upload_id"))
+		})
+	})
+})
