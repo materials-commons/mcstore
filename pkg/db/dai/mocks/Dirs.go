@@ -20,3 +20,24 @@ func (m *Dirs) ByID(id string) (*schema.Directory, error) {
 
 	return r0, r1
 }
+
+func (m *Dirs) ByPath(path, projectID string) (*schema.Directory, error) {
+	ret := m.Called(path, projectID)
+	r0 := ret.Get(0).(*schema.Directory)
+	r1 := ret.Error(1)
+	return r0, r1
+}
+
+func (m *Dirs) Files(dirID string) ([]schema.File, error) {
+	ret := m.Called(dirID)
+	r0 := ret.Get(0).([]schema.File)
+	r1 := ret.Error(1)
+	return r0, r1
+}
+
+func (m *Dirs) Insert(dir *schema.Directory) (*schema.Directory, error) {
+	ret := m.Called(dir)
+	r0 := ret.Get(0).(*schema.Directory)
+	r1 := ret.Error(1)
+	return r0, r1
+}
