@@ -11,8 +11,8 @@ import (
 )
 
 // RequestWriter is the interface used to write a request.
-type RequestWriter interface {
-	Write(dir string, req *flow.Request) error
+type requestWriter interface {
+	write(dir string, req *flow.Request) error
 }
 
 // A fileRequestWriter implements writing a request to a file.
@@ -21,7 +21,7 @@ type fileRequestWriter struct{}
 // Write will write the blocks for a request to the path returned by
 // the RequestPath Path call. Write will attempt to create the directory
 // path to write to.
-func (r *fileRequestWriter) Write(dir string, req *flow.Request) error {
+func (r *fileRequestWriter) write(dir string, req *flow.Request) error {
 	path := filepath.Join(dir, fmt.Sprintf("%d", req.FlowChunkNumber))
 	err := r.validateWrite(dir, path, req)
 	switch {
