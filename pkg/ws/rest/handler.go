@@ -43,7 +43,7 @@ func RouteHandler(f RouteFunc) restful.RouteFunction {
 				app.Log.Errorf("response.WriteEntity failed: %s", err)
 			}
 		default:
-			// Nothing to do
+			// No error and no value to write - nothing to do.
 		}
 	}
 }
