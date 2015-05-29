@@ -54,7 +54,7 @@ var _ = Describe("IDService", func() {
 			})
 
 			Context("Access allowed", func() {
-				It("Should allow access admin user", func() {
+				It("Should allow access to admin user", func() {
 					req.User = "admin@mc.org"
 					upload, err := s.ID(req)
 					Expect(err).To(BeNil(), "Unexpected error: %s", err)
