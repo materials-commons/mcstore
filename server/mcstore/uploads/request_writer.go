@@ -35,7 +35,7 @@ func (r *fileRequestWriter) write(dir string, req *flow.Request) error {
 }
 
 // validateWrite determines if a particular chunk can be written.
-// If the size of the ondisk chunk is smaller than the request
+// If the size of the on disk chunk is smaller than the request
 // chunk then that chunk is incomplete and we allow a write to it.
 func (r *fileRequestWriter) validateWrite(dir, path string, req *flow.Request) error {
 	// Create directory where chunk will be written
