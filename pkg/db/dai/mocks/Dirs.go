@@ -3,8 +3,8 @@ package mocks
 import "github.com/materials-commons/testify/mock"
 
 import (
-	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"fmt"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
 type Dirs struct {
@@ -52,7 +52,7 @@ type entry struct {
 }
 
 type Dirs2 struct {
-	method map[string]*entry
+	method        map[string]*entry
 	currentMethod string
 }
 
@@ -89,7 +89,7 @@ func (m *Dirs2) Insert(dir *schema.Directory) (*schema.Directory, error) {
 	return e.dir, e.err
 }
 
-func(m *Dirs2) On(method string) *Dirs2 {
+func (m *Dirs2) On(method string) *Dirs2 {
 	m.currentMethod = method
 	m.method[method] = &entry{}
 	return m
