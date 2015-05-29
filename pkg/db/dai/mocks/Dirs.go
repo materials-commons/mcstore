@@ -45,24 +45,24 @@ func (m *Dirs) Insert(dir *schema.Directory) (*schema.Directory, error) {
 	return r0, r1
 }
 
-type entry struct {
+type dentry struct {
 	dir   *schema.Directory
 	err   error
 	files []schema.File
 }
 
 type Dirs2 struct {
-	method        map[string]*entry
+	method        map[string]*dentry
 	currentMethod string
 }
 
 func NewMDirs2() *Dirs2 {
 	return &Dirs2{
-		method: make(map[string]*entry),
+		method: make(map[string]*dentry),
 	}
 }
 
-func (m *Dirs2) lookup(method string) *entry {
+func (m *Dirs2) lookup(method string) *dentry {
 	if e, ok := m.method[method]; ok {
 		return e
 	}
@@ -91,7 +91,7 @@ func (m *Dirs2) Insert(dir *schema.Directory) (*schema.Directory, error) {
 
 func (m *Dirs2) On(method string) *Dirs2 {
 	m.currentMethod = method
-	m.method[method] = &entry{}
+	m.method[method] = &dentry{}
 	return m
 }
 
