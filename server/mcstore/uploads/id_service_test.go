@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -20,8 +21,14 @@ var _ = Describe("IDService", func() {
 		projects = dai.NewRProjects(test.RSession())
 		uploads  = dai.NewRUploads(test.RSession())
 		access   = domain.NewAccess(projects, files, users)
-		s        = NewIDServiceFrom(dirs, projects, uploads, access)
-		upload   *schema.Upload
+		s        = &idService{
+			dirs:     dirs,
+			projects: projects,
+			uploads:  uploads,
+			access:   access,
+			fops:     file.OS,
+		}
+		upload *schema.Upload
 	)
 
 	AfterEach(func() {

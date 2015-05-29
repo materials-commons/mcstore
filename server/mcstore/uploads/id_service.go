@@ -1,9 +1,9 @@
 package uploads
 
 import (
-	"os"
 	"time"
 
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
@@ -38,6 +38,7 @@ type idService struct {
 	projects dai.Projects
 	uploads  dai.Uploads
 	access   domain.Access
+	fops     file.Operations
 }
 
 // NewIDService creates a new idService. It uses db.RSessionMust() to get
@@ -51,16 +52,7 @@ func NewIDService() *idService {
 		projects: dai.NewRProjects(session),
 		uploads:  dai.NewRUploads(session),
 		access:   access,
-	}
-}
-
-// NewIDServiceFrom creates a new instance of the idService using the passed in dai and access parameters.
-func NewIDServiceFrom(dirs dai.Dirs, projects dai.Projects, uploads dai.Uploads, access domain.Access) *idService {
-	return &idService{
-		dirs:     dirs,
-		projects: projects,
-		uploads:  uploads,
-		access:   access,
+		fops:     file.OS,
 	}
 }
 
@@ -136,7 +128,7 @@ func (s *idService) Delete(requestID, user string) error {
 			return err
 		}
 		// Delete the directory where chunks were being written
-		os.RemoveAll(app.MCDir.UploadDir(requestID))
+		s.fops.RemoveAll(app.MCDir.UploadDir(requestID))
 		return nil
 	}
 }
