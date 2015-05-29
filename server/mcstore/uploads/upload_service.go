@@ -30,7 +30,7 @@ type uploadService struct {
 	uploads     dai.Uploads
 	dirs        dai.Dirs
 	writer      requestWriter
-	requestPath RequestPath
+	requestPath requestPath
 	fops        file.Operations
 }
 
@@ -53,7 +53,7 @@ func NewUploadService() *uploadService {
 // Upload performs uploading a block and constructing the file
 // after all blocks have been uploaded.
 func (s *uploadService) Upload(req *UploadRequest) error {
-	dir := s.requestPath.Dir(req.Request)
+	dir := s.requestPath.dir(req.Request)
 	if err := s.writer.write(dir, req.Request); err != nil {
 		return err
 	}

@@ -30,14 +30,14 @@ var _ = Describe("RequestPath", func() {
 
 	Context("Path", func() {
 		It("Should return a valid path", func() {
-			requestPath := rpath.Path(&req)
+			requestPath := rpath.path(&req)
 			Expect(requestPath).To(Equal("/tmp/upload/testid/1"))
 		})
 	})
 
 	Context("Dir", func() {
 		It("Should return a valid dir", func() {
-			requestDir := rpath.Dir(&req)
+			requestDir := rpath.dir(&req)
 			Expect(requestDir).To(Equal("/tmp/upload/testid"))
 		})
 	})
