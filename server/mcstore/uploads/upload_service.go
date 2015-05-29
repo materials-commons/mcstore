@@ -2,8 +2,8 @@ package uploads
 
 import (
 	"io"
-	"os"
 
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/db"
@@ -25,10 +25,13 @@ type UploadService interface {
 
 // uploadService is an implementation of UploadService.
 type uploadService struct {
-	tracker *uploadTracker
-	files   dai.Files
-	uploads dai.Uploads
-	dirs    dai.Dirs
+	tracker     *uploadTracker
+	files       dai.Files
+	uploads     dai.Uploads
+	dirs        dai.Dirs
+	writer      requestWriter
+	requestPath RequestPath
+	fops        file.Operations
 }
 
 // NewUploadService creates a new uploadService connecting
@@ -37,19 +40,21 @@ type uploadService struct {
 func NewUploadService() *uploadService {
 	session := db.RSessionMust()
 	return &uploadService{
-		tracker: newUploadTracker(),
-		files:   dai.NewRFiles(session),
-		uploads: dai.NewRUploads(session),
-		dirs:    dai.NewRDirs(session),
+		tracker:     newUploadTracker(),
+		files:       dai.NewRFiles(session),
+		uploads:     dai.NewRUploads(session),
+		dirs:        dai.NewRDirs(session),
+		writer:      &fileRequestWriter{},
+		requestPath: &mcdirRequestPath{},
+		fops:        file.OS,
 	}
 }
 
 // Upload performs uploading a block and constructing the file
 // after all blocks have been uploaded.
 func (s *uploadService) Upload(req *UploadRequest) error {
-	dir := s.requestDir(req.Request)
-
-	if err := s.write(dir, req.Request); err != nil {
+	dir := s.requestPath.Dir(req.Request)
+	if err := s.writer.write(dir, req.Request); err != nil {
 		return err
 	}
 
@@ -140,22 +145,10 @@ func (s *uploadService) createFile(req *UploadRequest, upload *schema.Upload) (*
 // path is also created.
 func (s *uploadService) createDest(fileID string) (io.Writer, error) {
 	dir := app.MCDir.FileDir(fileID)
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := s.fops.MkdirAll(dir, 0700); err != nil {
 		return nil, err
 	}
-	return os.Create(app.MCDir.FilePath(fileID))
-}
-
-// requestDir returns the directory to write this requests chunks to.
-func (s *uploadService) requestDir(req *flow.Request) string {
-	requestPath := &mcdirRequestPath{}
-	return requestPath.Dir(req)
-}
-
-// Write will write a chunk to the given directory.
-func (s *uploadService) write(dest string, req *flow.Request) error {
-	writer := &fileRequestWriter{}
-	return writer.Write(dest, req)
+	return s.fops.Create(app.MCDir.FilePath(fileID))
 }
 
 // cleanup is called when an error has occurred. It attempts to clean up
@@ -171,8 +164,7 @@ func (s *uploadService) cleanup(req *UploadRequest, fileID string) error {
 
 //cleanupUploadRequest removes the upload request and file chunks.
 func (s *uploadService) cleanupUploadRequest(uploadID string) {
-
 	s.tracker.clear(uploadID)
 	s.uploads.Delete(uploadID)
-	os.RemoveAll(app.MCDir.UploadDir(uploadID))
+	s.fops.RemoveAll(app.MCDir.UploadDir(uploadID))
 }
