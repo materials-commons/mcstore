@@ -45,7 +45,7 @@ func (s *projectService) createProject(projectName, owner string, mustNotExist b
 
 	default:
 		if mustNotExist {
-			return nil, false, app.ErrExists
+			return nil, true, app.ErrExists
 		}
 
 		return project, true, nil
@@ -59,15 +59,15 @@ func (s *projectService) getProject(projectName, owner string, create bool) (*sc
 	project, err := s.projects.ByName(projectName, owner)
 
 	switch {
-	case err != nil:
-		return nil, false, err
-
-	case project == nil:
+	case err == app.ErrNotFound:
 		if create {
 			proj, err := s.createNewProject(projectName, owner)
 			return proj, true, err
 		}
 		return nil, false, app.ErrNotFound
+
+	case err != nil:
+		return nil, false, err
 
 	default:
 		return project, false, nil
