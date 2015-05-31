@@ -54,20 +54,20 @@ var _ = Describe("MediaType", func() {
 	})
 
 	Describe("MediaType Method Tests", func() {
-		It("Should detect the BMP file type", func() {
+		It("Should detect the BMP file type with no extension", func() {
 			mediatype := MediaType("xxxx-bmp123", bmpFileNoExtension)
 			Expect(mediatype.Mime).To(Equal("image/x-ms-bmp"))
 			Expect(mediatype.Description).To(Equal("BMP"))
 		})
 
 		It("Should detect the TIFF file type", func() {
-			mediatype := MediaType("xxxx-tif123", tiffFileNoExtension)
+			mediatype := MediaType("xxxx-tif123 with no extension", tiffFileNoExtension)
 			Expect(mediatype.Mime).To(Equal("image/tiff"))
 			Expect(mediatype.Description).To(Equal("TIFF"))
 		})
 
 		It("Should detect a JPEG file type", func() {
-			mediatype := MediaType("xxxx-tif123.jpg", jpgFileWithExtension)
+			mediatype := MediaType("xxxx-tif123.jpg with extension", jpgFileWithExtension)
 			Expect(mediatype.Mime).To(Equal("image/jpeg"))
 			Expect(mediatype.Description).To(Equal("JPEG"))
 		})
