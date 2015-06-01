@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"math"
-	"path/filepath"
 
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -148,7 +147,7 @@ func (s *idService) initUpload(req IDRequest, id string) error {
 	}
 
 	bset := bitset.New(numBlocks(req.FileSize))
-	f, err := s.fops.Create(filepath.Join(s.requestPath.dirFromID(id), "blocks"))
+	f, err := s.fops.Create(BlocksFile(s.requestPath, id))
 	if err != nil {
 		return err
 	}
