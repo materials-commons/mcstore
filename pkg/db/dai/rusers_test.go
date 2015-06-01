@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/test"
+	"github.com/materials-commons/mcstore/testutil"
 	"github.com/stretchr/testify/require"
 )
 
-var rusers = NewRUsers(test.RSession())
+var rusers = NewRUsers(testutil.RSession())
 
 func TestRUsersByID(t *testing.T) {
 	// Test existing

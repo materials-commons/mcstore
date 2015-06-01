@@ -54,36 +54,34 @@ var _ = Describe("MediaType", func() {
 	})
 
 	Describe("MediaType Method Tests", func() {
-		Context("BMP File without extension", func() {
-			It("Should detect the BMP file type", func() {
-				mediatype := MediaType("xxxx-bmp123", bmpFileNoExtension)
-				Expect(mediatype.Mime).To(Equal("image/x-ms-bmp"))
-				Expect(mediatype.Description).To(Equal("BMP"))
-			})
+		It("Should detect the BMP file type with no extension", func() {
+			mediatype := MediaType("xxxx-bmp123", bmpFileNoExtension)
+			Expect(mediatype.Mime).To(Equal("image/x-ms-bmp"))
+			Expect(mediatype.Description).To(Equal("BMP"))
+		})
 
-			It("Should detect the TIFF file type", func() {
-				mediatype := MediaType("xxxx-tif123", tiffFileNoExtension)
-				Expect(mediatype.Mime).To(Equal("image/tiff"))
-				Expect(mediatype.Description).To(Equal("TIFF"))
-			})
+		It("Should detect the TIFF file type", func() {
+			mediatype := MediaType("xxxx-tif123 with no extension", tiffFileNoExtension)
+			Expect(mediatype.Mime).To(Equal("image/tiff"))
+			Expect(mediatype.Description).To(Equal("TIFF"))
+		})
 
-			It("Should detect a JPEG file type", func() {
-				mediatype := MediaType("xxxx-tif123.jpg", jpgFileWithExtension)
-				Expect(mediatype.Mime).To(Equal("image/jpeg"))
-				Expect(mediatype.Description).To(Equal("JPEG"))
-			})
+		It("Should detect a JPEG file type", func() {
+			mediatype := MediaType("xxxx-tif123.jpg with extension", jpgFileWithExtension)
+			Expect(mediatype.Mime).To(Equal("image/jpeg"))
+			Expect(mediatype.Description).To(Equal("JPEG"))
+		})
 
-			It("Should return unknown on a bad file path with no extension", func() {
-				mediatype := MediaType("xxxx-bmp123", "/does/not/exist/xxxx-bmp123")
-				Expect(mediatype.Mime).To(Equal("unknown"))
-				Expect(mediatype.Description).To(Equal("Unknown"))
-			})
+		It("Should return unknown on a bad file path with no extension", func() {
+			mediatype := MediaType("xxxx-bmp123", "/does/not/exist/xxxx-bmp123")
+			Expect(mediatype.Mime).To(Equal("unknown"))
+			Expect(mediatype.Description).To(Equal("Unknown"))
+		})
 
-			It("Should detect matlab files by their extension", func() {
-				mediatype := MediaType("abc.m", "/tmp/abc.m")
-				Expect(mediatype.Mime).To(Equal("application/matlab"))
-				Expect(mediatype.Description).To(Equal("Matlab"))
-			})
+		It("Should detect matlab files by their extension", func() {
+			mediatype := MediaType("abc.m", "/tmp/abc.m")
+			Expect(mediatype.Mime).To(Equal("application/matlab"))
+			Expect(mediatype.Description).To(Equal("Matlab"))
 		})
 	})
 })

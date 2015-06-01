@@ -5,11 +5,11 @@ import (
 
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/test"
+	"github.com/materials-commons/mcstore/testutil"
 	"github.com/stretchr/testify/require"
 )
 
-var ruploads = NewRUploads(test.RSession())
+var ruploads = NewRUploads(testutil.RSession())
 
 func TestRUploadsForUser(t *testing.T) {
 	// Test no user
