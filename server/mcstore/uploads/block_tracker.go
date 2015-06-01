@@ -4,9 +4,9 @@ import (
 	"sync"
 
 	"github.com/materials-commons/gohandy/file"
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/willf/bitset"
 	"path/filepath"
-	"github.com/materials-commons/mcstore/pkg/app"
 )
 
 // blockTracker holds all the state of blocks for different upload requests.
