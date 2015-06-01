@@ -27,8 +27,16 @@ type Groups interface {
 }
 
 // Uploads allows manipulation and access to upload requests.
+type UploadSearch struct {
+	ProjectID   string
+	DirectoryID string
+	FileName    string
+	Checksum    string
+}
+
 type Uploads interface {
 	ByID(id string) (*schema.Upload, error)
+	Search(params UploadSearch) (*schema.Upload, error)
 	Insert(upload *schema.Upload) (*schema.Upload, error)
 	Update(upload *schema.Upload) error
 	ForUser(user string) ([]schema.Upload, error)

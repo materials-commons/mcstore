@@ -2,6 +2,7 @@ package dai
 
 import (
 	r "github.com/dancannon/gorethink"
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/model"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
@@ -25,6 +26,30 @@ func (u rUploads) ByID(id string) (*schema.Upload, error) {
 		return nil, err
 	}
 	return &upload, nil
+}
+
+// Search attempts to find a matching upload request matching the given
+// parameters.
+func (u rUploads) Search(params UploadSearch) (*schema.Upload, error) {
+	rql := model.Uploads.T().GetAllByIndex("project_id", params.ProjectID).
+		Filter(r.Row.Field("directory_id").Eq(params.DirectoryID))
+	var uploads []schema.Upload
+	if err := model.Uploads.Qs(u.session).Rows(rql, &uploads); err != nil {
+		return nil, err
+	}
+
+	match := func(uitem schema.Upload) bool {
+		if uitem.File.Name == params.FileName && uitem.File.Checksum == params.Checksum {
+			return true
+		}
+		return false
+	}
+
+	if matchingUpload := schema.Uploads.Find(uploads, match); matchingUpload != nil {
+		return matchingUpload, nil
+	}
+
+	return nil, app.ErrNotFound
 }
 
 // Insert adds a new upload to the uploads table.

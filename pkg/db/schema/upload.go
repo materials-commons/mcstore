@@ -29,6 +29,23 @@ type Upload struct {
 	File          FileUpload `gorethink:"file"`           // File being uploaded
 }
 
+// private type to hang helper methods off of.
+type uploadList struct{}
+
+// Uploads gives access to helper routines that work on lists of uploads.
+var Uploads uploadList
+
+// Find will return a matching Upload in a list of uploads when the match func returns true.
+func (u uploadList) Find(uploads []Upload, match func(upload Upload) bool) *Upload {
+	for _, upload := range uploads {
+		if match(upload) {
+			return &upload
+		}
+	}
+
+	return nil
+}
+
 // uploadCreater allows for chaining creation of an upload.
 type uploadCreater struct {
 	upload Upload

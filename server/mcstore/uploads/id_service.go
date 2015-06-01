@@ -76,6 +76,17 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 		return nil, err
 	}
 
+	searchParams := dai.UploadSearch{
+		ProjectID:   proj.ID,
+		DirectoryID: dir.ID,
+		FileName:    req.FileName,
+		Checksum:    req.Checksum,
+	}
+
+	if existingUpload, err := s.uploads.Search(searchParams); err != nil {
+		return existingUpload, nil
+	}
+
 	upload := schema.CUpload().
 		Owner(req.User).
 		Project(req.ProjectID, proj.Name).
