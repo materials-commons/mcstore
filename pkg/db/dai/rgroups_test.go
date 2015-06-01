@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/test"
+	"github.com/materials-commons/mcstore/testutil"
 	"github.com/stretchr/testify/require"
 )
 
-var rgroups = NewRGroups(test.RSession())
+var rgroups = NewRGroups(testutil.RSession())
 
 func TestRGroupsByID(t *testing.T) {
 	// Test existing group

@@ -7,11 +7,11 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/model"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/test"
+	"github.com/materials-commons/mcstore/testutil"
 	"github.com/stretchr/testify/require"
 )
 
-var rfiles = NewRFiles(test.RSession())
+var rfiles = NewRFiles(testutil.RSession())
 
 func TestRFilesByID(t *testing.T) {
 	// Test existing
@@ -36,7 +36,7 @@ func TestRFilesInsertIDSet(t *testing.T) {
 	require.Equal(t, newFile.ID, "test1.txt")
 
 	// Check that the join tables were updated.
-	session := test.RSession()
+	session := testutil.RSession()
 	var p2df []schema.Project2DataFile
 	rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(file.ID))
 	err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
@@ -60,7 +60,7 @@ func TestRFilesInsertNoIDSet(t *testing.T) {
 	require.NotNil(t, newFile)
 
 	// Check that the join tables were updated.
-	session := test.RSession()
+	session := testutil.RSession()
 	var p2df []schema.Project2DataFile
 	rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(newFile.ID))
 	err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
@@ -77,7 +77,7 @@ func TestRFilesInsertNoIDSet(t *testing.T) {
 }
 
 func deleteFile(fileID string) {
-	session := test.RSession()
+	session := testutil.RSession()
 	model.Files.Qs(session).Delete(fileID)
 
 	rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(fileID))
