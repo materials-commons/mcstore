@@ -3,10 +3,11 @@ package uploads
 import (
 	"sync"
 
+	"path/filepath"
+
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/willf/bitset"
-	"path/filepath"
 )
 
 // blockTracker holds all the state of blocks for different upload requests.
@@ -41,6 +42,8 @@ func (t *blockTracker) setBlock(id string, block int) {
 	bset.Set(uint(block))
 }
 
+// loadBlocks will load the blocks bitset for an id. It panics if it cannot
+// read the blocks file.
 func (t *blockTracker) loadBlocks(id string) {
 	path := BlocksFile(t.requestPath, id)
 	f, err := t.fops.Open(path)
@@ -53,6 +56,8 @@ func (t *blockTracker) loadBlocks(id string) {
 	t.reqBlocks[id] = &bset
 }
 
+// persist writes the blocks bitset to the blocks file. It panics if it cannot
+// write the blocks file.
 func (t *blockTracker) persist(id string) {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
@@ -60,6 +65,9 @@ func (t *blockTracker) persist(id string) {
 	t.writeBlocks(bset, id)
 }
 
+// persistAll writes all the blocks bitsets to their respective blocks file
+// for each id that is being tracked by the blocks tracker. It panics if
+// any of these fails to persist.
 func (t *blockTracker) persistAll() {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
@@ -68,6 +76,8 @@ func (t *blockTracker) persistAll() {
 	}
 }
 
+// writeBlocks performs the operation of writing the blocks file. It doesn't
+// take out any locks and should never be called directly.
 func (t *blockTracker) writeBlocks(bset *bitset.BitSet, id string) {
 	path := BlocksFile(t.requestPath, id)
 	f, err := t.fops.Create(path)
@@ -101,6 +111,7 @@ func (t *blockTracker) clear(id string) {
 	delete(t.reqBlocks, id)
 }
 
+// BlocksFile returns the path to the blocks file for a given id.
 func BlocksFile(rpath requestPath, id string) (path string) {
 	return filepath.Join(rpath.dirFromID(id), "blocks")
 }
