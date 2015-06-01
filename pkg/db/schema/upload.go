@@ -12,7 +12,6 @@ type FileUpload struct {
 	RemoteMTime time.Time `gorethink:"remote_mtime"` // CTime of the remote file
 	ChunkSize   int       `gorethink:"chunk_size"`   // Chunk transfer size
 	ChunkCount  int       `gorethink:"chunk_count"`  // Number of chunks expected
-	ChunkHashes []string  `gorethink:"chunk_hashes"` // Hash for each uploaded chunk
 }
 
 // A Upload models a user upload request. It allows for users to restart

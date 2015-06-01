@@ -22,11 +22,12 @@ var _ = Describe("IDService", func() {
 		uploads  = dai.NewRUploads(test.RSession())
 		access   = domain.NewAccess(projects, files, users)
 		s        = &idService{
-			dirs:     dirs,
-			projects: projects,
-			uploads:  uploads,
-			access:   access,
-			fops:     file.OS,
+			dirs:        dirs,
+			projects:    projects,
+			uploads:     uploads,
+			access:      access,
+			fops:        file.MockOps,
+			requestPath: &mockRequestPath{},
 		}
 		upload *schema.Upload
 	)

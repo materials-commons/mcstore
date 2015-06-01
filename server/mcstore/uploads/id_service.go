@@ -3,12 +3,16 @@ package uploads
 import (
 	"time"
 
+	"math"
+	"path/filepath"
+
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
+	"github.com/willf/bitset"
 )
 
 // A IDRequest requests a new upload id be created for
@@ -19,6 +23,7 @@ type IDRequest struct {
 	ProjectID   string
 	FileName    string
 	FileSize    int64
+	Checksum    string
 	FileMTime   time.Time
 	Host        string
 	Birthtime   time.Time
@@ -34,11 +39,12 @@ type IDService interface {
 // idService implements the IDService interface using
 // the dai services.
 type idService struct {
-	dirs     dai.Dirs
-	projects dai.Projects
-	uploads  dai.Uploads
-	access   domain.Access
-	fops     file.Operations
+	dirs        dai.Dirs
+	projects    dai.Projects
+	uploads     dai.Uploads
+	access      domain.Access
+	fops        file.Operations
+	requestPath requestPath
 }
 
 // NewIDService creates a new idService. It uses db.RSessionMust() to get
@@ -48,11 +54,12 @@ func NewIDService() *idService {
 	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	return &idService{
-		dirs:     dai.NewRDirs(session),
-		projects: dai.NewRProjects(session),
-		uploads:  dai.NewRUploads(session),
-		access:   access,
-		fops:     file.OS,
+		dirs:        dai.NewRDirs(session),
+		projects:    dai.NewRProjects(session),
+		uploads:     dai.NewRUploads(session),
+		access:      access,
+		fops:        file.OS,
+		requestPath: &mcdirRequestPath{},
 	}
 }
 
@@ -77,9 +84,20 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 		Host(req.Host).
 		FName(req.FileName).
 		FSize(req.FileSize).
+		FChecksum(req.Checksum).
 		FRemoteMTime(req.FileMTime).
 		Create()
-	return s.uploads.Insert(&upload)
+	u, err := s.uploads.Insert(&upload)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := s.initUpload(req, u.ID); err != nil {
+		s.uploads.Delete(u.ID)
+		return nil, err
+	}
+
+	return u, nil
 }
 
 // getProj retrieves the project with the given projectID. It checks that the
@@ -110,6 +128,32 @@ func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directo
 	default:
 		return dir, nil
 	}
+}
+
+// initUpload
+func (s *idService) initUpload(req IDRequest, id string) error {
+	if err := s.requestPath.mkdirFromID(id); err != nil {
+		return err
+	}
+
+	bset := bitset.New(numBlocks(req.FileSize))
+	f, err := s.fops.Create(filepath.Join(s.requestPath.dirFromID(id), "blocks"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	bset.WriteTo(f)
+	return nil
+}
+
+// TODO: Fix assumption of twoMeg chunks. This is used in a few places in code.
+const twoMeg = 2 * 1024 * 1024
+
+// numBlocks
+func numBlocks(fileSize int64) uint {
+	// round up to nearest number of blocks
+	d := float64(fileSize) / float64(twoMeg)
+	return uint(math.Ceil(d))
 }
 
 // Delete will delete the given requestID if the user has access

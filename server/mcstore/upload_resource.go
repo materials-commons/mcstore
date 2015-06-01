@@ -75,6 +75,7 @@ type CreateUploadRequest struct {
 	FileName      string `json:"filename"`
 	FileSize      int64  `json:"filesize"`
 	FileMTime     string `json:"filemtime"`
+	Checksum      string `json: "checksum"`
 }
 
 // uploadCreateResponse is the format of JSON sent back containing
@@ -87,7 +88,7 @@ type CreateUploadResponse struct {
 // the given request, and ensures that the returned upload id is unique. Upload
 // requests are persisted until deleted or a successful upload occurs.
 func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	cr, err := r.makeIDRequest(request, user.ID)
+	cr, err := r.request2IDRequest(request, user.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -100,11 +101,12 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 	resp := CreateUploadResponse{
 		RequestID: upload.ID,
 	}
+
 	return &resp, nil
 }
 
-// makeIDRequest fills out an id request to send to the idService. It handles request parameter errors.
-func (r *uploadResource) makeIDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
+// request2IDRequest fills out an id request to send to the idService. It handles request parameter errors.
+func (r *uploadResource) request2IDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
 	var req CreateUploadRequest
 	var cr uploads.IDRequest
 
@@ -134,6 +136,7 @@ func (r *uploadResource) makeIDRequest(request *restful.Request, userID string) 
 		FileName:    req.FileName,
 		FileSize:    req.FileSize,
 		FileMTime:   fileMTime,
+		Checksum:    req.Checksum,
 		Host:        request.Request.RemoteAddr,
 		Birthtime:   time.Now(),
 	}
