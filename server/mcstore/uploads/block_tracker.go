@@ -43,7 +43,8 @@ func (t *blockTracker) setBlock(id string, block int) {
 }
 
 // loadBlocks will load the blocks bitset for an id. It panics if it cannot
-// read the blocks file.
+// read the blocks file. loadBlocks doesn't grab mutex locks. It should
+// never be called directly.
 func (t *blockTracker) loadBlocks(id string) {
 	path := BlocksFile(t.requestPath, id)
 	f, err := t.fops.Open(path)
