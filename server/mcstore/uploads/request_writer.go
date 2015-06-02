@@ -70,7 +70,7 @@ type blockRequestWriter struct{}
 // order chunks are handled by seeking to proper position in the file.
 func (r *blockRequestWriter) write(dir string, req *flow.Request) error {
 	path := filepath.Join(dir, req.UploadID())
-	if err := r.validate(dir, path, req.FlowTotalSize); err != nil {
+	if err := r.createFile(dir, path, req.FlowTotalSize); err != nil {
 		return err
 	}
 	return r.writeRequest(path, req)
@@ -98,9 +98,9 @@ func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error 
 	}
 }
 
-// validate ensures that the path exists. If needed it will create the directory and
+// createFile ensures that the path exists. If needed it will create the directory and
 // the file. The file is created as a sparse file.
-func (r *blockRequestWriter) validate(dir, path string, size int64) error {
+func (r *blockRequestWriter) createFile(dir, path string, size int64) error {
 	err := os.MkdirAll(dir, 0700)
 	switch {
 	case err != nil:
