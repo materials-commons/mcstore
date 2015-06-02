@@ -82,7 +82,7 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 		Checksum:    req.Checksum,
 	}
 
-	if existingUpload, err := s.uploads.Search(searchParams); err != nil {
+	if existingUpload, err := s.uploads.Search(searchParams); err == nil {
 		return existingUpload, nil
 	}
 
