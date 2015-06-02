@@ -106,14 +106,18 @@ func (r *blockRequestWriter) validate(dir, path string, size int64) error {
 	case err != nil:
 		return err
 	case !file.Exists(path):
-		if f, err := os.Create(path); err != nil {
-			return err
-		} else {
-			defer f.Close()
-			return f.Truncate(size)
-		}
+		return createSparseFile(path, size)
 	default:
 		return nil
 	}
+}
 
+// createSparseFile creates a new sparse file at path of size.
+func createSparseFile(path string, size int64) error {
+	if f, err := os.Create(path); err != nil {
+		return err
+	} else {
+		defer f.Close()
+		return f.Truncate(size)
+	}
 }
