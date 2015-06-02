@@ -16,14 +16,15 @@ var _ = Describe("requestWriter", func() {
 			brWriter *blockRequestWriter = &blockRequestWriter{}
 			dirPath  string              = filepath.Join(os.TempDir(), "rr")
 			filePath string              = filepath.Join(dirPath, "req")
-			req      *flow.Request       = &flow.Request{
-				FlowIdentifier:  "req",
-				FlowChunkNumber: 1,
-			}
+			req      *flow.Request
 		)
 
 		BeforeEach(func() {
 			os.MkdirAll(dirPath, 0770)
+			req = &flow.Request{
+				FlowIdentifier:  "req",
+				FlowChunkNumber: 1,
+			}
 		})
 
 		AfterEach(func() {
