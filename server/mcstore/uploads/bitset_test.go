@@ -3,13 +3,11 @@ package uploads
 import (
 	"bytes"
 
-	"fmt"
 	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/willf/bitset"
-	"math"
 )
 
 var _ = Describe("BitSets", func() {
@@ -66,8 +64,8 @@ var _ = Describe("BitSets", func() {
 
 		Context("misc", func() {
 			It("Should round properly", func() {
-				x := float64(2) / float64(2)
-				fmt.Println("x = ", int(math.Ceil(x)))
+				var _ = float64(2) / float64(2)
+				//fmt.Println("x = ", int(math.Ceil(x)))
 			})
 		})
 	})
