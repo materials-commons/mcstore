@@ -76,28 +76,6 @@ func (r *blockRequestWriter) write(dir string, req *flow.Request) error {
 	return r.writeRequest(path, req)
 }
 
-// writeRequest performs the actual write of the request. It opens the file
-// sparse file, seeks to the proper position and then writes the data.
-func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error {
-	if f, err := os.OpenFile(path, os.O_WRONLY, 0660); err != nil {
-		return err
-	} else {
-		defer f.Close()
-		fromBeginning := 0
-		seekTo := int64((req.FlowChunkNumber - 1) * int32(len(req.Chunk)))
-		if _, err := f.Seek(seekTo, fromBeginning); err != nil {
-			app.Log.Critf("Failed seeking to write chunk #%d for %s: %s", req.FlowChunkNumber, req.UploadID(), err)
-			return err
-		}
-
-		if _, err := f.Write(req.Chunk); err != nil {
-			app.Log.Critf("Failed writing chunk #%d for %s: %s", req.FlowChunkNumber, req.UploadID(), err)
-			return err
-		}
-		return nil
-	}
-}
-
 // createFile ensures that the path exists. If needed it will create the directory and
 // the file. The file is created as a sparse file.
 func (r *blockRequestWriter) createFile(dir, path string, size int64) error {
@@ -117,5 +95,28 @@ func createSparseFile(path string, size int64) error {
 	} else {
 		defer f.Close()
 		return f.Truncate(size)
+	}
+}
+
+// writeRequest performs the actual write of the request. It opens the file
+// sparse file, seeks to the proper position and then writes the data.
+func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error {
+	if f, err := os.OpenFile(path, os.O_WRONLY, 0660); err != nil {
+		return err
+	} else {
+		defer f.Close()
+
+		fromBeginning := 0
+		seekTo := int64((req.FlowChunkNumber - 1) * int32(len(req.Chunk)))
+		if _, err := f.Seek(seekTo, fromBeginning); err != nil {
+			app.Log.Critf("Failed seeking to write chunk #%d for %s: %s", req.FlowChunkNumber, req.UploadID(), err)
+			return err
+		}
+
+		if _, err := f.Write(req.Chunk); err != nil {
+			app.Log.Critf("Failed writing chunk #%d for %s: %s", req.FlowChunkNumber, req.UploadID(), err)
+			return err
+		}
+		return nil
 	}
 }
