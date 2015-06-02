@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 )
@@ -56,4 +57,53 @@ func (r *fileRequestWriter) validateWrite(dir, path string, req *flow.Request) e
 	default:
 		return app.ErrInvalid
 	}
+}
+
+// blockRequestWriter implements writing requests to a single file. It writes the
+// requests in order by creating a sparse file and then seeking to the proper spot
+// in the file to write the requests data.
+type blockRequestWriter struct{}
+
+// write will write the request to a file located in dir. The file will have
+// the name of the flow UploadID(). This method creates a sparse file the
+// size of the file to be written and then writes requests in order. Out of
+// order chunks are handled by seeking to proper position in the file.
+func (r *blockRequestWriter) write(dir string, req *flow.Request) error {
+	path := filepath.Join(dir, req.UploadID())
+	if err := r.validate(dir, path, req.FlowTotalSize); err != nil {
+		return err
+	}
+	return r.writeRequest(path, req)
+}
+
+// writeRequest performs the actual write of the request. It opens the file
+// sparse file, seeks to the proper position and then writes the data.
+func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error {
+	if f, err := os.OpenFile(path, os.O_WRONLY, 0660); err != nil {
+		return err
+	} else {
+		defer f.Close()
+		fromBeginning := 0
+		f.Seek(req.FlowChunkNumber-1*len(req.Chunk), fromBeginning)
+		f.Write(req.Chunk)
+		return nil
+	}
+}
+
+// validate ensures that the path exists. It will create the directory and
+// the file. The file is created as a sparse file.
+func (r *blockRequestWriter) validate(dir, path string, size int64) error {
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return err
+	}
+
+	if !file.Exists(path) {
+		f, err := os.Create(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+		return f.Truncate(size)
+	}
+	return nil
 }
