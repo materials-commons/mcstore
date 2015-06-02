@@ -101,17 +101,19 @@ func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error 
 // validate ensures that the path exists. If needed it will create the directory and
 // the file. The file is created as a sparse file.
 func (r *blockRequestWriter) validate(dir, path string, size int64) error {
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	err := os.MkdirAll(dir, 0700)
+	switch {
+	case err != nil:
 		return err
+	case !file.Exists(path):
+		if f, err := os.Create(path); err != nil {
+			return err
+		} else {
+			defer f.Close()
+			return f.Truncate(size)
+		}
+	default:
+		return nil
 	}
 
-	if !file.Exists(path) {
-		f, err := os.Create(path)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-		return f.Truncate(size)
-	}
-	return nil
 }
