@@ -1,10 +1,17 @@
 package uploads
 
-import "sync"
+import (
+	"crypto/md5"
+	"fmt"
+	"hash"
+	"io"
+	"sync"
+)
 
 type requestBlockCount struct {
 	blocksDone int
 	numBlocks  int
+	h          hash.Hash
 }
 
 // A uploadTracker tracks the block count for a given id.
@@ -29,6 +36,7 @@ func (u *blockCountTracker) load(id string, numBlocks int) {
 	if _, ok := u.tracker[id]; !ok {
 		req := &requestBlockCount{
 			numBlocks: numBlocks,
+			h:         md5.New(),
 		}
 		u.tracker[id] = req
 	}
@@ -62,4 +70,17 @@ func (u *blockCountTracker) clear(id string) {
 	defer u.mutex.Unlock()
 	u.mutex.Lock()
 	delete(u.tracker, id)
+}
+
+func (u *blockCountTracker) hash(id string) string {
+	defer u.mutex.Unlock()
+	u.mutex.Lock()
+
+	h := u.tracker[id].h
+	return fmt.Sprintf("%x", h.Sum(nil))
+}
+
+func (u *blockCountTracker) addToHash(id string, what []byte) {
+	h := u.tracker[id].h
+	io.WriteString(h, string(what))
 }
