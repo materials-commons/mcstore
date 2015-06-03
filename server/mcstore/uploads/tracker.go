@@ -6,6 +6,8 @@ type tracker interface {
 	load(id string, numBlocks int)
 	clear(id string)
 	clearBlock(id string, block int)
+	hash(id string) string
+	addToHash(id string, what []byte)
 }
 
 var (
