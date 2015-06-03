@@ -22,6 +22,7 @@ type IDRequest struct {
 	FileName    string
 	FileSize    int64
 	Checksum    string
+	ChunkSize   int
 	FileMTime   time.Time
 	Host        string
 	Birthtime   time.Time
@@ -103,7 +104,7 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 		return nil, err
 	}
 
-	if err := s.initUpload(u.ID, req.FileSize); err != nil {
+	if err := s.initUpload(u.ID, req.FileSize, req.ChunkSize); err != nil {
 		s.uploads.Delete(u.ID)
 		return nil, err
 	}
@@ -142,22 +143,19 @@ func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directo
 }
 
 // initUpload
-func (s *idService) initUpload(id string, fileSize int64) error {
+func (s *idService) initUpload(id string, fileSize int64, chunkSize int) error {
 	if err := s.requestPath.mkdirFromID(id); err != nil {
 		return err
 	}
 
-	s.tracker.load(id, numBlocks(fileSize))
+	s.tracker.load(id, numBlocks(fileSize, chunkSize))
 	return nil
 }
 
-// TODO: Fix assumption of twoMeg chunks. This is used in a few places in code.
-const twoMeg = 2 * 1024 * 1024
-
 // numBlocks
-func numBlocks(fileSize int64) int {
+func numBlocks(fileSize int64, chunkSize int) int {
 	// round up to nearest number of blocks
-	d := float64(fileSize) / float64(twoMeg)
+	d := float64(fileSize) / float64(chunkSize)
 	return int(math.Ceil(d))
 }
 

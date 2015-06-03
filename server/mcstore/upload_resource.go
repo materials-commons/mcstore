@@ -74,6 +74,7 @@ type CreateUploadRequest struct {
 	DirectoryPath string `json:"directory_path"`
 	FileName      string `json:"filename"`
 	FileSize      int64  `json:"filesize"`
+	ChunkSize     int    `json:"chunk_size"`
 	FileMTime     string `json:"filemtime"`
 	Checksum      string `json: "checksum"`
 }
@@ -115,12 +116,16 @@ func (r *uploadResource) request2IDRequest(request *restful.Request, userID stri
 		return cr, err
 	}
 
-	app.Log.Debugf("%#v", req)
+	app.Log.Debugf("CreateUploadRequest %#v", req)
 
 	fileMTime, err := time.Parse(time.RFC1123, req.FileMTime)
 	if err != nil {
 		app.Log.Debugf("makeIDRequest time.Parse failed on %s: %s", req.FileMTime, err)
 		return cr, err
+	}
+
+	if req.ChunkSize == 0 {
+		req.ChunkSize = 1024 * 1024
 	}
 
 	directoryID, err := r.getDirectoryID(req)
@@ -136,6 +141,7 @@ func (r *uploadResource) request2IDRequest(request *restful.Request, userID stri
 		FileName:    req.FileName,
 		FileSize:    req.FileSize,
 		FileMTime:   fileMTime,
+		ChunkSize:   req.ChunkSize,
 		Checksum:    req.Checksum,
 		Host:        request.Request.RemoteAddr,
 		Birthtime:   time.Now(),
