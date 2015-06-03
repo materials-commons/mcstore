@@ -25,7 +25,7 @@ type UploadService interface {
 
 // uploadService is an implementation of UploadService.
 type uploadService struct {
-	tracker     *uploadTracker
+	tracker     tracker
 	files       dai.Files
 	uploads     dai.Uploads
 	dirs        dai.Dirs
@@ -40,7 +40,7 @@ type uploadService struct {
 func NewUploadService() *uploadService {
 	session := db.RSessionMust()
 	return &uploadService{
-		tracker:     newUploadTracker(),
+		tracker:     requestBlockCountTracker,
 		files:       dai.NewRFiles(session),
 		uploads:     dai.NewRUploads(session),
 		dirs:        dai.NewRDirs(session),
@@ -59,9 +59,9 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 	}
 
 	id := req.UploadID()
-	s.tracker.increment(id)
+	s.tracker.setBlock(id, int(req.FlowChunkNumber))
 
-	if s.allBlocksUploaded(id, req.FlowTotalChunks) {
+	if s.tracker.done(id) {
 		// assembling the file, and performing any processing may take a while, especially
 		// on large uploads, so we perform this step in the background.
 		go func(req *UploadRequest, dir string) {
@@ -78,12 +78,6 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 		}(req, dir)
 	}
 	return nil
-}
-
-// allBlocksUploaded checks if we have received all the blocks for a file.
-func (s *uploadService) allBlocksUploaded(id string, totalChunks int32) bool {
-	count := s.tracker.count(id)
-	return count == totalChunks
 }
 
 // assemble put the chunks for the file back together, create a database entry

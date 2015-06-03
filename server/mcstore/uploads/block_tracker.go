@@ -33,28 +33,32 @@ func newBlockTracker() *blockTracker {
 func (t *blockTracker) setBlock(id string, block int) {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
-	bset, found := t.reqBlocks[id]
-	if !found {
-		// need to load this items blocks.
-		t.loadBlocks(id)
-		bset = t.reqBlocks[id]
-	}
+	bset := t.reqBlocks[id]
 	bset.Set(uint(block))
 }
 
-// loadBlocks will load the blocks bitset for an id. It panics if it cannot
-// read the blocks file. loadBlocks doesn't grab mutex locks. It should
-// never be called directly.
-func (t *blockTracker) loadBlocks(id string) {
-	path := BlocksFile(t.requestPath, id)
-	f, err := t.fops.Open(path)
-	if err != nil {
-		app.Log.Panicf("Can't load block file for request %s (path %s): %s", id, path, err)
+// setup will load the blocks bitset for an id. It panics if it cannot
+// read the blocks file. loadBlocks doesn't grab mutex locks.
+func (t *blockTracker) setup(id string, numBlocks int) {
+	defer t.mutex.Unlock()
+	t.mutex.Lock()
+
+	if _, ok := t.reqBlocks[id]; ok {
+		return
 	}
-	defer f.Close()
-	var bset bitset.BitSet
-	bset.ReadFrom(f)
-	t.reqBlocks[id] = &bset
+
+	path := BlocksFile(t.requestPath, id)
+	if f, err := t.fops.Open(path); err != nil {
+		// File not found. Create new entry.
+		bset := bitset.New(uint(numBlocks))
+		t.reqBlocks[id] = bset
+		t.writeBlocks(bset, id)
+	} else {
+		defer f.Close()
+		var bset bitset.BitSet
+		bset.ReadFrom(f)
+		t.reqBlocks[id] = &bset
+	}
 }
 
 // persist writes the blocks bitset to the blocks file. It panics if it cannot
