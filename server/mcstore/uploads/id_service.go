@@ -11,7 +11,6 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
-	"github.com/willf/bitset"
 )
 
 // A IDRequest requests a new upload id be created for
@@ -43,6 +42,7 @@ type idService struct {
 	uploads     dai.Uploads
 	access      domain.Access
 	fops        file.Operations
+	tracker     tracker
 	requestPath requestPath
 }
 
@@ -58,6 +58,7 @@ func NewIDService() *idService {
 		uploads:     dai.NewRUploads(session),
 		access:      access,
 		fops:        file.OS,
+		tracker:     requestBlockCountTracker,
 		requestPath: &mcdirRequestPath{},
 	}
 }
@@ -102,7 +103,7 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 		return nil, err
 	}
 
-	if err := s.initUpload(req, u.ID); err != nil {
+	if err := s.initUpload(u.ID, req.FileSize); err != nil {
 		s.uploads.Delete(u.ID)
 		return nil, err
 	}
@@ -141,18 +142,12 @@ func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directo
 }
 
 // initUpload
-func (s *idService) initUpload(req IDRequest, id string) error {
+func (s *idService) initUpload(id string, fileSize int64) error {
 	if err := s.requestPath.mkdirFromID(id); err != nil {
 		return err
 	}
 
-	bset := bitset.New(numBlocks(req.FileSize))
-	f, err := s.fops.Create(BlocksFile(s.requestPath, id))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	bset.WriteTo(f)
+	s.tracker.load(id, numBlocks(fileSize))
 	return nil
 }
 
@@ -160,10 +155,10 @@ func (s *idService) initUpload(req IDRequest, id string) error {
 const twoMeg = 2 * 1024 * 1024
 
 // numBlocks
-func numBlocks(fileSize int64) uint {
+func numBlocks(fileSize int64) int {
 	// round up to nearest number of blocks
 	d := float64(fileSize) / float64(twoMeg)
-	return uint(math.Ceil(d))
+	return int(math.Ceil(d))
 }
 
 // Delete will delete the given requestID if the user has access
