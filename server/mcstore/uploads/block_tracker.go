@@ -37,9 +37,8 @@ func (t *blockTracker) setBlock(id string, block int) {
 	bset.Set(uint(block))
 }
 
-// setup will load the blocks bitset for an id. It panics if it cannot
-// read the blocks file. loadBlocks doesn't grab mutex locks.
-func (t *blockTracker) setup(id string, numBlocks int) {
+// load will load the blocks bitset for an id.
+func (t *blockTracker) load(id string, numBlocks int) {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
 

@@ -22,7 +22,7 @@ func newBlockCountTracker() *blockCountTracker {
 	}
 }
 
-func (u *blockCountTracker) setup(id string, numBlocks int) {
+func (u *blockCountTracker) load(id string, numBlocks int) {
 	defer u.mutex.Unlock()
 	u.mutex.Lock()
 
