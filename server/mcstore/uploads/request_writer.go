@@ -106,9 +106,8 @@ func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error 
 	} else {
 		defer f.Close()
 
-		fromBeginning := 0
 		seekTo := int64((req.FlowChunkNumber - 1) * req.FlowChunkSize)
-		if _, err := f.Seek(seekTo, fromBeginning); err != nil {
+		if _, err := f.Seek(seekTo, os.SEEK_SET); err != nil {
 			app.Log.Critf("Failed seeking to write chunk #%d for %s: %s", req.FlowChunkNumber, req.UploadID(), err)
 			return err
 		}
