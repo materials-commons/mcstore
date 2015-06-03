@@ -3,8 +3,6 @@ package uploads
 import (
 	"sync"
 
-	"path/filepath"
-
 	"hash"
 
 	"crypto/md5"
@@ -61,52 +59,7 @@ func (t *blockTracker) load(id string, numBlocks int) {
 		bset: bset,
 		h:    md5.New(),
 	}
-
-	//	path := BlocksFile(t.requestPath, id)
-	//	if f, err := t.fops.Open(path); err != nil {
-	//		// File not found. Create new entry.
-	//		bset := bitset.New(uint(numBlocks))
-	//		t.reqBlocks[id] = bset
-	//		t.writeBlocks(bset, id)
-	//	} else {
-	//		defer f.Close()
-	//		var bset bitset.BitSet
-	//		bset.ReadFrom(f)
-	//		t.reqBlocks[id] = &bset
-	//	}
 }
-
-//// persist writes the blocks bitset to the blocks file. It panics if it cannot
-//// write the blocks file.
-//func (t *blockTracker) persist(id string) {
-//	defer t.mutex.Unlock()
-//	t.mutex.Lock()
-//	bset := t.reqBlocks[id]
-//	t.writeBlocks(bset, id)
-//}
-//
-//// persistAll writes all the blocks bitsets to their respective blocks file
-//// for each id that is being tracked by the blocks tracker. It panics if
-//// any of these fails to persist.
-//func (t *blockTracker) persistAll() {
-//	defer t.mutex.Unlock()
-//	t.mutex.Lock()
-//	for id, bset := range t.reqBlocks {
-//		t.writeBlocks(bset, id)
-//	}
-//}
-//
-//// writeBlocks performs the operation of writing the blocks file. It doesn't
-//// take out any locks and should never be called directly.
-//func (t *blockTracker) writeBlocks(bset *bitset.BitSet, id string) {
-//	path := BlocksFile(t.requestPath, id)
-//	f, err := t.fops.Create(path)
-//	if err != nil {
-//		app.Log.Panicf("Can't write block file for request %s (path %s): %s", id, path, err)
-//	}
-//	defer f.Close()
-//	bset.WriteTo(f)
-//}
 
 // clearBlock unmarks a block.
 func (t *blockTracker) clearBlock(id string, block int) {
@@ -142,9 +95,4 @@ func (t *blockTracker) hash(id string) string {
 func (t *blockTracker) addToHash(id string, what []byte) {
 	h := t.reqBlocks[id].h
 	io.WriteString(h, string(what))
-}
-
-// BlocksFile returns the path to the blocks file for a given id.
-func BlocksFile(rpath requestPath, id string) (path string) {
-	return filepath.Join(rpath.dirFromID(id), "blocks")
 }

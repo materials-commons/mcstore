@@ -17,8 +17,15 @@ type Command struct {
 	// Whether subcommands are optional
 	SubcommandsOptional bool
 
+	// Aliases for the command
+	Aliases []string
+
+	// Whether positional arguments are required
+	ArgsRequired bool
+
 	commands            []*Command
 	hasBuiltinHelpGroup bool
+	args                []*Arg
 }
 
 // Commander is an interface which can be implemented by any command added in
@@ -47,6 +54,8 @@ type Usage interface {
 func (c *Command) AddCommand(command string, shortDescription string, longDescription string, data interface{}) (*Command, error) {
 	cmd := newCommand(command, shortDescription, longDescription, data)
 
+	cmd.parent = c
+
 	if err := cmd.scan(); err != nil {
 		return nil, err
 	}
@@ -60,6 +69,8 @@ func (c *Command) AddCommand(command string, shortDescription string, longDescri
 // options are in the group.
 func (c *Command) AddGroup(shortDescription string, longDescription string, data interface{}) (*Group, error) {
 	group := newGroup(shortDescription, longDescription, data)
+
+	group.parent = c
 
 	if err := group.scanType(c.scanSubcommandHandler(group)); err != nil {
 		return nil, err
@@ -78,10 +89,18 @@ func (c *Command) Commands() []*Command {
 // command can be found Find will return nil.
 func (c *Command) Find(name string) *Command {
 	for _, cc := range c.commands {
-		if cc.Name == name {
+		if cc.match(name) {
 			return cc
 		}
 	}
 
 	return nil
+}
+
+// Args returns a list of positional arguments associated with this command.
+func (c *Command) Args() []*Arg {
+	ret := make([]*Arg, len(c.args))
+	copy(ret, c.args)
+
+	return ret
 }

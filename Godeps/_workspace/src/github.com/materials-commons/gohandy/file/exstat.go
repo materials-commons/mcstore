@@ -22,6 +22,54 @@ func ExStat(path string) (fileInfo ExFileInfo, err error) {
 		return nil, err
 	}
 
-	exfi := newExFileInfo(fi, path)
+	exfi := systemExFileInfo(fi, path)
 	return exfi, nil
+}
+
+// stdExFileInfo is a version of the ExFileInfo where the extended
+// attributes are given by the user.
+type stdExFileInfo struct {
+	os.FileInfo
+	path  string
+	mtime time.Time
+	ctime time.Time
+	atime time.Time
+	fid   FID
+	size  int64
+}
+
+func ExInfoFrom(size int64, ctime, atime, mtime time.Time, fid FID) *stdExFileInfo {
+	finfo := &stdExFileInfo{
+		path:  "",
+		ctime: ctime,
+		atime: atime,
+		mtime: mtime,
+		fid:   fid,
+		size:  size,
+	}
+	return finfo
+}
+
+func (fi *stdExFileInfo) FID() FID {
+	return fi.fid
+}
+
+func (fi *stdExFileInfo) CTime() time.Time {
+	return fi.ctime
+}
+
+func (fi *stdExFileInfo) ModTime() time.Time {
+	return fi.mtime
+}
+
+func (fi *stdExFileInfo) ATime() time.Time {
+	return fi.atime
+}
+
+func (fi *stdExFileInfo) Path() string {
+	return fi.path
+}
+
+func (fi *stdExFileInfo) Size() int64 {
+	return fi.size
 }

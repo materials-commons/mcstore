@@ -8,14 +8,17 @@ package cast
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	jww "github.com/spf13/jwalterweatherman"
 )
 
 func ToTimeE(i interface{}) (tim time.Time, err error) {
+	i = indirect(i)
 	jww.DEBUG.Println("ToTimeE called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
@@ -32,7 +35,24 @@ func ToTimeE(i interface{}) (tim time.Time, err error) {
 	}
 }
 
+func ToDurationE(i interface{}) (d time.Duration, err error) {
+	i = indirect(i)
+	jww.DEBUG.Println("ToDurationE called on type:", reflect.TypeOf(i))
+
+	switch s := i.(type) {
+	case time.Duration:
+		return s, nil
+	case string:
+		d, err = time.ParseDuration(s)
+		return
+	default:
+		err = fmt.Errorf("Unable to Cast %#v to Duration\n", i)
+		return
+	}
+}
+
 func ToBoolE(i interface{}) (bool, error) {
+	i = indirect(i)
 	jww.DEBUG.Println("ToBoolE called on type:", reflect.TypeOf(i))
 
 	switch b := i.(type) {
@@ -41,16 +61,19 @@ func ToBoolE(i interface{}) (bool, error) {
 	case nil:
 		return false, nil
 	case int:
-		if i.(int) > 0 {
+		if i.(int) != 0 {
 			return true, nil
 		}
 		return false, nil
+	case string:
+		return strconv.ParseBool(i.(string))
 	default:
 		return false, fmt.Errorf("Unable to Cast %#v to bool", i)
 	}
 }
 
 func ToFloat64E(i interface{}) (float64, error) {
+	i = indirect(i)
 	jww.DEBUG.Println("ToFloat64E called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
@@ -81,6 +104,7 @@ func ToFloat64E(i interface{}) (float64, error) {
 }
 
 func ToIntE(i interface{}) (int, error) {
+	i = indirect(i)
 	jww.DEBUG.Println("ToIntE called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
@@ -116,7 +140,47 @@ func ToIntE(i interface{}) (int, error) {
 	}
 }
 
+// From html/template/content.go
+// Copyright 2011 The Go Authors. All rights reserved.
+// indirect returns the value, after dereferencing as many times
+// as necessary to reach the base type (or nil).
+func indirect(a interface{}) interface{} {
+	if a == nil {
+		return nil
+	}
+	if t := reflect.TypeOf(a); t.Kind() != reflect.Ptr {
+		// Avoid creating a reflect.Value if it's not a pointer.
+		return a
+	}
+	v := reflect.ValueOf(a)
+	for v.Kind() == reflect.Ptr && !v.IsNil() {
+		v = v.Elem()
+	}
+	return v.Interface()
+}
+
+// From html/template/content.go
+// Copyright 2011 The Go Authors. All rights reserved.
+// indirectToStringerOrError returns the value, after dereferencing as many times
+// as necessary to reach the base type (or nil) or an implementation of fmt.Stringer
+// or error,
+func indirectToStringerOrError(a interface{}) interface{} {
+	if a == nil {
+		return nil
+	}
+
+	var errorType = reflect.TypeOf((*error)(nil)).Elem()
+	var fmtStringerType = reflect.TypeOf((*fmt.Stringer)(nil)).Elem()
+
+	v := reflect.ValueOf(a)
+	for !v.Type().Implements(fmtStringerType) && !v.Type().Implements(errorType) && v.Kind() == reflect.Ptr && !v.IsNil() {
+		v = v.Elem()
+	}
+	return v.Interface()
+}
+
 func ToStringE(i interface{}) (string, error) {
+	i = indirectToStringerOrError(i)
 	jww.DEBUG.Println("ToStringE called on type:", reflect.TypeOf(i))
 
 	switch s := i.(type) {
@@ -128,8 +192,14 @@ func ToStringE(i interface{}) (string, error) {
 		return strconv.FormatInt(int64(i.(int)), 10), nil
 	case []byte:
 		return string(s), nil
+	case template.HTML:
+		return string(s), nil
 	case nil:
 		return "", nil
+	case fmt.Stringer:
+		return s.String(), nil
+	case error:
+		return s.Error(), nil
 	default:
 		return "", fmt.Errorf("Unable to Cast %#v to string", i)
 	}
@@ -159,6 +229,30 @@ func ToStringMapStringE(i interface{}) (map[string]string, error) {
 	return m, fmt.Errorf("Unable to Cast %#v to map[string]string", i)
 }
 
+func ToStringMapBoolE(i interface{}) (map[string]bool, error) {
+	jww.DEBUG.Println("ToStringMapBoolE called on type:", reflect.TypeOf(i))
+
+	var m = map[string]bool{}
+
+	switch v := i.(type) {
+	case map[interface{}]interface{}:
+		for k, val := range v {
+			m[ToString(k)] = ToBool(val)
+		}
+		return m, nil
+	case map[string]interface{}:
+		for k, val := range v {
+			m[ToString(k)] = ToBool(val)
+		}
+		return m, nil
+	case map[string]bool:
+		return v, nil
+	default:
+		return m, fmt.Errorf("Unable to Cast %#v to map[string]bool", i)
+	}
+	return m, fmt.Errorf("Unable to Cast %#v to map[string]bool", i)
+}
+
 func ToStringMapE(i interface{}) (map[string]interface{}, error) {
 	jww.DEBUG.Println("ToStringMapE called on type:", reflect.TypeOf(i))
 
@@ -186,7 +280,6 @@ func ToSliceE(i interface{}) ([]interface{}, error) {
 
 	switch v := i.(type) {
 	case []interface{}:
-		fmt.Println("here")
 		for _, u := range v {
 			s = append(s, u)
 		}
@@ -216,11 +309,45 @@ func ToStringSliceE(i interface{}) ([]string, error) {
 		return a, nil
 	case []string:
 		return v, nil
+	case string:
+		return strings.Fields(v), nil
 	default:
 		return a, fmt.Errorf("Unable to Cast %#v to []string", i)
 	}
 
 	return a, fmt.Errorf("Unable to Cast %#v to []string", i)
+}
+
+func ToIntSliceE(i interface{}) ([]int, error) {
+	jww.DEBUG.Println("ToIntSliceE called on type:", reflect.TypeOf(i))
+
+	if i == nil {
+		return []int{}, fmt.Errorf("Unable to Cast %#v to []int", i)
+	}
+
+	switch v := i.(type) {
+	case []int:
+		return v, nil
+	}
+
+	kind := reflect.TypeOf(i).Kind()
+	switch kind {
+	case reflect.Slice, reflect.Array:
+		s := reflect.ValueOf(i)
+		a := make([]int, s.Len())
+		for j := 0; j < s.Len(); j++ {
+			val, err := ToIntE(s.Index(j).Interface())
+			if err != nil {
+				return []int{}, fmt.Errorf("Unable to Cast %#v to []int", i)
+			}
+			a[j] = val
+		}
+		return a, nil
+	default:
+		return []int{}, fmt.Errorf("Unable to Cast %#v to []int", i)
+	}
+
+	return []int{}, fmt.Errorf("Unable to Cast %#v to []int", i)
 }
 
 func StringToDate(s string) (time.Time, error) {

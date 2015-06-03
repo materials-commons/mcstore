@@ -41,8 +41,8 @@ func (fi *winExFileInfo) Path() string {
 	return fi.path
 }
 
-// newExFileInfo creates a new winExFileInfo from a os.FileInfo.
-func newExFileInfo(fi os.FileInfo, path string) *winExFileInfo {
+// systemExFileInfo creates a new winExFileInfo from a os.FileInfo.
+func systemExFileInfo(fi os.FileInfo, path string) *winExFileInfo {
 	fid, err := createFID(path)
 	if err != nil {
 		// do something
