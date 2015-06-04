@@ -55,3 +55,17 @@ func (m *Files) UpdateFields(fileID string, fields map[string]interface{}) error
 	r0 := ret.Error(0)
 	return r0
 }
+
+func (m *Files) Delete(fileID, directoryID, projectID string) (*schema.File, error) {
+	ret := m.Called(fileID, directoryID, projectID)
+	r0 := ret.Get(0).(*schema.File)
+	r1 := ret.Error(1)
+	return r0, r1
+}
+
+func (m *Files) GetProject(fileID string) (*schema.Project, error) {
+	ret := m.Called(fileID)
+	r0 := ret.Get(0).(*schema.Project)
+	r1 := ret.Error(1)
+	return r0, r1
+}
