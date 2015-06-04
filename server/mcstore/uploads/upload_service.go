@@ -1,7 +1,7 @@
 package uploads
 
 import (
-	"io"
+	"path/filepath"
 
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -40,11 +40,11 @@ type uploadService struct {
 func NewUploadService() *uploadService {
 	session := db.RSessionMust()
 	return &uploadService{
-		tracker:     requestBlockCountTracker,
+		tracker:     requestBlockTracker,
 		files:       dai.NewRFiles(session),
 		uploads:     dai.NewRUploads(session),
 		dirs:        dai.NewRDirs(session),
-		writer:      &fileRequestWriter{},
+		writer:      &blockRequestWriter{},
 		requestPath: &mcdirRequestPath{},
 		fops:        file.OS,
 	}
@@ -64,18 +64,17 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 	if s.tracker.done(id) {
 		// assembling the file, and performing any processing may take a while, especially
 		// on large uploads, so we perform this step in the background.
-		go func(req *UploadRequest, dir string) {
-			if file, err := s.assemble(req, dir); err != nil {
-				app.Log.Errorf("Assembly failed for request %s: %s", req.FlowIdentifier, err)
-				// Assembly failed. If file isn't nil then
-				// there is some cleanup to do in the database.
-				if file != nil {
-					if err := s.cleanup(req, file.ID); err != nil {
-						app.Log.Errorf("Attempted cleanup of failed assembly %s errored with: %s", req.FlowIdentifier, err)
-					}
+		if file, err := s.assemble(req, dir); err != nil {
+			app.Log.Errorf("Assembly failed for request %s: %s", req.FlowIdentifier, err)
+			// Assembly failed. If file isn't nil then
+			// there is some cleanup to do in the database.
+			if file != nil {
+				if err := s.cleanup(req, file.ID); err != nil {
+					app.Log.Errorf("Attempted cleanup of failed assembly %s errored with: %s", req.FlowIdentifier, err)
 				}
 			}
-		}(req, dir)
+			return err
+		}
 	}
 	return nil
 }
@@ -97,18 +96,14 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 	}
 
 	// Create on disk entry to write chunks to
-	dest, err := s.createDest(file.ID)
-	if err != nil {
+	if err := s.createDest(file.ID); err != nil {
 		app.Log.Errorf("Assembly failed for request %s, couldn't create file on disk: %s", req.FlowIdentifier, err)
 		return file, err
 	}
 
-	// Assemble the chunks
-	chunkSupplier := newDirChunkSupplier(dir)
-	if err := assembleRequest(chunkSupplier, dest); err != nil {
-		app.Log.Errorf("Assembly failed for request %s, couldn't assemble request: %s", req.FlowIdentifier, err)
-		return file, err
-	}
+	// Move file
+	uploadDir := s.requestPath.dir(req.Request)
+	s.fops.Rename(filepath.Join(uploadDir, req.UploadID()), app.MCDir.FilePath(file.ID))
 
 	// Finish updating the file state.
 	finisher := newFinisher(s.files, s.dirs)
@@ -137,12 +132,12 @@ func (s *uploadService) createFile(req *UploadRequest, upload *schema.Upload) (*
 
 // createDest creates the destination file and ensures that the directory
 // path is also created.
-func (s *uploadService) createDest(fileID string) (io.Writer, error) {
+func (s *uploadService) createDest(fileID string) error {
 	dir := app.MCDir.FileDir(fileID)
 	if err := s.fops.MkdirAll(dir, 0700); err != nil {
-		return nil, err
+		return err
 	}
-	return s.fops.Create(app.MCDir.FilePath(fileID))
+	return nil
 }
 
 // cleanup is called when an error has occurred. It attempts to clean up
