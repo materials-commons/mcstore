@@ -7,9 +7,10 @@ import (
 
 	"crypto/md5"
 	"fmt"
+
+	"bytes"
 	"io"
 
-	"github.com/materials-commons/gohandy/file"
 	"github.com/willf/bitset"
 )
 
@@ -22,18 +23,14 @@ type requestByBlockTracker struct {
 // If a block has been successfully written then it is marked, otherwise
 // the block is clear and no data has been written for it.
 type blockTracker struct {
-	mutex       sync.RWMutex
-	requestPath requestPath
-	fops        file.Operations
-	reqBlocks   map[string]*requestByBlockTracker
+	mutex     sync.RWMutex
+	reqBlocks map[string]*requestByBlockTracker
 }
 
 // newBlockTracker creates a new blockTracker instance.
 func newBlockTracker() *blockTracker {
 	return &blockTracker{
-		requestPath: &mcdirRequestPath{},
-		fops:        file.OS,
-		reqBlocks:   make(map[string]*requestByBlockTracker),
+		reqBlocks: make(map[string]*requestByBlockTracker),
 	}
 }
 
@@ -42,7 +39,7 @@ func (t *blockTracker) setBlock(id string, block int) {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
 	bset := t.reqBlocks[id].bset
-	bset.Set(uint(block))
+	bset.Set(uint(block - 1))
 }
 
 // load will load the blocks bitset for an id.
@@ -66,12 +63,12 @@ func (t *blockTracker) clearBlock(id string, block int) {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
 	bset := t.reqBlocks[id].bset
-	bset.SetTo(uint(block), false)
+	bset.SetTo(uint(block-1), false)
 }
 
 // done returns true if all blocks have been marked for an id.
 func (t *blockTracker) done(id string) bool {
-	defer t.mutex.Unlock()
+	defer t.mutex.RUnlock()
 	t.mutex.RLock()
 	bset := t.reqBlocks[id].bset
 	return bset.All()
@@ -94,5 +91,5 @@ func (t *blockTracker) hash(id string) string {
 
 func (t *blockTracker) addToHash(id string, what []byte) {
 	h := t.reqBlocks[id].h
-	io.WriteString(h, string(what))
+	io.Copy(h, bytes.NewBuffer(what))
 }
