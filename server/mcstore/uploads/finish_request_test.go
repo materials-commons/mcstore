@@ -1,6 +1,7 @@
 package uploads
 
 import (
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	dmocks "github.com/materials-commons/mcstore/pkg/db/dai/mocks"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -10,17 +11,20 @@ import (
 
 var _ = Describe("FinishRequest", func() {
 	var (
-		files *dmocks.Files
-		dirs  *dmocks.Dirs
-		f     *finisher
+		files  *dmocks.Files
+		dirs   *dmocks.Dirs
+		files2 *dmocks.Files2
+		f      *finisher
 	)
 
 	BeforeEach(func() {
 		files = dmocks.NewMFiles()
 		dirs = dmocks.NewMDirs()
+		files2 = dmocks.NewMFiles2()
 		f = &finisher{
 			files: files,
 			dirs:  dirs,
+			fops:  file.MockOps,
 		}
 	})
 
@@ -81,5 +85,9 @@ var _ = Describe("FinishRequest", func() {
 	})
 
 	Describe("finish method tests", func() {
+
+		It("Should fail if the size is wrong.", func() {
+
+		})
 	})
 })
