@@ -26,12 +26,16 @@ var _ = Describe("IDService", func() {
 			projects:    projects,
 			uploads:     uploads,
 			access:      access,
-			fops:        file.MockOps,
+			fops:        file.MockOps(),
 			tracker:     requestBlockCountTracker,
 			requestPath: &mockRequestPath{},
 		}
 		upload *schema.Upload
 	)
+
+	BeforeEach(func() {
+		s.fops = file.MockOps()
+	})
 
 	AfterEach(func() {
 		if upload != nil {
