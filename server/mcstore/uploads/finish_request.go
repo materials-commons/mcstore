@@ -36,11 +36,6 @@ func newFinisher(files dai.Files, dirs dai.Dirs) *finisher {
 // logical blocks.
 func (f *finisher) finish(req *UploadRequest, fileID, checksum string, upload *schema.Upload) error {
 	filePath := app.MCDir.FilePath(fileID)
-	//	checksum, err := file.HashStr(md5.New(), filePath)
-	//	if err != nil {
-	//		app.Log.Errorf("Failed creating checksum for '%s': %s", filePath, err)
-	//		return err
-	//	}
 
 	parentID, err := f.parentID(upload.File.Name, upload.DirectoryID)
 	if err != nil {
