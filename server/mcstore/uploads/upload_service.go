@@ -58,7 +58,9 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 		return err
 	}
 
+
 	id := req.UploadID()
+	s.tracker.addToHash(id, req.Chunk)
 	s.tracker.setBlock(id, int(req.FlowChunkNumber))
 
 	if s.tracker.done(id) {
@@ -107,7 +109,7 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 
 	// Finish updating the file state.
 	finisher := newFinisher(s.files, s.dirs)
-	if err := finisher.finish(req, file.ID, upload); err != nil {
+	if err := finisher.finish(req, file.ID, s.tracker.hash(req.UploadID()), upload); err != nil {
 		app.Log.Errorf("Assembly failed for request %s, couldn't finish request: %s", req.FlowIdentifier, err)
 		return file, err
 	}
