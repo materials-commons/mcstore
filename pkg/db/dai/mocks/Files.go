@@ -3,8 +3,8 @@ package mocks
 import "github.com/materials-commons/testify/mock"
 
 import (
-	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"fmt"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
 
 type Files struct {
@@ -74,13 +74,13 @@ func (m *Files) GetProject(fileID string) (*schema.Project, error) {
 }
 
 type fentry struct {
-	file *schema.File
-	err error
+	file    *schema.File
+	err     error
 	project *schema.Project
 }
 
 type Files2 struct {
-	method map[string]*fentry
+	method        map[string]*fentry
 	currentMethod string
 }
 
