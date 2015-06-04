@@ -58,7 +58,6 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 		return err
 	}
 
-
 	id := req.UploadID()
 	s.tracker.addToHash(id, req.Chunk)
 	s.tracker.setBlock(id, int(req.FlowChunkNumber))
