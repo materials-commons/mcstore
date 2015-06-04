@@ -3,6 +3,7 @@ package uploads
 import (
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/app/flow"
 	dmocks "github.com/materials-commons/mcstore/pkg/db/dai/mocks"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	. "github.com/onsi/ginkgo"
@@ -11,20 +12,23 @@ import (
 
 var _ = Describe("FinishRequest", func() {
 	var (
-		files  *dmocks.Files
-		dirs   *dmocks.Dirs
-		files2 *dmocks.Files2
-		f      *finisher
+		files   *dmocks.Files
+		dirs    *dmocks.Dirs
+		files2  *dmocks.Files2
+		fops    *file.MockOperations
+		f       *finisher
+		nilFile *schema.File = nil
 	)
 
 	BeforeEach(func() {
 		files = dmocks.NewMFiles()
 		dirs = dmocks.NewMDirs()
 		files2 = dmocks.NewMFiles2()
+		fops = file.MockOps()
 		f = &finisher{
 			files: files,
 			dirs:  dirs,
-			fops:  file.MockOps,
+			fops:  fops,
 		}
 	})
 
@@ -40,7 +44,6 @@ var _ = Describe("FinishRequest", func() {
 		})
 
 		It("Should not return a parent when there isn't one", func() {
-			var nilFile *schema.File = nil
 			files.On("ByPath", "file.name", "dir").Return(nilFile, app.ErrNotFound)
 			parentID, err := f.parentID("file.name", "dir")
 			Expect(err).To(BeNil())
@@ -48,7 +51,6 @@ var _ = Describe("FinishRequest", func() {
 		})
 
 		It("Should return an error when ByPath returns an error other than app.ErrNotFound", func() {
-			var nilFile *schema.File = nil
 			files.On("ByPath", "file.name", "dir").Return(nilFile, app.ErrInvalid)
 			parentID, err := f.parentID("file.name", "dir")
 			Expect(err).To(Equal(app.ErrInvalid))
@@ -85,9 +87,31 @@ var _ = Describe("FinishRequest", func() {
 	})
 
 	Describe("finish method tests", func() {
+		var (
+			upload *schema.Upload = &schema.Upload{
+				DirectoryID: "dir",
+				File: schema.FileUpload{
+					Name: "file.name",
+				},
+			}
+			freq *flow.Request
+			req  *UploadRequest
+		)
+
+		BeforeEach(func() {
+			freq = &flow.Request{}
+			req = &UploadRequest{freq}
+		})
 
 		It("Should fail if the size is wrong.", func() {
-
+			files.On("ByPath", "file.name", "dir").Return(nilFile, app.ErrNotFound)
+			mFileInfo := file.MockFileInfo{
+				MSize: 2,
+			}
+			freq.FlowTotalSize = 3
+			fops.On("Stat").SetError(nil).SetValue(mFileInfo)
+			err := f.finish(req, "fileID", "checksum", upload)
+			Expect(err).To(Equal(app.ErrInvalid))
 		})
 	})
 })
