@@ -12,8 +12,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var _ = fmt.Sprintf("")
+
 var _ = Describe("RFiles", func() {
-	var rfiles Files
+	var rfiles rFiles
 
 	BeforeEach(func() {
 		rfiles = NewRFiles(testutil.RSession())
@@ -59,13 +61,22 @@ var _ = Describe("RFiles", func() {
 
 				deleteFile(file.ID)
 			})
+
+			It("Should return an error when attempting to insert same object twice", func() {
+				tfile := schema.NewFile("test1.txt", "test@mc.org")
+				tfile.ID = "test1.txt"
+				newFile, err := rfiles.Insert(&tfile, "test", "test")
+				Expect(err).To(BeNil())
+				Expect(newFile.ID).To(Equal("test1.txt"))
+
+				newFile, err = rfiles.Insert(&tfile, "test", "test")
+				deleteFile("test1.txt")
+			})
 		})
 
 		Context("Database sets ID", func() {
 			It("Should properly create the file plus all the join table entries", func() {
 				file := schema.NewFile("test1.txt", "test@mc.org")
-
-				fmt.Printf("%#v", rfiles)
 				newFile, err := rfiles.Insert(&file, "test", "test")
 				Expect(err).To(BeNil())
 				Expect(newFile.ID).NotTo(Equal(""))
@@ -85,6 +96,91 @@ var _ = Describe("RFiles", func() {
 				Expect(len(dir2df)).To(BeNumerically("==", 1))
 
 				deleteFile(newFile.ID)
+			})
+		})
+	})
+
+	Describe("Delete", func() {
+		Context("Test against existing file", func() {
+			BeforeEach(func() {
+				tfile := schema.NewFile("tfile", "test@mc.org")
+				tfile.ID = "tfile"
+				rfiles.Insert(&tfile, "test", "test")
+			})
+
+			AfterEach(func() {
+				model.Files.Qs(rfiles.session).Delete("tfile")
+
+				rql := model.DirFiles.T().GetAllByIndex("datafile_id", "tfile").
+					Filter(r.Row.Field("datadir_id").Eq("test")).Delete()
+				rql.RunWrite(rfiles.session)
+
+				rql = model.ProjectFiles.T().GetAllByIndex("datafile_id", "tfile").
+					Filter(r.Row.Field("project_id").Eq("test")).Delete()
+				rql.RunWrite(rfiles.session)
+			})
+
+			Context("Supporting Method Tests", func() {
+				Describe("getProjects", func() {
+					It("Should find tfile in the test project", func() {
+						projects, err := rfiles.getProjects("tfile")
+						Expect(err).To(BeNil())
+						Expect(len(projects)).To(BeNumerically("==", 1))
+						proj := projects[0]
+						Expect(proj.DataFileID).To(Equal("tfile"))
+						Expect(proj.ProjectID).To(Equal("test"))
+					})
+				})
+
+				Describe("getDirs", func() {
+					It("Should find tfile in the test dir", func() {
+						dirs, err := rfiles.getDirs("tfile")
+						Expect(err).To(BeNil())
+						Expect(len(dirs)).To(BeNumerically("==", 1))
+						dir := dirs[0]
+						Expect(dir.DataFileID).To(Equal("tfile"))
+						Expect(dir.DataDirID).To(Equal("test"))
+					})
+				})
+
+				Describe("deleteFromDir", func() {
+					It("Should delete the tfile entry in datadir2datafile table", func() {
+						err := rfiles.deleteFromDir("tfile", "test")
+						Expect(err).To(BeNil())
+						dirs, err := rfiles.getDirs("tfile")
+						Expect(err).To(Equal(app.ErrNotFound))
+						Expect(dirs).To(BeNil())
+					})
+				})
+
+				Describe("deleteFromProject", func() {
+					It("Should delete the tfile entry in project2datafile table", func() {
+						err := rfiles.deleteFromProject("tfile", "test")
+						Expect(err).To(BeNil())
+						projects, err := rfiles.getProjects("tfile")
+						Expect(err).To(Equal(app.ErrNotFound))
+						Expect(projects).To(BeNil())
+					})
+				})
+			})
+
+			Context("Use Delete method to delete", func() {
+				It("Should delete tfile and all the join table entries", func() {
+					_, err := rfiles.Delete("tfile", "test", "test")
+					Expect(err).To(BeNil())
+
+					file, err := rfiles.ByID("tfile")
+					Expect(err).To(Equal(app.ErrNotFound))
+					Expect(file).To(BeNil())
+
+					dirs, err := rfiles.getDirs("tfile")
+					Expect(err).To(Equal(app.ErrNotFound))
+					Expect(dirs).To(BeNil())
+
+					projects, err := rfiles.getProjects("tfile")
+					Expect(err).To(Equal(app.ErrNotFound))
+					Expect(projects).To(BeNil())
+				})
 			})
 		})
 	})
