@@ -32,8 +32,6 @@ func newFinisher(files dai.Files, dirs dai.Dirs) *finisher {
 // finish takes care of updating the file and directory pointers, determining
 // if a matching file (by checksum) has already been uploaded, and making the
 // file ready for the user to access.
-// TODO: refactor this method into a few separate methods that contain the
-// logical blocks.
 func (f *finisher) finish(req *UploadRequest, fileID, checksum string, upload *schema.Upload) error {
 	filePath := app.MCDir.FilePath(fileID)
 
@@ -98,7 +96,7 @@ func (f *finisher) finish(req *UploadRequest, fileID, checksum string, upload *s
 
 // Size gets the size of the reconstructed file.
 func (f *finisher) size(fileID string) int64 {
-	finfo, err := os.Stat(app.MCDir.FilePath(fileID))
+	finfo, err := f.fops.Stat(app.MCDir.FilePath(fileID))
 	if err != nil {
 		return 0
 	}
