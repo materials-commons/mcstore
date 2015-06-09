@@ -167,7 +167,6 @@ var _ = Describe("FinishRequest", func() {
 				Expect(updatedFile.Checksum).To(Equal("no-matching-checksum"))
 				Expect(updatedFile.Uploaded).To(BeNumerically("==", 100))
 				Expect(updatedFile.Current).To(BeTrue())
-				//fmt.Printf("\n%#v\n", updatedFile)
 			})
 
 			It("Should succeed if matching checksum is found", func() {
@@ -186,11 +185,6 @@ var _ = Describe("FinishRequest", func() {
 				Expect(updatedFile.Checksum).To(Equal("no-matching-checksum"))
 				Expect(updatedFile.Uploaded).To(BeNumerically("==", 100))
 				Expect(updatedFile.Current).To(BeTrue())
-				//fmt.Printf("\n%#v\n", updatedFile)
-			})
-
-			It("Should properly update the parent when there is one", func() {
-
 			})
 		})
 	})
