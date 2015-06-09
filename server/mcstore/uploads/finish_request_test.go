@@ -173,10 +173,6 @@ var _ = Describe("FinishRequest", func() {
 				Expect(updatedFile.Uploaded).To(BeNumerically("==", 100))
 				Expect(updatedFile.Current).To(BeTrue())
 			})
-
-			It("Should properly update the parent when there is one", func() {
-
-			})
 		})
 	})
 })
