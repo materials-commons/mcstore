@@ -1,8 +1,6 @@
 package uploads
 
 import (
-	"fmt"
-
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -140,17 +138,6 @@ var _ = Describe("FinishRequest", func() {
 				files.Delete("testfile1.txt", "test", "test")
 			})
 
-			It("Should delete the file", func() {
-				tfile := schema.NewFile("testfile2.txt", "test@mc.org")
-				tfile.ID = "testfile2.txt"
-				files.Insert(&tfile, "test", "test")
-				_, err := files.Delete("testfile1.txt", "test", "test")
-				Expect(err).To(BeNil())
-				_, err = files.ByID("testfile1.txt")
-				fmt.Println("err", err)
-				Expect(err).NotTo(BeNil())
-			})
-
 			It("Should succeed if no matching checksum is found", func() {
 				mFileInfo := file.MockFileInfo{
 					MSize: 100,
@@ -167,7 +154,6 @@ var _ = Describe("FinishRequest", func() {
 				Expect(updatedFile.Checksum).To(Equal("no-matching-checksum"))
 				Expect(updatedFile.Uploaded).To(BeNumerically("==", 100))
 				Expect(updatedFile.Current).To(BeTrue())
-				//fmt.Printf("\n%#v\n", updatedFile)
 			})
 
 			It("Should succeed if matching checksum is found", func() {
@@ -186,7 +172,6 @@ var _ = Describe("FinishRequest", func() {
 				Expect(updatedFile.Checksum).To(Equal("no-matching-checksum"))
 				Expect(updatedFile.Uploaded).To(BeNumerically("==", 100))
 				Expect(updatedFile.Current).To(BeTrue())
-				//fmt.Printf("\n%#v\n", updatedFile)
 			})
 
 			It("Should properly update the parent when there is one", func() {
