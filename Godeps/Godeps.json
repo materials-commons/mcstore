@@ -21,8 +21,8 @@
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-107-g942282e",
-			"Rev": "942282e931e8286aa802a30b01fa7e16befb50f3"
+			"Comment": "1.2.0-106-ga889873",
+			"Rev": "a889873af50a499d060097216dcdbcc26ed09e7c"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
@@ -49,8 +49,8 @@
 		},
 		{
 			"ImportPath": "github.com/hashicorp/consul/api",
-			"Comment": "v0.5.0-267-g480c189",
-			"Rev": "480c189d9afa27f41d6b134a46b2afd700df42a7"
+			"Comment": "v0.4.1-366-gf2e1065",
+			"Rev": "f2e1065246cb49aa7d0bfa07f4e93e6bb569841f"
 		},
 		{
 			"ImportPath": "github.com/inconshreveable/log15",
@@ -69,17 +69,17 @@
 		},
 		{
 			"ImportPath": "github.com/materials-commons/config",
-			"Rev": "aa73a1105b10121b75fa60659f63b078e998d7f7"
+			"Rev": "0324c5548ccba1266166e6efcc430af1e64a1272"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/gohandy/ezhttp",
-			"Comment": "v0.1-59-gecd2c28",
-			"Rev": "ecd2c285f258006625efc750afebccb07e119dd4"
+			"Comment": "v0.1-62-g3a94c10",
+			"Rev": "3a94c10afeea7923e48277341953f18a0088fe0a"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/gohandy/file",
-			"Comment": "v0.1-59-gecd2c28",
-			"Rev": "ecd2c285f258006625efc750afebccb07e119dd4"
+			"Comment": "v0.1-62-g3a94c10",
+			"Rev": "3a94c10afeea7923e48277341953f18a0088fe0a"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/testify/mock",
@@ -95,13 +95,13 @@
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Comment": "v1.2.0-beta",
-			"Rev": "0efbdc3a60137c0757b84e994a56037378170913"
+			"Comment": "v1.2.0-beta-17-gc5c7614",
+			"Rev": "c5c761488350e56a28c4a91da87e5db7020bedc8"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-43-gf4f1cae",
-			"Rev": "f4f1caefe95e396ea97b72dd6c52973ae4a6978c"
+			"Comment": "v1.0-48-g766f404",
+			"Rev": "766f4042b942146e90594d145c5071fa92c0aa9a"
 		},
 		{
 			"ImportPath": "github.com/parnurzeal/gorequest",
@@ -143,13 +143,11 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh/terminal",
-			"Comment": "null-236",
-			"Rev": "69e2a90ed92d03812364aeb947b7068dc42e561e"
+			"Rev": "24ffb5feb3312a39054178a4b0a4554fc2201248"
 		},
 		{
 			"ImportPath": "golang.org/x/net/publicsuffix",
-			"Comment": "null-223",
-			"Rev": "5dedbdc181629d2f3557caf2667e60eb82c5e6d7"
+			"Rev": "e0403b4e005737430c05a57aac078479844f919c"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v1",

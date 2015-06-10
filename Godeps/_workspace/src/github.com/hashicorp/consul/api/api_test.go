@@ -6,41 +6,112 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
-	"runtime"
+	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/hashicorp/consul/testutil"
 )
 
-type configCallback func(c *Config)
+var consulConfig = `{
+	"ports": {
+		"dns": 19000,
+		"http": 18800,
+		"rpc": 18600,
+		"serf_lan": 18200,
+		"serf_wan": 18400,
+		"server": 18000
+	},
+	"data_dir": "%s",
+	"bootstrap": true,
+	"server": true
+}`
 
-func makeClient(t *testing.T) (*Client, *testutil.TestServer) {
-	return makeClientWithConfig(t, nil, nil)
+type testServer struct {
+	pid        int
+	dataDir    string
+	configFile string
 }
 
-func makeClientWithConfig(
-	t *testing.T,
-	cb1 configCallback,
-	cb2 testutil.ServerConfigCallback) (*Client, *testutil.TestServer) {
+func (s *testServer) stop() {
+	defer os.RemoveAll(s.dataDir)
+	defer os.RemoveAll(s.configFile)
 
-	// Make client config
-	conf := DefaultConfig()
-	if cb1 != nil {
-		cb1(conf)
+	cmd := exec.Command("kill", "-9", fmt.Sprintf("%d", s.pid))
+	if err := cmd.Run(); err != nil {
+		panic(err)
+	}
+}
+
+func newTestServer(t *testing.T) *testServer {
+	if path, err := exec.LookPath("consul"); err != nil || path == "" {
+		t.Log("consul not found on $PATH, skipping")
+		t.SkipNow()
 	}
 
-	// Create server
-	server := testutil.NewTestServerConfig(t, cb2)
-	conf.Address = server.HTTPAddr
+	pidFile, err := ioutil.TempFile("", "consul")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	pidFile.Close()
+	os.Remove(pidFile.Name())
 
-	// Create client
+	dataDir, err := ioutil.TempDir("", "consul")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	configFile, err := ioutil.TempFile("", "consul")
+	if err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	configContent := fmt.Sprintf(consulConfig, dataDir)
+	if _, err := configFile.WriteString(configContent); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+	configFile.Close()
+
+	// Start the server
+	cmd := exec.Command("consul", "agent", "-config-file", configFile.Name())
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("err: %s", err)
+	}
+
+	// Allow the server some time to start, and verify we have a leader.
+	client := new(http.Client)
+	testutil.WaitForResult(func() (bool, error) {
+		resp, err := client.Get("http://127.0.0.1:18800/v1/status/leader")
+		if err != nil {
+			return false, err
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil || !strings.Contains(string(body), "18000") {
+			return false, fmt.Errorf("No leader")
+		}
+
+		return true, nil
+	}, func(err error) {
+		t.Fatalf("err: %s", err)
+	})
+
+	return &testServer{
+		pid:        cmd.Process.Pid,
+		dataDir:    dataDir,
+		configFile: configFile.Name(),
+	}
+}
+
+func makeClient(t *testing.T) (*Client, *testServer) {
+	server := newTestServer(t)
+	conf := DefaultConfig()
+	conf.Address = "127.0.0.1:18800"
 	client, err := NewClient(conf)
 	if err != nil {
 		t.Fatalf("err: %v", err)
 	}
-
 	return client, server
 }
 
@@ -58,56 +129,9 @@ func testKey() string {
 		buf[10:16])
 }
 
-func TestDefaultConfig_env(t *testing.T) {
-	t.Parallel()
-	addr := "1.2.3.4:5678"
-	token := "abcd1234"
-	auth := "username:password"
-
-	os.Setenv("CONSUL_HTTP_ADDR", addr)
-	defer os.Setenv("CONSUL_HTTP_ADDR", "")
-	os.Setenv("CONSUL_HTTP_TOKEN", token)
-	defer os.Setenv("CONSUL_HTTP_TOKEN", "")
-	os.Setenv("CONSUL_HTTP_AUTH", auth)
-	defer os.Setenv("CONSUL_HTTP_AUTH", "")
-	os.Setenv("CONSUL_HTTP_SSL", "1")
-	defer os.Setenv("CONSUL_HTTP_SSL", "")
-	os.Setenv("CONSUL_HTTP_SSL_VERIFY", "0")
-	defer os.Setenv("CONSUL_HTTP_SSL_VERIFY", "")
-
-	config := DefaultConfig()
-
-	if config.Address != addr {
-		t.Errorf("expected %q to be %q", config.Address, addr)
-	}
-
-	if config.Token != token {
-		t.Errorf("expected %q to be %q", config.Token, token)
-	}
-
-	if config.HttpAuth == nil {
-		t.Fatalf("expected HttpAuth to be enabled")
-	}
-	if config.HttpAuth.Username != "username" {
-		t.Errorf("expected %q to be %q", config.HttpAuth.Username, "username")
-	}
-	if config.HttpAuth.Password != "password" {
-		t.Errorf("expected %q to be %q", config.HttpAuth.Password, "password")
-	}
-
-	if config.Scheme != "https" {
-		t.Errorf("expected %q to be %q", config.Scheme, "https")
-	}
-
-	if !config.HttpClient.Transport.(*http.Transport).TLSClientConfig.InsecureSkipVerify {
-		t.Errorf("expected SSL verification to be off")
-	}
-}
-
 func TestSetQueryOptions(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	r := c.newRequest("GET", "/v1/kv/foo")
 	q := &QueryOptions{
@@ -141,9 +165,8 @@ func TestSetQueryOptions(t *testing.T) {
 }
 
 func TestSetWriteOptions(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	r := c.newRequest("GET", "/v1/kv/foo")
 	q := &WriteOptions{
@@ -161,9 +184,8 @@ func TestSetWriteOptions(t *testing.T) {
 }
 
 func TestRequestToHTTP(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	r := c.newRequest("DELETE", "/v1/kv/foo")
 	q := &QueryOptions{
@@ -178,13 +200,12 @@ func TestRequestToHTTP(t *testing.T) {
 	if req.Method != "DELETE" {
 		t.Fatalf("bad: %v", req)
 	}
-	if req.URL.RequestURI() != "/v1/kv/foo?dc=foo" {
+	if req.URL.String() != "http://127.0.0.1:18800/v1/kv/foo?dc=foo" {
 		t.Fatalf("bad: %v", req)
 	}
 }
 
 func TestParseQueryMeta(t *testing.T) {
-	t.Parallel()
 	resp := &http.Response{
 		Header: make(map[string][]string),
 	}
@@ -205,38 +226,5 @@ func TestParseQueryMeta(t *testing.T) {
 	}
 	if !qm.KnownLeader {
 		t.Fatalf("Bad: %v", qm)
-	}
-}
-
-func TestAPI_UnixSocket(t *testing.T) {
-	t.Parallel()
-	if runtime.GOOS == "windows" {
-		t.SkipNow()
-	}
-
-	tempDir, err := ioutil.TempDir("", "consul")
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	defer os.RemoveAll(tempDir)
-	socket := filepath.Join(tempDir, "test.sock")
-
-	c, s := makeClientWithConfig(t, func(c *Config) {
-		c.Address = "unix://" + socket
-	}, func(c *testutil.TestServerConfig) {
-		c.Addresses = &testutil.TestAddressConfig{
-			HTTP: "unix://" + socket,
-		}
-	})
-	defer s.Stop()
-
-	agent := c.Agent()
-
-	info, err := agent.Self()
-	if err != nil {
-		t.Fatalf("err: %s", err)
-	}
-	if info["Config"]["NodeName"] == "" {
-		t.Fatalf("bad: %v", info)
 	}
 }

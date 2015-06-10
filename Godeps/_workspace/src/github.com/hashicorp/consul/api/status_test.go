@@ -5,9 +5,8 @@ import (
 )
 
 func TestStatusLeader(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	status := c.Status()
 
@@ -21,9 +20,8 @@ func TestStatusLeader(t *testing.T) {
 }
 
 func TestStatusPeers(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	status := c.Status()
 
