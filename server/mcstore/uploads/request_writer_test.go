@@ -96,15 +96,5 @@ var _ = Describe("requestWriter", func() {
 			dataCombined = append(dataCombined, data2...)
 			Expect(content).To(Equal(dataCombined))
 		})
-
-		Context("write method tests", func() {
-			It("Should fail", func() {
-				Expect("").To(Equal(""))
-			})
-		})
-
-		Context("validate method tests", func() {
-
-		})
 	})
 })
