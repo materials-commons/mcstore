@@ -63,8 +63,6 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 	s.tracker.setBlock(id, int(req.FlowChunkNumber))
 
 	if s.tracker.done(id) {
-		// assembling the file, and performing any processing may take a while, especially
-		// on large uploads, so we perform this step in the background.
 		if file, err := s.assemble(req, dir); err != nil {
 			app.Log.Errorf("Assembly failed for request %s: %s", req.FlowIdentifier, err)
 			// Assembly failed. If file isn't nil then
@@ -80,7 +78,7 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 	return nil
 }
 
-// assemble put the chunks for the file back together, create a database entry
+// assemble moves the upload file to its proper location, creates a database entry
 // and take care of all book keeping tasks to make the file accessible.
 func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, error) {
 	// Look up the upload
