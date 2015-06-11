@@ -1,4 +1,4 @@
-package get
+package mc
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-var Command = cli.Command{
+var GetCommand = cli.Command{
 	Name:  "get",
 	Usage: "Get a property",
 	Flags: []cli.Flag{
@@ -15,9 +15,9 @@ var Command = cli.Command{
 			Usage: "name of receiving service",
 		},
 	},
-	Action: Cmd,
+	Action: getCLI,
 }
 
-func Cmd(c *cli.Context) {
+func getCLI(c *cli.Context) {
 	fmt.Println("get: ", c.Args())
 }

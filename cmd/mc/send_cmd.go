@@ -1,4 +1,4 @@
-package send
+package mc
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-var Command = cli.Command{
+var SendCommand = cli.Command{
 	Name:    "send",
 	Aliases: []string{"s"},
 	Usage:   "Send data over the air",
@@ -28,9 +28,9 @@ var Command = cli.Command{
 			Usage: "file to send",
 		},
 	},
-	Action: Cmd,
+	Action: sendCLI,
 }
 
-func Cmd(c *cli.Context) {
+func sendCLI(c *cli.Context) {
 	fmt.Println("send: ", c.Args())
 }

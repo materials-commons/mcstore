@@ -1,4 +1,4 @@
-package download
+package mc
 
 import (
 	"fmt"
@@ -6,14 +6,14 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-var Command = cli.Command{
+var DownloadCommand = cli.Command{
 	Name:    "download",
 	Aliases: []string{"down", "d"},
 	Usage:   "Download data from MaterialsCommons",
 	Flags:   []cli.Flag{},
-	Action:  Cmd,
+	Action:  downloadCLI,
 }
 
-func Cmd(c *cli.Context) {
+func downloadCLI(c *cli.Context) {
 	fmt.Println("download: ", c.Args())
 }

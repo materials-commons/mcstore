@@ -1,4 +1,4 @@
-package set
+package mc
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-var Command = cli.Command{
+var SetCommand = cli.Command{
 	Name:  "set",
 	Usage: "Set property",
 	Flags: []cli.Flag{
@@ -15,9 +15,9 @@ var Command = cli.Command{
 			Usage: "name of receiving service",
 		},
 	},
-	Action: Cmd,
+	Action: setCLI,
 }
 
-func Cmd(c *cli.Context) {
+func setCLI(c *cli.Context) {
 	fmt.Println("set: ", c.Args())
 }

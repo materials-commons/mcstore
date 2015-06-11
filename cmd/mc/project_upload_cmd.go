@@ -1,4 +1,4 @@
-package upload
+package mc
 
 import (
 	"crypto/tls"
@@ -16,7 +16,7 @@ import (
 )
 
 // Command contains the arguments and functions for the cli upload command.
-var Command = cli.Command{
+var projectUploadCommand = cli.Command{
 	Name:    "upload",
 	Aliases: []string{"up", "u"},
 	Usage:   "Upload data to MaterialsCommons",
@@ -27,7 +27,7 @@ var Command = cli.Command{
 			Usage: "Number of simultaneous uploads to perform, defaults to 3",
 		},
 	},
-	Action: uploadCLI,
+	Action: projectUploadCLI,
 }
 
 const oneMeg = 1024 * 1024
@@ -39,7 +39,7 @@ var proj *project.MCProject
 //var pbPool = &pb.Pool{}
 
 // uploadCLI implements the cli command upload.
-func uploadCLI(c *cli.Context) {
+func projectUploadCLI(c *cli.Context) {
 	fmt.Println("upload: ", c.Args())
 	if len(c.Args()) != 1 {
 		fmt.Println("You must give a directory to upload.")

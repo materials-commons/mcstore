@@ -1,4 +1,4 @@
-package setup
+package mc
 
 import (
 	"bufio"
@@ -21,7 +21,7 @@ import (
 )
 
 // Command contains the options to configure the setup command.
-var Command = cli.Command{
+var SetupCommand = cli.Command{
 	Name:   "setup",
 	Usage:  "Set up the configuration",
 	Action: setupCLI,

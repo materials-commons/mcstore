@@ -1,4 +1,4 @@
-package receive
+package mc
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-var Command = cli.Command{
+var ReceiveCommand = cli.Command{
 	Name:    "receive",
 	Aliases: []string{"rec", "r"},
 	Usage:   "Receive data over the air",
@@ -16,9 +16,9 @@ var Command = cli.Command{
 			Usage: "name of receiving service",
 		},
 	},
-	Action: Cmd,
+	Action: receiveCLI,
 }
 
-func Cmd(c *cli.Context) {
+func receiveCLI(c *cli.Context) {
 	fmt.Println("receive: ", c.Args())
 }

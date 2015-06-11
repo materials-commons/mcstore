@@ -1,4 +1,4 @@
-package create
+package mc
 
 import (
 	"crypto/tls"
@@ -26,7 +26,7 @@ import (
 
 // createCommandArgs holds values that won't change and are
 // needed during the upload process.
-type createCommandArgs struct {
+type projectCreateCommandArgs struct {
 	projectName   string
 	projectID     string
 	directoryPath string
@@ -37,7 +37,7 @@ const twoMeg = 1024 * 1024 * 2
 
 var (
 	// Command contains the arguments and function for the cli project create command.
-	Command = cli.Command{
+	projectCreateCommand = cli.Command{
 		Name:    "create",
 		Aliases: []string{"cr", "c"},
 		Usage:   "Create a new project",
@@ -52,16 +52,16 @@ var (
 				Usage: "Number of simultaneous uploads to perform, defaults to 3",
 			},
 		},
-		Action: createCLI,
+		Action: projectCreateCLI,
 	}
 
 	// args contains global values, including arguments from the cli
 	// that are needed to create and upload a project.
-	args createCommandArgs
+	args projectCreateCommandArgs
 )
 
 // createCLI implements the project create command.
-func createCLI(c *cli.Context) {
+func projectCreateCLI(c *cli.Context) {
 	if err := validateArgs(c); err != nil {
 		fmt.Println("Invalid arguments:", err)
 		os.Exit(1)

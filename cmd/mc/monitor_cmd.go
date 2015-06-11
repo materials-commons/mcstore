@@ -1,4 +1,4 @@
-package monitor
+package mc
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"github.com/codegangsta/cli"
 )
 
-var Command = cli.Command{
+var MonitorCommand = cli.Command{
 	Name:    "monitor",
 	Aliases: []string{"mon", "m"},
 	Usage:   "Monitor a directory for changes",
@@ -16,9 +16,9 @@ var Command = cli.Command{
 			Usage: "name of receiving service",
 		},
 	},
-	Action: Cmd,
+	Action: monitorCLI,
 }
 
-func Cmd(c *cli.Context) {
+func monitorCLI(c *cli.Context) {
 	fmt.Println("monitor: ", c.Args())
 }
