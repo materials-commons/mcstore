@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
@@ -29,6 +30,17 @@ type dirService struct {
 func newDirService() *dirService {
 	session := db.RSessionMust()
 
+	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
+	return &dirService{
+		dirs:     dai.NewRDirs(session),
+		projects: dai.NewRProjects(session),
+		access:   access,
+	}
+}
+
+// newDirServiceUsingSession creates a new idService that connects to the database using
+// the given session.
+func newDirServiceUsingSession(session *r.Session) *dirService {
 	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	return &dirService{
 		dirs:     dai.NewRDirs(session),

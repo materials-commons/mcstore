@@ -3,6 +3,7 @@ package uploads
 import (
 	"path/filepath"
 
+	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -39,6 +40,20 @@ type uploadService struct {
 // establish a connection to the database.
 func NewUploadService() *uploadService {
 	session := db.RSessionMust()
+	return &uploadService{
+		tracker:     requestBlockTracker,
+		files:       dai.NewRFiles(session),
+		uploads:     dai.NewRUploads(session),
+		dirs:        dai.NewRDirs(session),
+		writer:      &blockRequestWriter{},
+		requestPath: &mcdirRequestPath{},
+		fops:        file.OS,
+	}
+}
+
+// NewUploadServiceUsingSession creates a new idService that connects to the database using
+// the given session.
+func NewUploadServiceUsingSession(session *r.Session) *uploadService {
 	return &uploadService{
 		tracker:     requestBlockTracker,
 		files:       dai.NewRFiles(session),

@@ -5,6 +5,7 @@ import (
 
 	"math"
 
+	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
@@ -52,6 +53,21 @@ type idService struct {
 // the database.
 func NewIDService() *idService {
 	session := db.RSessionMust()
+	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
+	return &idService{
+		dirs:        dai.NewRDirs(session),
+		projects:    dai.NewRProjects(session),
+		uploads:     dai.NewRUploads(session),
+		access:      access,
+		fops:        file.OS,
+		tracker:     requestBlockCountTracker,
+		requestPath: &mcdirRequestPath{},
+	}
+}
+
+// NewIDServiceUsingSession creates a new idService that connects to the database using
+// the given session.
+func NewIDServiceUsingSession(session *r.Session) *idService {
 	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	return &idService{
 		dirs:        dai.NewRDirs(session),
