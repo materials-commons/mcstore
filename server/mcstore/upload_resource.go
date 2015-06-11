@@ -20,6 +20,7 @@ type uploadResource struct {
 
 // UploadEntry is a client side representation of an upload.
 type UploadEntry struct {
+	RequestID   string    `json:"request_id"`
 	FileName    string    `json:"filename"`
 	DirectoryID string    `json:"directory_id"`
 	ProjectID   string    `json:"project_id"`
@@ -91,11 +92,13 @@ type CreateUploadResponse struct {
 func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	cr, err := r.request2IDRequest(request, user.ID)
 	if err != nil {
+		app.Log.Debugf("request2IDRequst failed", err)
 		return nil, err
 	}
 
 	upload, err := r.idService.ID(cr)
 	if err != nil {
+		app.Log.Debugf("idService.ID failed", err)
 		return nil, err
 	}
 
@@ -209,6 +212,7 @@ func uploads2uploadEntries(projectUploads []schema.Upload) []UploadEntry {
 	entries := make([]UploadEntry, len(projectUploads))
 	for i, entry := range projectUploads {
 		entries[i] = UploadEntry{
+			RequestID:   entry.ID,
 			FileName:    entry.File.Name,
 			DirectoryID: entry.DirectoryID,
 			ProjectID:   entry.ProjectID,
