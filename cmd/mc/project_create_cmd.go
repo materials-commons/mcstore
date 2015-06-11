@@ -33,8 +33,6 @@ type projectCreateCommandArgs struct {
 	n             int
 }
 
-const twoMeg = 1024 * 1024 * 2
-
 var (
 	// Command contains the arguments and function for the cli project create command.
 	projectCreateCommand = cli.Command{
