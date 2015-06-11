@@ -5,9 +5,9 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/parnurzeal/gorequest"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore"
+	"github.com/parnurzeal/gorequest"
 )
 
 var projectStatusCommand = cli.Command{
