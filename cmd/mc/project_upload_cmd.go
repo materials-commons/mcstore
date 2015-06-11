@@ -7,7 +7,6 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/file"
-	"github.com/materials-commons/mcstore/cmd/pkg/opts"
 	"github.com/materials-commons/mcstore/cmd/pkg/project"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/files"
@@ -42,7 +41,7 @@ func projectUploadCLI(c *cli.Context) {
 		os.Exit(1)
 	}
 	dir := c.Args()[0]
-	numThreads := opts.GetNumThreads(c)
+	numThreads := getNumThreads(c)
 
 	if !file.IsDir(dir) {
 		fmt.Printf("Invalid directory: %s.\n", dir)

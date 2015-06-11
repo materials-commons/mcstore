@@ -1,4 +1,4 @@
-package opts
+package mc
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 const maxSimultaneous = 5
 
 // getNumThreads ensures that the number of parallel downloads is valid.
-func GetNumThreads(c *cli.Context) int {
+func getNumThreads(c *cli.Context) int {
 	numThreads := c.Int("parallel")
 
 	if numThreads < 1 {

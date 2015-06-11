@@ -15,7 +15,6 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/ezhttp"
-	"github.com/materials-commons/mcstore/cmd/pkg/opts"
 	"github.com/materials-commons/mcstore/cmd/pkg/project"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -93,7 +92,7 @@ func validateArgs(c *cli.Context) error {
 		return err
 	}
 
-	args.n = opts.GetNumThreads(c)
+	args.n = getNumThreads(c)
 
 	return nil
 }
