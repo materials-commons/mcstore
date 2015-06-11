@@ -6,6 +6,8 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/parnurzeal/gorequest"
+	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/server/mcstore"
 )
 
 var projectStatusCommand = cli.Command{
@@ -55,13 +57,30 @@ func projectStatusCLI(c *cli.Context) {
 }
 
 func (s *projectStatusCommandState) displayStatusAll(project string) {
-
+	s.displayStatusUploads(project)
+	s.displayStatusFileChanges(project)
 }
 
 func (s *projectStatusCommandState) displayStatusUploads(project string) {
+	if uploads, err := s.getUploads(project); err != nil {
+		fmt.Println("Failed retrieving uploads for project: %s", err)
+	} else {
+		fmt.Printf("%#v\n", uploads)
+	}
+}
 
+func (s *projectStatusCommandState) getUploads(project string) ([]mcstore.UploadEntry, error) {
+	r, body, errs := s.client.Get("").End()
+	if err := app.MCApi.APIError(r, errs); err != nil {
+		return nil, err
+	}
+
+	var uploads []mcstore.UploadEntry
+	app.MCApi.ToJSON(body, &uploads)
+	return uploads, nil
 }
 
 func (s *projectStatusCommandState) displayStatusFileChanges(project string) {
-
+	fmt.Println("file changes not yet implemented")
+	os.Exit(1)
 }
