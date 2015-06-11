@@ -1,4 +1,4 @@
-package mc
+package client
 
 import (
 	"crypto/tls"
@@ -6,6 +6,6 @@ import (
 	"github.com/parnurzeal/gorequest"
 )
 
-func newGoRequest() *gorequest.SuperAgent {
+func NewGoRequest() *gorequest.SuperAgent {
 	return gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 }

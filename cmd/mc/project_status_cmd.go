@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
+	"github.com/materials-commons/mcstore/cmd/pkg/client"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore"
 	"github.com/parnurzeal/gorequest"
@@ -43,7 +44,7 @@ func projectStatusCLI(c *cli.Context) {
 
 	proj := c.Args()[0]
 	s := &projectStatusCommandState{
-		client: newGoRequest(),
+		client: client.NewGoRequest(),
 	}
 
 	switch {

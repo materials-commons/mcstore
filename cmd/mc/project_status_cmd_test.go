@@ -2,15 +2,17 @@ package mc
 
 import (
 	"fmt"
+	"net/http/httptest"
+	"time"
+
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
+	c "github.com/materials-commons/mcstore/cmd/pkg/client"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/parnurzeal/gorequest"
-	"net/http/httptest"
-	"time"
 )
 
 var _ = fmt.Println
@@ -26,7 +28,7 @@ var _ = Describe("ProjectStatusCmd", func() {
 		)
 
 		BeforeEach(func() {
-			client = newGoRequest()
+			client = c.NewGoRequest()
 			uploadRequest = mcstore.CreateUploadRequest{
 				ProjectID:     "test",
 				DirectoryID:   "test",
