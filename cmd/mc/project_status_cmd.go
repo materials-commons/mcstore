@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/codegangsta/cli"
-	"github.com/materials-commons/mcstore/Godeps/_workspace/src/github.com/parnurzeal/gorequest"
+	"github.com/parnurzeal/gorequest"
 )
 
 var projectStatusCommand = cli.Command{
@@ -29,7 +29,7 @@ var projectStatusCommand = cli.Command{
 	Action: projectStatusCLI,
 }
 
-type projectStatusCommand struct {
+type projectStatusCommandState struct {
 	client *gorequest.SuperAgent
 }
 
@@ -40,7 +40,7 @@ func projectStatusCLI(c *cli.Context) {
 	}
 
 	proj := c.Args()[0]
-	s := &projectStatusCommand{
+	s := &projectStatusCommandState{
 		client: newGoRequest(),
 	}
 
@@ -54,14 +54,14 @@ func projectStatusCLI(c *cli.Context) {
 	}
 }
 
-func (s *projectStatusCommand) displayStatusAll(project string) {
+func (s *projectStatusCommandState) displayStatusAll(project string) {
 
 }
 
-func (s *projectStatusCommand) displayStatusUploads(project string) {
+func (s *projectStatusCommandState) displayStatusUploads(project string) {
 
 }
 
-func (s *projectStatusCommand) displayStatusFileChanges(project string) {
+func (s *projectStatusCommandState) displayStatusFileChanges(project string) {
 
 }
