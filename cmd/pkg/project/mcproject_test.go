@@ -2,7 +2,6 @@ package project
 
 import (
 	"os"
-	"testing"
 	"time"
 
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -10,23 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-var mcproject *MCProject
-
-func TestMain(m *testing.M) {
-	setup()
-	retCode := m.Run()
-	teardown()
-	os.Exit(retCode)
-}
-
-func setup() {
-	os.Mkdir(".mcproject", 0777)
-}
-
-func teardown() {
-	os.RemoveAll(".mcproject")
-}
 
 var _ = Describe("MCProject", func() {
 	var (
@@ -36,7 +18,12 @@ var _ = Describe("MCProject", func() {
 	BeforeEach(func() {
 		var err error
 		os.Mkdir(".mcproject", 0777)
-		mcproject, err = Create(".mcproject", "proj1", "proj1id")
+		project := ClientProject{
+			Path:      ".mcproject",
+			Name:      "proj1",
+			ProjectID: "proj1id",
+		}
+		mcproject, err = Create(project)
 		Expect(err).To(BeNil())
 		Expect(mcproject).ToNot(BeNil())
 	})

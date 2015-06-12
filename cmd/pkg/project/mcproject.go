@@ -92,10 +92,16 @@ func openDB(dir string, mustExist bool) (*sqlx.DB, error) {
 	return db, nil
 }
 
+type ClientProject struct {
+	Name      string
+	ProjectID string
+	Path      string
+}
+
 // Create will create a new .mcproject directory in path and
 // populate the database with the given project.
-func Create(path, name, projectID string) (*MCProject, error) {
-	projPath := filepath.Join(path, ".mcproject")
+func Create(project ClientProject) (*MCProject, error) {
+	projPath := filepath.Join(project.Path, ".mcproject")
 	if err := os.MkdirAll(projPath, 0700); err != nil {
 		return nil, err
 	}
@@ -113,11 +119,11 @@ func Create(path, name, projectID string) (*MCProject, error) {
 	mcproject := &MCProject{
 		db: db,
 		// Dir of location.
-		Dir: filepath.Dir(path),
+		Dir: filepath.Dir(project.Path),
 	}
 	proj := &Project{
-		ProjectID: projectID,
-		Name:      name,
+		ProjectID: project.ProjectID,
+		Name:      project.Name,
 	}
 	proj, err = mcproject.insertProject(proj)
 	if err != nil {
