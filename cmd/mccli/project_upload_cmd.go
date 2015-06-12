@@ -1,4 +1,4 @@
-package mc
+package mccli
 
 import (
 	"crypto/tls"
@@ -7,8 +7,8 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/file"
+	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/cmd/pkg/project"
-	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstore"
 	"github.com/parnurzeal/gorequest"
@@ -145,13 +145,13 @@ func (u *uploader) createUploadRequest() {
 	}
 
 	var resp mcstore.CreateUploadResponse
-	fmt.Println("url =", app.MCApi.APIUrl("/upload"))
-	r, body, errs := u.client.Post(app.MCApi.APIUrl("/upload")).Send(req).End()
-	if err := app.MCApi.APIError(r, errs); err != nil {
+	fmt.Println("url =", mc.Api.APIUrl("/upload"))
+	r, body, errs := u.client.Post(mc.Api.APIUrl("/upload")).Send(req).End()
+	if err := mc.Api.APIError(r, errs); err != nil {
 		fmt.Println("got err from Post:", err)
 		return
 	}
-	app.MCApi.ToJSON(body, &resp)
+	mc.Api.ToJSON(body, &resp)
 	fmt.Printf("%#v\n", resp)
 }
 

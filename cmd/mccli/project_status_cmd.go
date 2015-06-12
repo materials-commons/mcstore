@@ -1,4 +1,4 @@
-package mc
+package mccli
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/cmd/pkg/client"
-	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/server/mcstore"
 	"github.com/olekukonko/tablewriter"
 	"github.com/parnurzeal/gorequest"
@@ -95,7 +95,7 @@ func (s *projectStatusCmd) displayStatusUploads(projectID string) {
 					entry.RequestID,
 					entry.Birthtime.Format(time.RFC822),
 					entry.FileName,
-					strconv.Itoa(entry.Size),
+					strconv.FormatInt(entry.Size, 10),
 					entry.Host,
 				}
 				table.Append(data)
@@ -109,13 +109,13 @@ func (s *projectStatusCmd) displayStatusUploads(projectID string) {
 // getUploads queries the server for the uploads for the project.
 func (s *projectStatusCmd) getUploads(projectID string) ([]mcstore.UploadEntry, error) {
 	config.Set("apikey", "test")
-	r, body, errs := s.client.Get(app.MCApi.APIUrl("/upload/test")).End()
-	if err := app.MCApi.APIError(r, errs); err != nil {
+	r, body, errs := s.client.Get(mc.Api.APIUrl("/upload/test")).End()
+	if err := mc.Api.APIError(r, errs); err != nil {
 		return nil, err
 	}
 
 	var uploads []mcstore.UploadEntry
-	app.MCApi.ToJSON(body, &uploads)
+	mc.Api.ToJSON(body, &uploads)
 	return uploads, nil
 }
 

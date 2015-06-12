@@ -1,4 +1,4 @@
-package mc
+package mccli
 
 const oneMeg = 1024 * 1024
 const twoMeg = oneMeg * 2

@@ -1,4 +1,4 @@
-package mc
+package mccli
 
 import (
 	"crypto/tls"
@@ -15,6 +15,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/ezhttp"
+	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/cmd/pkg/project"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -64,7 +65,12 @@ func projectCreateCLI(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	proj, err := project.Create(args.directoryPath, args.projectName, args.projectID)
+	p := project.ClientProject{
+		Name:      args.projectName,
+		Path:      args.directoryPath,
+		ProjectID: args.projectID,
+	}
+	proj, err := project.Create(p)
 	if err != nil {
 		fmt.Println("Unable to create project:", err)
 		os.Exit(1)
@@ -229,7 +235,7 @@ func (i *indexer) indexFile(entry files.TreeEntry) error {
 				DirectoryID:      dir.DirectoryID,
 			}
 			params := req.ToMultipartParams()
-			s, perr := i.ezclient.PostFileBytes(app.MCApi.APIUrl("/chunk"), entry.Finfo.Name(), "chunkData", buf[:n], params)
+			s, perr := i.ezclient.PostFileBytes(mc.Api.APIUrl("/chunk"), entry.Finfo.Name(), "chunkData", buf[:n], params)
 			if perr != nil {
 				app.Log.Errorf("Posting file chunks failed: %d/%s", s, perr)
 			}
@@ -280,12 +286,12 @@ func toProjectPath(dirpath string) string {
 }
 
 func sendRequest(client *gorequest.SuperAgent, path string, req interface{}, resp interface{}) error {
-	r, body, errs := client.Post(app.MCApi.APIUrl(path)).Send(req).End()
-	if err := app.MCApi.APIError(r, errs); err != nil {
+	r, body, errs := client.Post(mc.Api.APIUrl(path)).Send(req).End()
+	if err := mc.Api.APIError(r, errs); err != nil {
 		fmt.Println("Unable to create project:", err)
 		return err
 	}
 
-	app.MCApi.ToJSON(body, resp)
+	mc.Api.ToJSON(body, resp)
 	return nil
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/materials-commons/config/handler"
 	"github.com/materials-commons/config/loader"
 	"github.com/materials-commons/gohandy/file"
-	"github.com/materials-commons/mcstore/cmd/mc"
+	"github.com/materials-commons/mcstore/cmd/mccli"
 	"github.com/materials-commons/mcstore/pkg/app"
 )
 
@@ -36,15 +36,15 @@ func main() {
 		},
 	}
 	app.Commands = []cli.Command{
-		mc.SendCommand,
-		mc.ReceiveCommand,
-		mc.GetCommand,
-		mc.SetCommand,
-		mc.ProjectCommand,
-		mc.DownloadCommand,
-		mc.MonitorCommand,
-		mc.SetupCommand,
-		mc.LoginCommand,
+		mccli.SendCommand,
+		mccli.ReceiveCommand,
+		mccli.GetCommand,
+		mccli.SetCommand,
+		mccli.ProjectCommand,
+		mccli.DownloadCommand,
+		mccli.MonitorCommand,
+		mccli.SetupCommand,
+		mccli.LoginCommand,
 	}
 	app.Run(os.Args)
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
 	c "github.com/materials-commons/mcstore/cmd/pkg/client"
-	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/testutil"
 	. "github.com/onsi/ginkgo"
@@ -48,13 +48,13 @@ var _ = Describe("UploadResource", func() {
 
 	var (
 		createUploadRequest = func(req CreateUploadRequest) (*CreateUploadResponse, error) {
-			r, body, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(req).End()
-			if err := app.MCApi.APIError(r, errs); err != nil {
+			r, body, errs := client.Post(mc.Api.APIUrl("/upload")).Send(req).End()
+			if err := mc.Api.APIError(r, errs); err != nil {
 				return nil, err
 			}
 
 			var uploadResponse CreateUploadResponse
-			if err := app.MCApi.ToJSON(body, &uploadResponse); err != nil {
+			if err := mc.Api.ToJSON(body, &uploadResponse); err != nil {
 				return nil, err
 			}
 			return &uploadResponse, nil
@@ -69,8 +69,8 @@ var _ = Describe("UploadResource", func() {
 		It("Should return an error when the user doesn't have permission", func() {
 			// Set apikey for user who doesn't have permission
 			config.Set("apikey", "test2")
-			r, _, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(uploadRequest).End()
-			err := app.MCApi.APIError(r, errs)
+			r, _, errs := client.Post(mc.Api.APIUrl("/upload")).Send(uploadRequest).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})
@@ -78,8 +78,8 @@ var _ = Describe("UploadResource", func() {
 		It("Should return an error when the project doesn't exist", func() {
 			config.Set("apikey", "test")
 			uploadRequest.ProjectID = "does-not-exist"
-			r, _, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(uploadRequest).End()
-			err := app.MCApi.APIError(r, errs)
+			r, _, errs := client.Post(mc.Api.APIUrl("/upload")).Send(uploadRequest).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
@@ -87,28 +87,28 @@ var _ = Describe("UploadResource", func() {
 		It("Should return an error when the directory doesn't exist", func() {
 			config.Set("apikey", "test")
 			uploadRequest.DirectoryID = "does-not-exist"
-			r, _, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(uploadRequest).End()
-			err := app.MCApi.APIError(r, errs)
+			r, _, errs := client.Post(mc.Api.APIUrl("/upload")).Send(uploadRequest).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
 
 		It("Should return an error when the apikey doesn't exist", func() {
 			config.Set("apikey", "does-not-exist")
-			r, _, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(uploadRequest).End()
-			err := app.MCApi.APIError(r, errs)
+			r, _, errs := client.Post(mc.Api.APIUrl("/upload")).Send(uploadRequest).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})
 
 		It("Should create a new request for a valid submit", func() {
 			config.Set("apikey", "test")
-			r, body, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(uploadRequest).End()
-			err := app.MCApi.APIError(r, errs)
+			r, body, errs := client.Post(mc.Api.APIUrl("/upload")).Send(uploadRequest).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).To(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 200))
 			var uploadResponse CreateUploadResponse
-			err = app.MCApi.ToJSON(body, &uploadResponse)
+			err = mc.Api.ToJSON(body, &uploadResponse)
 			Expect(err).To(BeNil())
 
 			uploadEntry, err := uploads.ByID(uploadResponse.RequestID)
@@ -126,8 +126,8 @@ var _ = Describe("UploadResource", func() {
 			Expect(err).To(BeNil())
 
 			config.Set("apikey", "bad-key")
-			r, _, errs := client.Get(app.MCApi.APIUrl("/upload/test")).End()
-			err = app.MCApi.APIError(r, errs)
+			r, _, errs := client.Get(mc.Api.APIUrl("/upload/test")).End()
+			err = mc.Api.APIError(r, errs)
 			Expect(err).ToNot(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 
@@ -137,8 +137,8 @@ var _ = Describe("UploadResource", func() {
 
 		It("Should return an error on a bad project", func() {
 			config.Set("apikey", "test")
-			r, _, errs := client.Get(app.MCApi.APIUrl("/upload/bad-project-id")).End()
-			err := app.MCApi.APIError(r, errs)
+			r, _, errs := client.Get(mc.Api.APIUrl("/upload/bad-project-id")).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).ToNot(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
@@ -147,12 +147,12 @@ var _ = Describe("UploadResource", func() {
 			config.Set("apikey", "test")
 			resp, err := createUploadRequest(uploadRequest)
 			Expect(err).To(BeNil())
-			r, body, errs := client.Get(app.MCApi.APIUrl("/upload/test")).End()
-			err = app.MCApi.APIError(r, errs)
+			r, body, errs := client.Get(mc.Api.APIUrl("/upload/test")).End()
+			err = mc.Api.APIError(r, errs)
 			Expect(err).To(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 200))
 			var entries []UploadEntry
-			err = app.MCApi.ToJSON(body, &entries)
+			err = mc.Api.ToJSON(body, &entries)
 			Expect(err).To(BeNil())
 			Expect(len(entries)).To(BeNumerically("==", 1))
 			entry := entries[0]

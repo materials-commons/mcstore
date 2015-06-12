@@ -1,4 +1,4 @@
-package mc
+package mccli
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
 	c "github.com/materials-commons/mcstore/cmd/pkg/client"
-	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/server/mcstore"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -51,8 +51,8 @@ var _ = Describe("ProjectStatusCmd", func() {
 		It("Should return an error when the user doesn't have permission", func() {
 			// Set apikey for user who doesn't have permission
 			config.Set("apikey", "test2")
-			r, _, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(uploadRequest).End()
-			err := app.MCApi.APIError(r, errs)
+			r, _, errs := client.Post(mc.Api.APIUrl("/upload")).Send(uploadRequest).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})
@@ -60,19 +60,18 @@ var _ = Describe("ProjectStatusCmd", func() {
 		It("Should return an error when the project doesn't exist", func() {
 			config.Set("apikey", "test")
 			uploadRequest.ProjectID = "does-not-exist"
-			r, _, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(uploadRequest).End()
-			err := app.MCApi.APIError(r, errs)
+			r, _, errs := client.Post(mc.Api.APIUrl("/upload")).Send(uploadRequest).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
 
 		It("Should return an error when the apikey doesn't exist", func() {
 			config.Set("apikey", "does-not-exist")
-			r, _, errs := client.Post(app.MCApi.APIUrl("/upload")).Send(uploadRequest).End()
-			err := app.MCApi.APIError(r, errs)
+			r, _, errs := client.Post(mc.Api.APIUrl("/upload")).Send(uploadRequest).End()
+			err := mc.Api.APIError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
-			fmt.Println("r.StatusCode =", r.StatusCode)
 		})
 
 		It("Should get the upload entries for the project", func() {

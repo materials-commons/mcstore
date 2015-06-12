@@ -1,4 +1,4 @@
-package app
+package mc
 
 import (
 	"encoding/json"
@@ -9,12 +9,13 @@ import (
 
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/gohandy/ezhttp"
+	"github.com/materials-commons/mcstore/pkg/app"
 	"gnd.la/net/urlutil"
 )
 
 type mcapi struct{}
 
-var MCApi mcapi
+var Api mcapi
 
 func (a mcapi) MCUrl() string {
 	return config.GetString("mcurl")
@@ -39,7 +40,7 @@ func (a mcapi) APIUrl(path string) string {
 func (a mcapi) APIError(resp *http.Response, errs []error) error {
 	switch {
 	case len(errs) != 0:
-		return ErrInvalid
+		return app.ErrInvalid
 	case resp.StatusCode > 299:
 		return fmt.Errorf("HTTP Error: %s", resp.Status)
 	default:

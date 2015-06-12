@@ -1,4 +1,4 @@
-package mc
+package mccli
 
 import (
 	"bufio"
@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/codegangsta/cli"
+	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/cmd/pkg/user"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -77,11 +78,11 @@ func getAPIKey(username, password string) (string, error) {
 		Password: password,
 	}
 	request := gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	resp, body, errs := request.Put(urlutil.MustJoin(app.MCApi.MCUrl(), path.Join("api", "user", username, "apikey"))).
+	resp, body, errs := request.Put(urlutil.MustJoin(mc.Api.MCUrl(), path.Join("api", "user", username, "apikey"))).
 		Send(l).
 		End()
 	if len(errs) != 0 {
-		fmt.Printf("Unable to communicate with MaterialsCommons at: %s\n", app.MCApi.MCUrl())
+		fmt.Printf("Unable to communicate with MaterialsCommons at: %s\n", mc.Api.MCUrl())
 		return "", app.ErrInvalid
 	}
 	if resp.StatusCode > 299 {
