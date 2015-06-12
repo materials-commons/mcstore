@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/stretchr/testify/require"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 var mcproject *MCProject
@@ -26,79 +28,130 @@ func teardown() {
 	os.RemoveAll(".mcproject")
 }
 
-func TestCreateDB(t *testing.T) {
-	var err error
-	mcproject, err = Create(".mcproject", "proj1", "proj1id")
-	require.Nil(t, err, "Open failed: %s", err)
-	require.NotNil(t, mcproject, "mcproject is nil")
-	db := mcproject.db
+var _ = Describe("MCProject", func() {
+	var (
+		mcproject *MCProject
+	)
 
-	var projects []Project
-	err = db.Select(&projects, "select * from project")
-	require.Nil(t, err, "Select failed: %s", err)
-	require.Equal(t, len(projects), 1, "Expected one project got %d", len(projects))
-	proj := projects[0]
-	require.Equal(t, proj.ProjectID, "proj1id", "Got wrong projectID: %s", proj.ProjectID)
-	require.Equal(t, proj.Name, "proj1", "Got wrote name: %s", proj.Name)
-}
+	BeforeEach(func() {
+		var err error
+		os.Mkdir(".mcproject", 0777)
+		mcproject, err = Create(".mcproject", "proj1", "proj1id")
+		Expect(err).To(BeNil())
+		Expect(mcproject).ToNot(BeNil())
+	})
 
-func TestInsertDir(t *testing.T) {
-	db := mcproject.db
-	now := time.Now()
-	dir := &Directory{
-		DirectoryID: "abc123",
-		Path:        "/tmp/dir",
-		LastUpload:  now,
-	}
+	AfterEach(func() {
+		os.RemoveAll(".mcproject")
+	})
 
-	var err error
-	dir, err = mcproject.InsertDirectory(dir)
-	require.Nil(t, err, "insert failed %s", err)
-	require.True(t, dir.ID != 0, "ID should not be 0: %#v", dir)
+	Describe("Create method tests", func() {
+		It("Should find the created project", func() {
+			db := mcproject.db
+			var projects []Project
+			err := db.Select(&projects, "select * from project")
+			Expect(err).To(BeNil())
+			Expect(projects).To(HaveLen(1))
+			proj := projects[0]
+			Expect(proj.ProjectID).To(Equal("proj1id"))
+			Expect(proj.Name).To(Equal("proj1"))
+		})
+	})
 
-	var dirs []Directory
-	err = db.Select(&dirs, "select * from directories")
-	require.Nil(t, err, "Select failed: %s", err)
-	require.Equal(t, 1, len(dirs), "Expected only 1 dir, got %d", len(dirs))
-	require.Equal(t, "abc123", dirs[0].DirectoryID, "Got wrong directory id: %s", dirs[0].DirectoryID)
-	require.True(t, dir.ID == dirs[0].ID, "Got unexpected id: %d", dirs[0].ID)
-	require.True(t, dir.LastUpload == now, "Got unexpected last upload. Expected %#v, got %#v", dir.LastUpload, now)
-}
+	Describe("InsertDir method tests", func() {
+		It("Should successfully insert and find the inserted directory", func() {
+			db := mcproject.db
+			now := time.Now()
+			dir := &Directory{
+				DirectoryID: "abc123",
+				Path:        "/tmp/dir",
+				LastUpload:  now,
+			}
 
-func TestFindDirectoryByPath(t *testing.T) {
-	dir, err := mcproject.FindDirectoryByPath("/tmp/dir")
-	require.Nil(t, err, "lookup failed %s", err)
-	require.NotNil(t, dir, "Lookup failed for directory")
-	require.Equal(t, "abc123", dir.DirectoryID, "Got wrong directory id %s", dir.DirectoryID)
+			var err error
+			dir, err = mcproject.InsertDirectory(dir)
+			Expect(err).To(BeNil())
+			Expect(dir.ID).ToNot(BeNumerically("==", 0))
 
-	dir, err = mcproject.FindDirectoryByPath("/does/not/exist")
-	require.Equal(t, err, app.ErrNotFound, "Got wrong error: %s", err)
-}
+			var dirs []Directory
+			err = db.Select(&dirs, "select * from directories")
+			Expect(err).To(BeNil())
+			Expect(dirs).To(HaveLen(1))
+			d := dirs[0]
+			Expect(d.DirectoryID).To(Equal("abc123"))
+			Expect(d.LastUpload).To(BeTemporally("==", now))
+		})
+	})
 
-func TestInsertFile(t *testing.T) {
-	db := mcproject.db
-	var dirs []Directory
-	db.Select(&dirs, "select * from directories")
-	f := &File{
-		FileID:    "fileid123",
-		Directory: dirs[0].ID,
-		Name:      "test.txt",
-		Size:      64 * 1024 * 1024 * 1024,
-	}
+	Describe("FindDirectoryByPath method tests", func() {
+		BeforeEach(func() {
+			now := time.Now()
+			dir := &Directory{
+				DirectoryID: "abc123",
+				Path:        "/tmp/dir",
+				LastUpload:  now,
+			}
 
-	var err error
-	f, err = mcproject.InsertFile(f)
-	require.Nil(t, err, "insert failed: %s", err)
-	require.True(t, f.ID != 0, "ID should not be 0: %#v", f)
+			var err error
+			dir, err = mcproject.InsertDirectory(dir)
+			Expect(err).To(BeNil())
+			Expect(dir.ID).ToNot(BeNumerically("==", 0))
+		})
 
-	var files []File
-	err = db.Select(&files, "select * from files")
-	require.Nil(t, err, "Select failed: %s", err)
-	require.Equal(t, len(files), 1, "Expected one file got %d", len(files))
-	f0 := files[0]
-	require.Equal(t, f0.FileID, "fileid123", "Got wrong fileid: %s", f0.FileID)
-	require.Equal(t, f0.Name, "test.txt", "Got wrote name: %s", f0.Name)
-	areEqual := f0.Size == (64 * 1024 * 1024 * 1024)
-	require.True(t, areEqual, "Got wrong size: %d", f0.Size)
-	require.True(t, f0.ID == f.ID, "Got unexpected id: %d", f0.ID)
-}
+		It("Should find directory by path", func() {
+			dir, err := mcproject.FindDirectoryByPath("/tmp/dir")
+			Expect(err).To(BeNil())
+			Expect(dir.DirectoryID).To(Equal("abc123"))
+		})
+
+		It("Should get ErrNotFound for directory that doesn't exist", func() {
+			dir, err := mcproject.FindDirectoryByPath("/does/not/exist")
+			Expect(err).To(Equal(app.ErrNotFound))
+			Expect(dir).To(BeNil())
+		})
+	})
+
+	Describe("InsertFile method tests", func() {
+		var fid int64
+
+		BeforeEach(func() {
+			now := time.Now()
+			dir := &Directory{
+				DirectoryID: "abc123",
+				Path:        "/tmp/dir",
+				LastUpload:  now,
+			}
+
+			var err error
+			dir, err = mcproject.InsertDirectory(dir)
+			Expect(err).To(BeNil())
+			Expect(dir.ID).ToNot(BeNumerically("==", 0))
+
+			f := &File{
+				FileID:    "fileid123",
+				Directory: dir.ID,
+				Name:      "test.txt",
+				Size:      64 * 1024 * 1024 * 1024,
+			}
+
+			f, err = mcproject.InsertFile(f)
+			Expect(err).To(BeNil())
+			Expect(f.ID).NotTo(BeNumerically("==", 0))
+			fid = f.ID
+		})
+
+		It("Should find inserted file", func() {
+			db := mcproject.db
+			var files []File
+			err := db.Select(&files, "select * from files")
+			Expect(err).To(BeNil())
+			Expect(files).To(HaveLen(1))
+			f0 := files[0]
+			Expect(f0.FileID).To(Equal("fileid123"))
+			Expect(f0.Name).To(Equal("test.txt"))
+			expectedSize := (64 * 1024 * 1024 * 1024)
+			Expect(f0.Size).To(BeNumerically("==", expectedSize))
+			Expect(f0.ID).To(Equal(fid))
+		})
+	})
+})
