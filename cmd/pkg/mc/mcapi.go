@@ -29,7 +29,7 @@ func (a mcapi) MCClient() *ezhttp.EzClient {
 	return ezhttp.NewClient()
 }
 
-func (a mcapi) APIUrl(path string) string {
+func (a mcapi) Url(path string) string {
 	values := url.Values{}
 	values.Add("apikey", config.GetString("apikey"))
 	mcurl := urlutil.MustJoin(a.MCUrl(), path)
@@ -37,7 +37,7 @@ func (a mcapi) APIUrl(path string) string {
 	return mcurl
 }
 
-func (a mcapi) APIError(resp *http.Response, errs []error) error {
+func (a mcapi) Error(resp *http.Response, errs []error) error {
 	switch {
 	case len(errs) != 0:
 		return app.ErrInvalid

@@ -145,9 +145,9 @@ func (u *uploader) createUploadRequest() {
 	}
 
 	var resp mcstore.CreateUploadResponse
-	fmt.Println("url =", mc.Api.APIUrl("/upload"))
-	r, body, errs := u.client.Post(mc.Api.APIUrl("/upload")).Send(req).End()
-	if err := mc.Api.APIError(r, errs); err != nil {
+	fmt.Println("url =", mc.Api.Url("/upload"))
+	r, body, errs := u.client.Post(mc.Api.Url("/upload")).Send(req).End()
+	if err := mc.Api.Error(r, errs); err != nil {
 		fmt.Println("got err from Post:", err)
 		return
 	}
