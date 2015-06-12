@@ -8,7 +8,7 @@ server:
 	(cd ./server/mcstore/main; godep go build mcstored.go)
 
 cli:
-	(cd ./cmd/mc/main; godep go build mc.go)
+	(cd ./cmd/mccli/main; godep go build mc.go)
 
 docs:
 	./makedocs.sh
