@@ -8,7 +8,6 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
-	"github.com/materials-commons/mcstore/cmd/pkg/project"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstore"
 	"github.com/parnurzeal/gorequest"
@@ -29,7 +28,7 @@ var projectUploadCommand = cli.Command{
 	Action: projectUploadCLI,
 }
 
-var proj *project.MCProject
+var proj *mc.MCProject
 
 //var pbPool = &pb.Pool{}
 
@@ -54,7 +53,7 @@ func projectUploadCLI(c *cli.Context) {
 // uploadToServer
 func uploadToServer(dir string, numThreads int) {
 	var err error
-	proj, err = project.Find(dir)
+	proj, err = mc.Find(dir)
 	if err != nil {
 		fmt.Println("Unable to locate project dir is in.")
 		os.Exit(1)

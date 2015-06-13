@@ -16,7 +16,6 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
-	"github.com/materials-commons/mcstore/cmd/pkg/project"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/files"
@@ -65,12 +64,12 @@ func projectCreateCLI(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	p := project.ClientProject{
+	p := mc.ClientProject{
 		Name:      args.projectName,
 		Path:      args.directoryPath,
 		ProjectID: args.projectID,
 	}
-	proj, err := project.Create(p)
+	proj, err := mc.Create(p)
 	if err != nil {
 		fmt.Println("Unable to create project:", err)
 		os.Exit(1)
@@ -135,7 +134,7 @@ func validateDirectoryPath(path string) error {
 
 // indexProject walks the directory tree and indexes each of the files found. Indexing
 // can be performed in parallel.
-func indexProject(path string, proj *project.MCProject) error {
+func indexProject(path string, proj *mc.MCProject) error {
 	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 		indexEntries(proj, done, entries, result)
 	}
@@ -153,18 +152,18 @@ func indexProject(path string, proj *project.MCProject) error {
 // isn't being hammered looking for directory entries.
 type indexer struct {
 	client   *gorequest.SuperAgent
-	dirs     map[string]*project.Directory
-	proj     *project.MCProject
+	dirs     map[string]*mc.Directory
+	proj     *mc.MCProject
 	ezclient *ezhttp.EzClient
 }
 
 // indexEntries processes the entries sent along the entries channel. It also
 // processes done channel events by exiting the go routine.
-func indexEntries(proj *project.MCProject, done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
+func indexEntries(proj *mc.MCProject, done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 	i := &indexer{
 		client:   gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
 		proj:     proj.Clone(),
-		dirs:     make(map[string]*project.Directory),
+		dirs:     make(map[string]*mc.Directory),
 		ezclient: ezhttp.NewSSLClient(),
 	}
 	for entry := range entries {
@@ -199,7 +198,7 @@ func (i *indexer) indexDirectory(entry files.TreeEntry) error {
 	if err := sendRequest(i.client, "", req, &resp); err != nil {
 		return err
 	}
-	dir := &project.Directory{
+	dir := &mc.Directory{
 		DirectoryID: resp.DirectoryID,
 		Path:        entry.Path,
 	}
@@ -251,7 +250,7 @@ func (i *indexer) indexFile(entry files.TreeEntry) error {
 	return nil
 }
 
-func (i *indexer) findFileDirectory(entry files.TreeEntry) *project.Directory {
+func (i *indexer) findFileDirectory(entry files.TreeEntry) *mc.Directory {
 	dirpath := filepath.Dir(entry.Path)
 	if dir, found := i.dirs[dirpath]; found {
 		return dir
@@ -263,7 +262,7 @@ func (i *indexer) findFileDirectory(entry files.TreeEntry) *project.Directory {
 	return dir
 }
 
-func (i *indexer) createUploadRequest(entry files.TreeEntry, dir *project.Directory) (string, error) {
+func (i *indexer) createUploadRequest(entry files.TreeEntry, dir *mc.Directory) (string, error) {
 	req := mcstore.CreateUploadRequest{
 		ProjectID:     args.projectID,
 		DirectoryID:   dir.DirectoryID,

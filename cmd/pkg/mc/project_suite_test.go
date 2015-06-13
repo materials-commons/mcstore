@@ -1,4 +1,4 @@
-package project
+package mc
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestProject(t *testing.T) {
+func TestMC(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Project Suite")
+	RunSpecs(t, "MC Suite")
 }
