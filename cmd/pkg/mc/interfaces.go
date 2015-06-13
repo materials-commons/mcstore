@@ -1,6 +1,7 @@
 package mc
 
 type ProjectDB interface {
+	Open(path string) (ProjectDB, error)
 	Project() *Project
 	InsertDirectory(dir *Directory) (*Directory, error)
 	Directories() []Directory
@@ -12,6 +13,18 @@ type ProjectDB interface {
 type ProjectDBLister interface {
 	// All returns a list of the known ProjectDBs. The ProjectDBs
 	// are open.
-	All() []ProjectDB
+	All() ([]ProjectDB, error)
+
+	// Create will create a new local project and populate
+	// the default database entries. The returned ProjectDB
+	// has already been opened.
 	Create(project *Project) (ProjectDB, error)
+}
+
+type MCUser interface {
+	Home() string
+	APIKey() string
+	ConfigDir() string
+	ConfigFile() string
+	ProjectsFiles() string
 }

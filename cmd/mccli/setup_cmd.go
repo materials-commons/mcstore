@@ -95,7 +95,7 @@ func getAPIKey(username, password string) (string, error) {
 // writeConfigFile writes the created config.json file. It also creates
 // the $HOME/.materialscommons directory.
 func writeConfigFile(configSetup userConfigSetup) {
-	if err := os.MkdirAll(mc.ConfigDir(), 0700); err != nil {
+	if err := os.MkdirAll(mc.User.ConfigDir(), 0700); err != nil {
 		panic(fmt.Sprintf("Couldn't create dir: %s", err))
 	}
 	b, err := json.Marshal(configSetup)
@@ -104,5 +104,5 @@ func writeConfigFile(configSetup userConfigSetup) {
 	}
 	var out bytes.Buffer
 	json.Indent(&out, b, "", "  ")
-	ioutil.WriteFile(mc.ConfigFile(), out.Bytes(), 0700)
+	ioutil.WriteFile(mc.User.ConfigFile(), out.Bytes(), 0700)
 }
