@@ -52,7 +52,7 @@ var _ = Describe("ProjectStatusCmd", func() {
 			// Set apikey for user who doesn't have permission
 			config.Set("apikey", "test2")
 			r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})
@@ -61,7 +61,7 @@ var _ = Describe("ProjectStatusCmd", func() {
 			config.Set("apikey", "test")
 			uploadRequest.ProjectID = "does-not-exist"
 			r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
@@ -69,7 +69,7 @@ var _ = Describe("ProjectStatusCmd", func() {
 		It("Should return an error when the apikey doesn't exist", func() {
 			config.Set("apikey", "does-not-exist")
 			r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})

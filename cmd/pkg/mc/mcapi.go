@@ -37,7 +37,7 @@ func (a mcapi) Url(path string) string {
 	return mcurl
 }
 
-func (a mcapi) Error(resp *http.Response, errs []error) error {
+func (a mcapi) IsError(resp *http.Response, errs []error) error {
 	switch {
 	case len(errs) != 0:
 		return app.ErrInvalid

@@ -287,7 +287,7 @@ func toProjectPath(dirpath string) string {
 
 func sendRequest(client *gorequest.SuperAgent, path string, req interface{}, resp interface{}) error {
 	r, body, errs := client.Post(mc.Api.Url(path)).Send(req).End()
-	if err := mc.Api.Error(r, errs); err != nil {
+	if err := mc.Api.IsError(r, errs); err != nil {
 		fmt.Println("Unable to create project:", err)
 		return err
 	}

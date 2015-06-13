@@ -49,7 +49,7 @@ var _ = Describe("UploadResource", func() {
 	var (
 		createUploadRequest = func(req CreateUploadRequest) (*CreateUploadResponse, error) {
 			r, body, errs := client.Post(mc.Api.Url("/upload")).Send(req).End()
-			if err := mc.Api.Error(r, errs); err != nil {
+			if err := mc.Api.IsError(r, errs); err != nil {
 				return nil, err
 			}
 
@@ -70,7 +70,7 @@ var _ = Describe("UploadResource", func() {
 			// Set apikey for user who doesn't have permission
 			config.Set("apikey", "test2")
 			r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})
@@ -79,7 +79,7 @@ var _ = Describe("UploadResource", func() {
 			config.Set("apikey", "test")
 			uploadRequest.ProjectID = "does-not-exist"
 			r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
@@ -88,7 +88,7 @@ var _ = Describe("UploadResource", func() {
 			config.Set("apikey", "test")
 			uploadRequest.DirectoryID = "does-not-exist"
 			r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
@@ -96,7 +96,7 @@ var _ = Describe("UploadResource", func() {
 		It("Should return an error when the apikey doesn't exist", func() {
 			config.Set("apikey", "does-not-exist")
 			r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})
@@ -104,7 +104,7 @@ var _ = Describe("UploadResource", func() {
 		It("Should create a new request for a valid submit", func() {
 			config.Set("apikey", "test")
 			r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).To(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 200))
 			var uploadResponse CreateUploadResponse
@@ -127,7 +127,7 @@ var _ = Describe("UploadResource", func() {
 
 			config.Set("apikey", "bad-key")
 			r, _, errs := client.Get(mc.Api.Url("/upload/test")).End()
-			err = mc.Api.Error(r, errs)
+			err = mc.Api.IsError(r, errs)
 			Expect(err).ToNot(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 
@@ -138,7 +138,7 @@ var _ = Describe("UploadResource", func() {
 		It("Should return an error on a bad project", func() {
 			config.Set("apikey", "test")
 			r, _, errs := client.Get(mc.Api.Url("/upload/bad-project-id")).End()
-			err := mc.Api.Error(r, errs)
+			err := mc.Api.IsError(r, errs)
 			Expect(err).ToNot(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
@@ -148,7 +148,7 @@ var _ = Describe("UploadResource", func() {
 			resp, err := createUploadRequest(uploadRequest)
 			Expect(err).To(BeNil())
 			r, body, errs := client.Get(mc.Api.Url("/upload/test")).End()
-			err = mc.Api.Error(r, errs)
+			err = mc.Api.IsError(r, errs)
 			Expect(err).To(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 200))
 			var entries []UploadEntry
