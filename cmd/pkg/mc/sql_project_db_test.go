@@ -3,14 +3,15 @@ package mc
 import (
 	"os"
 
+	"io/ioutil"
+	"path/filepath"
+
 	"github.com/materials-commons/mcstore/pkg/app"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"io/ioutil"
-	"path/filepath"
 )
 
-var _ = Describe("MCProject", func() {
+var _ = Describe("SQLProjectDB", func() {
 	var (
 		projectReq ProjectReq
 	)
@@ -27,23 +28,23 @@ var _ = Describe("MCProject", func() {
 		os.RemoveAll(".materialscommons")
 	})
 
-	Describe("Create method tests", func() {
+	Describe("CreateProjectDB method tests", func() {
 		It("Should return an error if the path doesn't exist", func() {
 			os.RemoveAll(".materialscommons")
-			pdb, err := Create(projectReq, ".materialscommons")
+			pdb, err := CreateProjectDB(projectReq, ".materialscommons")
 			Expect(err).To(Equal(app.ErrNotFound))
 			Expect(pdb).To(BeNil())
 		})
 
 		It("Should return an error if the project already exists", func() {
 			ioutil.WriteFile(filepath.Join(".materialscommons", "proj1id.db"), []byte("hello"), 0777)
-			pdb, err := Create(projectReq, ".materialscommons")
+			pdb, err := CreateProjectDB(projectReq, ".materialscommons")
 			Expect(err).To(Equal(app.ErrExists))
 			Expect(pdb).To(BeNil())
 		})
 
 		It("Should create the project when it doesn't exist", func() {
-			pdb, err := Create(projectReq, ".materialscommons")
+			pdb, err := CreateProjectDB(projectReq, ".materialscommons")
 			Expect(err).To(BeNil())
 			Expect(pdb).NotTo(BeNil())
 			db := pdb.db

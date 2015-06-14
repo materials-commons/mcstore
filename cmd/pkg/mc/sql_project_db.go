@@ -16,7 +16,7 @@ type sqlProjectDB struct {
 	db *sqlx.DB
 }
 
-func Open(dbpath string) (*sqlProjectDB, error) {
+func OpenProjectDB(dbpath string) (*sqlProjectDB, error) {
 	if !file.Exists(dbpath) {
 		return nil, app.ErrNotFound
 	}
@@ -55,7 +55,7 @@ type ProjectReq struct {
 
 // Create will create a new project database at the named path.
 // It will return an error if the project already exists.
-func Create(projectReq ProjectReq, path string) (*sqlProjectDB, error) {
+func CreateProjectDB(projectReq ProjectReq, path string) (*sqlProjectDB, error) {
 	dbfilePath := filepath.Join(path, projectReq.ProjectID+".db")
 
 	switch {

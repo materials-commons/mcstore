@@ -70,7 +70,7 @@ func projectCreateCLI(c *cli.Context) {
 		ProjectID: args.projectID,
 	}
 	// TODO: Fix me
-	proj, err := mc.Create(p, ".materialscommons")
+	proj, err := mc.CreateProjectDB(p, ".materialscommons")
 	if err != nil {
 		fmt.Println("Unable to create project:", err)
 		os.Exit(1)

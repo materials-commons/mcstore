@@ -1,9 +1,10 @@
 package mc
 
 import (
+	"path/filepath"
+
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
-	"path/filepath"
 )
 
 type mcprojects struct {
@@ -34,7 +35,7 @@ func (p *mcprojects) All() ([]ProjectDB, error) {
 func loadProjectDBEntries(projectDBPaths []string) []ProjectDB {
 	var projects []ProjectDB
 	for _, filePath := range projectDBPaths {
-		if projdb, err := Open(filePath); err != nil {
+		if projdb, err := OpenProjectDB(filePath); err != nil {
 			app.Log.Errorf("Unable to open projectDB '%s': %s", filePath, err)
 		} else {
 			projects = append(projects, projdb)
