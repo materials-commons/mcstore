@@ -20,10 +20,8 @@ type ProjectDBLister interface {
 	Create(project *Project) (ProjectDB, error)
 }
 
-type MCUser interface {
-	Home() string
+type Configer interface {
 	APIKey() string
 	ConfigDir() string
 	ConfigFile() string
-	ProjectsFiles() string
 }

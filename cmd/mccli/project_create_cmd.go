@@ -64,12 +64,13 @@ func projectCreateCLI(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	p := mc.ClientProject{
+	p := mc.ProjectReq{
 		Name:      args.projectName,
 		Path:      args.directoryPath,
 		ProjectID: args.projectID,
 	}
-	proj, err := mc.Create(p)
+	// TODO: Fix me
+	proj, err := mc.Create(p, ".materialscommons")
 	if err != nil {
 		fmt.Println("Unable to create project:", err)
 		os.Exit(1)
@@ -134,7 +135,7 @@ func validateDirectoryPath(path string) error {
 
 // indexProject walks the directory tree and indexes each of the files found. Indexing
 // can be performed in parallel.
-func indexProject(path string, proj *mc.MCProject) error {
+func indexProject(path string, proj mc.ProjectDB) error {
 	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 		indexEntries(proj, done, entries, result)
 	}
@@ -153,16 +154,16 @@ func indexProject(path string, proj *mc.MCProject) error {
 type indexer struct {
 	client   *gorequest.SuperAgent
 	dirs     map[string]*mc.Directory
-	proj     *mc.MCProject
+	proj     mc.ProjectDB
 	ezclient *ezhttp.EzClient
 }
 
 // indexEntries processes the entries sent along the entries channel. It also
 // processes done channel events by exiting the go routine.
-func indexEntries(proj *mc.MCProject, done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
+func indexEntries(proj mc.ProjectDB, done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 	i := &indexer{
 		client:   gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
-		proj:     proj.Clone(),
+		proj:     nil, // proj.Clone(),
 		dirs:     make(map[string]*mc.Directory),
 		ezclient: ezhttp.NewSSLClient(),
 	}
@@ -257,7 +258,7 @@ func (i *indexer) findFileDirectory(entry files.TreeEntry) *mc.Directory {
 	}
 
 	// The directory is not in our cache, so go to database to get it.
-	dir, _ := i.proj.FindDirectoryByPath(dirpath)
+	dir, _ := i.proj.FindDirectory(dirpath)
 	i.dirs[dirpath] = dir
 	return dir
 }
