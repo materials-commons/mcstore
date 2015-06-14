@@ -1,7 +1,6 @@
 package mc
 
 type ProjectDB interface {
-	Open(path string) (ProjectDB, error)
 	Project() *Project
 	InsertDirectory(dir *Directory) (*Directory, error)
 	Directories() []Directory

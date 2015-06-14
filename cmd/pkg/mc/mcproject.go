@@ -14,72 +14,30 @@ import (
 
 // MCProject is a materials commons project on the local system.
 type MCProject struct {
-	ID  string
-	Dir string
+	id  string
+	dir string
 	db  *sqlx.DB
 }
 
-// Clone will create a new instance of MCProject from and existing one. This can
-// be used to create separate MCProjects for different go routines.
-func (p *MCProject) Clone() *MCProject {
-	mcprojectDir := filepath.Join(p.Dir, ".mcproject")
-	db, _ := openDB(mcprojectDir, true)
-	return &MCProject{
-		ID:  p.ID,
-		Dir: p.Dir,
-		db:  db,
-	}
-}
+const dbMustExist = true
 
-// Find will attempt to locate the project that a directory is in. It does
-// this by going up the directory tree looking for a .mcproject directory
-// that contains a project.db in it. If it cannot find one it returns
-// the error app.ErrNotFound
-func Find(dir string) (*MCProject, error) {
-	// Normalize the directory path, and convert all path separators to a
-	// forward slash (/).
-	dirPath, err := filepath.Abs(dir)
-	if err != nil {
-		app.Log.Debugf("Bad directory %s: %s", dir, err)
+func Open(id string) (*MCProject, error) {
+	dbpath := filepath.Join(User.ConfigDir(), id+".db")
+	if db, err := openDB(dbpath, dbMustExist); err != nil {
 		return nil, err
-	}
-
-	dirPath = filepath.ToSlash(dirPath)
-	for {
-		if dirPath == "/" {
-			// Projects at root level not allowed
-			return nil, app.ErrNotFound
+	} else {
+		proj := &MCProject{
+			id:  id,
+			dir: User.ConfigDir(),
+			db:  db,
 		}
-
-		mcprojectDir := filepath.Join(dirPath, ".mcproject")
-		if file.IsDir(mcprojectDir) {
-			return Open(mcprojectDir)
-		}
-		dirPath = filepath.Dir(dirPath)
+		return proj, nil
 	}
-}
-
-// Open will open a project database in the specified .mcproject
-// directory. The project.db must exist. If it doesn't exist
-// it will return the error app.ErrNotFound.
-func Open(dir string) (*MCProject, error) {
-	db, err := openDB(dir, true)
-	if err != nil {
-		return nil, err
-	}
-
-	mcproject := &MCProject{
-		db: db,
-		// Dir of location.
-		Dir: filepath.Dir(dir),
-	}
-	return mcproject, nil
 }
 
 // openDB will attempt to open the project.db file. The mustExist
 // flag specifies whether or not the database file must exist.
-func openDB(dir string, mustExist bool) (*sqlx.DB, error) {
-	dbpath := filepath.Join(dir, "project.db")
+func openDB(dbpath string, mustExist bool) (*sqlx.DB, error) {
 	if mustExist && !file.Exists(dbpath) {
 		return nil, app.ErrNotFound
 	}
@@ -119,7 +77,7 @@ func Create(project ClientProject) (*MCProject, error) {
 	mcproject := &MCProject{
 		db: db,
 		// Dir of location.
-		Dir: filepath.Dir(project.Path),
+		dir: filepath.Dir(project.Path),
 	}
 	proj := &Project{
 		ProjectID: project.ProjectID,

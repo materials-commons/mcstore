@@ -58,7 +58,7 @@ func uploadToServer(dir string, numThreads int) {
 		fmt.Println("Unable to locate project dir is in.")
 		os.Exit(1)
 	}
-	fmt.Printf("project = '%s'\n", proj.ID)
+	fmt.Printf("project = '%s'\n", proj.id)
 	// _, errc := files.PWalk(dir, numThreads, processFiles)
 	// if err := <-errc; err != nil {
 	// 	fmt.Println("Got error: ", err)
