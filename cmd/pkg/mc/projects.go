@@ -8,7 +8,7 @@ import (
 )
 
 type mcprojects struct {
-	config Configer
+	config   Configer
 	dbOpener ProjectDBOpener
 }
 
