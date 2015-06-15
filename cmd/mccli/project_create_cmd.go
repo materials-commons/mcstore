@@ -69,8 +69,7 @@ func projectCreateCLI(c *cli.Context) {
 		Path:      args.directoryPath,
 		ProjectID: args.projectID,
 	}
-	// TODO: Fix me
-	proj, err := mc.ProjectOpener.OpenProjectDB(p, mc.ProjectDBCreate)
+	proj, err := mc.ProjectOpener.CreateProjectDB(p)
 	if err != nil {
 		fmt.Println("Unable to create project:", err)
 		os.Exit(1)
