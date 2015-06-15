@@ -2,10 +2,13 @@ package mc
 
 type ProjectDB interface {
 	Project() *Project
+	UpdateProject(project *Project) error
 	InsertDirectory(dir *Directory) (*Directory, error)
+	UpdateDirectory(dir *Directory) error
 	Directories() []Directory
 	Ls(dir Directory) []File
 	InsertFile(f *File) (*File, error)
+	UpdateFile(f *File) error
 	FindDirectory(path string) (*Directory, error)
 	Clone() ProjectDB
 }

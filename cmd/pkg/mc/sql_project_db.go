@@ -36,6 +36,19 @@ func (p *sqlProjectDB) InsertDirectory(dir *Directory) (*Directory, error) {
 	return dir, nil
 }
 
+func (p *sqlProjectDB) UpdateDirectory(dir *Directory) error {
+	sql := `
+	       update directories set
+	           directoryid = :directoryid,
+	           path = :path,
+	           lastupload = :lastupload,
+	           lastdownload = :lastdownload
+	       where id=:id
+	`
+	_, err := p.db.Exec(sql, dir.DirectoryID, dir.Path, dir.LastUpload, dir.LastDownload, dir.ID)
+	return err
+}
+
 // FindDirectory looks up a directory by its path.
 func (p *sqlProjectDB) FindDirectory(path string) (*Directory, error) {
 	query := `select * from directories where path = $1`
@@ -69,6 +82,25 @@ func (p *sqlProjectDB) InsertFile(f *File) (*File, error) {
 	return f, err
 }
 
+func (p *sqlProjectDB) UpdateFile(f *File) error {
+	sql := `
+	       update files set
+	           fileid = :fileid,
+	           name = :name,
+	           checksum = :checksum,
+	           size = :size,
+	           mtime = :mtime,
+	           ctime = :ctime,
+	           lastupload = :lastupload,
+	           lastdownload = :lastdownload,
+	           directory = :directory
+	       where id=:id
+	`
+	_, err := p.db.Exec(sql, f.FileID, f.Name, f.Checksum, f.Size, f.MTime,
+		f.CTime, f.LastUpload, f.LastDownload, f.Directory, f.ID)
+	return err
+}
+
 // insertProject will insert a new project entry into the project database.
 func (p *sqlProjectDB) insertProject(proj *Project) (*Project, error) {
 	sql := `
@@ -81,6 +113,20 @@ func (p *sqlProjectDB) insertProject(proj *Project) (*Project, error) {
 	}
 	proj.ID, _ = res.LastInsertId()
 	return proj, err
+}
+
+func (p *sqlProjectDB) UpdateProject(proj *Project) error {
+	sql := `
+	     update project set
+	         name = :name,
+	         projectid = :projectid,
+	         path = :path,
+	         lastupload = :lastupload,
+	         lastdownload = :lastdownload
+	     where id=:id
+	`
+	_, err := p.db.Exec(sql, proj.Name, proj.ProjectID, proj.Path, proj.LastUpload, proj.LastDownload, proj.ID)
+	return err
 }
 
 func (p *sqlProjectDB) Directories() []Directory {
