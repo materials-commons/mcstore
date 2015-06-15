@@ -144,7 +144,8 @@ func (c *uploadCreater) FChunk(size, count int) *uploadCreater {
 	return c
 }
 
-// FBlocks sets the Upload.File.Blocks field.
+// FBlocks sets the Upload.File.Blocks field. It also sets the BitString
+// field with a byte array representation of the bitset.
 func (c *uploadCreater) FBlocks(blocks *bitset.BitSet) *uploadCreater {
 	c.upload.File.Blocks = blocks
 	c.upload.File.BitString, _ = blocks.MarshalJSON()
