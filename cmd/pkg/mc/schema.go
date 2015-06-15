@@ -10,6 +10,7 @@ import (
 type Project struct {
 	ID           int64
 	Name         string
+	Path         string
 	ProjectID    string
 	LastUpload   time.Time
 	LastDownload time.Time
@@ -55,6 +56,7 @@ var schemas = []schemaCommand{
                         id integer primary key,
                         name text,
                         projectid varchar(40),
+                        path text,
                         lastupload datetime,
                         lastdownload datetime
                      )
@@ -85,7 +87,7 @@ var schemas = []schemaCommand{
 	},
 
 	{
-		description: "Create the table for that holds all known files",
+		description: "Create the table that holds all known files",
 		sql: `
              create table files(
                 id integer primary key,
