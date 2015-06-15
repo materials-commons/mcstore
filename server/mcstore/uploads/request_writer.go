@@ -119,3 +119,11 @@ func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error 
 		return nil
 	}
 }
+
+type mockRequestWriter struct {
+	err error
+}
+
+func (r *mockRequestWriter) write(dir string, req *flow.Request) error {
+	return r.err
+}
