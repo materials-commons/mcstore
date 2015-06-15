@@ -19,7 +19,12 @@ func Find(dir string) (ProjectDB, error) {
 }
 
 func (p *sqlProjectDB) Project() *Project {
-	return nil
+	var proj Project
+	if err := p.db.Get(&proj, "select * from project"); err != nil {
+		app.Log.Critf("Unable to retrieve project from database: %s", err)
+		return nil
+	}
+	return &proj
 }
 
 // InsertDirectory will insert a new directory entry into the project database.
