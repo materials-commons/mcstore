@@ -72,10 +72,10 @@ func (p *sqlProjectDB) InsertFile(f *File) (*File, error) {
 // insertProject will insert a new project entry into the project database.
 func (p *sqlProjectDB) insertProject(proj *Project) (*Project, error) {
 	sql := `
-           insert into project(name, projectid, lastupload, lastdownload)
-                       values(:name, :projectid, :lastupload, :lastdownload)
+           insert into project(name, projectid, path, lastupload, lastdownload)
+                       values(:name, :projectid, :path, :lastupload, :lastdownload)
         `
-	res, err := p.db.Exec(sql, proj.Name, proj.ProjectID, proj.LastUpload, proj.LastDownload)
+	res, err := p.db.Exec(sql, proj.Name, proj.ProjectID, proj.Path, proj.LastUpload, proj.LastDownload)
 	if err != nil {
 		return nil, err
 	}
