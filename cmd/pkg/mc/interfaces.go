@@ -32,7 +32,7 @@ type ProjectDBLister interface {
 	// Create will create a new local project and populate
 	// the default database entries. The returned ProjectDB
 	// has already been opened.
-	Create(project *Project) (ProjectDB, error)
+	Create(dbSpec ProjectDBSpec) (ProjectDB, error)
 }
 
 type Configer interface {

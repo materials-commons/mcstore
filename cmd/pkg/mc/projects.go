@@ -8,26 +8,25 @@ import (
 )
 
 type mcprojects struct {
-	config   Configer
+	configer Configer
 	dbOpener ProjectDBOpener
 }
 
 var Projects *mcprojects = NewProjects(NewOSUserConfiger())
 
-func NewProjects(config Configer) *mcprojects {
+func NewProjects(configer Configer) *mcprojects {
 	return &mcprojects{
-		config: config,
-		// TODO: Remove hard coding of type of opener here
-		dbOpener: sqlProjectDBOpener{},
+		configer: configer,
+		dbOpener: sqlProjectDBOpener{configer: configer},
 	}
 }
 
 func (p *mcprojects) All() ([]ProjectDB, error) {
-	if !file.Exists(p.config.ConfigDir()) {
+	if !file.Exists(p.configer.ConfigDir()) {
 		return nil, app.ErrNotFound
 	}
 
-	projectsGlob := filepath.Join(p.config.ConfigDir(), "*.db")
+	projectsGlob := filepath.Join(p.configer.ConfigDir(), "*.db")
 	if fileMatches, err := filepath.Glob(projectsGlob); err != nil {
 		return nil, err
 	} else {
@@ -48,6 +47,6 @@ func (p *mcprojects) loadProjectDBEntries(projectDBPaths []string) []ProjectDB {
 	return projects
 }
 
-func (p *mcprojects) Create(project *Project) (ProjectDB, error) {
-	return nil, app.ErrInvalid
+func (p *mcprojects) Create(dbSpec ProjectDBSpec) (ProjectDB, error) {
+	return p.dbOpener.CreateProjectDB(dbSpec)
 }
