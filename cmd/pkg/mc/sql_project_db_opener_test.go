@@ -52,6 +52,8 @@ var _ = Describe("SqlProjectDBOpener", func() {
 				pdb, err := projectOpener.CreateProjectDB(projectDBSpec)
 				Expect(err).To(BeNil())
 				Expect(pdb).NotTo(BeNil())
+
+				// Test the projects contents
 				sqlpdb := pdb.(*sqlProjectDB)
 				db := sqlpdb.db
 				var projects []Project
@@ -72,9 +74,12 @@ var _ = Describe("SqlProjectDBOpener", func() {
 			})
 
 			It("Should open an existing project", func() {
+				// Create the project
 				pdb, err := projectOpener.CreateProjectDB(projectDBSpec)
 				Expect(err).To(BeNil())
 				Expect(pdb).NotTo(BeNil())
+
+				// Open the project and test its contents
 				pdb, err = projectOpener.OpenProjectDB("proj1")
 				Expect(err).To(BeNil())
 				Expect(pdb).NotTo(BeNil())
