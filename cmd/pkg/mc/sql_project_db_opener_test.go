@@ -63,6 +63,7 @@ var _ = Describe("SqlProjectDBOpener", func() {
 				proj := projects[0]
 				Expect(proj.ProjectID).To(Equal("proj1id"))
 				Expect(proj.Name).To(Equal("proj1"))
+				Expect(proj.Path).To(Equal("/tmp"))
 			})
 		})
 

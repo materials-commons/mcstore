@@ -2,11 +2,12 @@ package mc
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
-	"path/filepath"
-	"strings"
 )
 
 type sqlProjectDBOpener struct {
@@ -63,6 +64,7 @@ func (p sqlProjectDBOpener) loadDB(db *sqlx.DB, dbSpec ProjectDBSpec) (*sqlProje
 	proj := &Project{
 		ProjectID: dbSpec.ProjectID,
 		Name:      dbSpec.Name,
+		Path:      dbSpec.Path,
 	}
 
 	projectdb := &sqlProjectDB{
