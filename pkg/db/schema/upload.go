@@ -1,17 +1,23 @@
 package schema
 
-import "time"
+import (
+	"time"
+
+	"github.com/willf/bitset"
+)
 
 // FileUpload is the tracking information for an individual file upload.
 type FileUpload struct {
-	Name        string    `gorethink:"name"`         // File name on remote system
-	Checksum    string    `gorethink:"checksum"`     // Computed file checksum
-	Size        int64     `gorethink:"size"`         // Size of file on remote system
-	Birthtime   time.Time `gorethink:"birthtime"`    // When was FileUpload started
-	MTime       time.Time `gorethink:"mtime"`        // Last time this entry was modified
-	RemoteMTime time.Time `gorethink:"remote_mtime"` // CTime of the remote file
-	ChunkSize   int       `gorethink:"chunk_size"`   // Chunk transfer size
-	ChunkCount  int       `gorethink:"chunk_count"`  // Number of chunks expected
+	Name        string         `gorethink:"name"`         // File name on remote system
+	Checksum    string         `gorethink:"checksum"`     // Computed file checksum
+	Size        int64          `gorethink:"size"`         // Size of file on remote system
+	Birthtime   time.Time      `gorethink:"birthtime"`    // When was FileUpload started
+	MTime       time.Time      `gorethink:"mtime"`        // Last time this entry was modified
+	RemoteMTime time.Time      `gorethink:"remote_mtime"` // CTime of the remote file
+	ChunkSize   int            `gorethink:"chunk_size"`   // Chunk transfer size
+	ChunkCount  int            `gorethink:"chunk_count"`  // Number of chunks expected
+	Blocks      *bitset.BitSet // Block state. If set block as has been uploaded
+	BitString   []byte
 }
 
 // A Upload models a user upload request. It allows for users to restart
@@ -135,6 +141,13 @@ func (c *uploadCreater) FRemoteMTime(t time.Time) *uploadCreater {
 func (c *uploadCreater) FChunk(size, count int) *uploadCreater {
 	c.upload.File.ChunkSize = size
 	c.upload.File.ChunkCount = count
+	return c
+}
+
+// FBlocks sets the Upload.File.Blocks field.
+func (c *uploadCreater) FBlocks(blocks *bitset.BitSet) *uploadCreater {
+	c.upload.File.Blocks = blocks
+	c.upload.File.BitString, _ = blocks.MarshalJSON()
 	return c
 }
 

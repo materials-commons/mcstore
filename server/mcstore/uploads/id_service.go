@@ -5,6 +5,8 @@ import (
 
 	"math"
 
+	"fmt"
+
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -12,7 +14,10 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
+	"github.com/willf/bitset"
 )
+
+var _ = fmt.Println
 
 // A IDRequest requests a new upload id be created for
 // the given parameters.
@@ -80,8 +85,7 @@ func NewIDServiceUsingSession(session *r.Session) *idService {
 	}
 }
 
-// ID will create a new Upload request. It validates and checks access to the given project
-// and directory.
+// ID will create a new Upload request or return an existing one.
 func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 	proj, err := s.getProj(req.ProjectID, req.User)
 	if err != nil {
@@ -101,9 +105,11 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 	}
 
 	if existingUpload, err := s.uploads.Search(searchParams); err == nil {
+		// Found existing
 		return existingUpload, nil
 	}
 
+	n := uint(numBlocks(req.FileSize, req.ChunkSize))
 	upload := schema.CUpload().
 		Owner(req.User).
 		Project(req.ProjectID, proj.Name).
@@ -114,6 +120,7 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 		FSize(req.FileSize).
 		FChecksum(req.Checksum).
 		FRemoteMTime(req.FileMTime).
+		FBlocks(bitset.New(n)).
 		Create()
 	u, err := s.uploads.Insert(&upload)
 	if err != nil {
@@ -124,7 +131,6 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 		s.uploads.Delete(u.ID)
 		return nil, err
 	}
-
 	return u, nil
 }
 
@@ -172,7 +178,8 @@ func (s *idService) initUpload(id string, fileSize int64, chunkSize int) error {
 func numBlocks(fileSize int64, chunkSize int) int {
 	// round up to nearest number of blocks
 	d := float64(fileSize) / float64(chunkSize)
-	return int(math.Ceil(d))
+	n := int(math.Ceil(d))
+	return n
 }
 
 // Delete will delete the given requestID if the user has access

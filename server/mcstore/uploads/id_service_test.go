@@ -4,6 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"fmt"
+
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
@@ -11,6 +13,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/domain"
 	"github.com/materials-commons/mcstore/testutil"
 )
+
+var _ = fmt.Println
 
 var _ = Describe("IDService", func() {
 
@@ -56,6 +60,8 @@ var _ = Describe("IDService", func() {
 					ProjectID:   "test",
 					DirectoryID: "test",
 					Host:        "host",
+					FileSize:    10,
+					ChunkSize:   10,
 				}
 			})
 
@@ -85,7 +91,7 @@ var _ = Describe("IDService", func() {
 				})
 			})
 
-			Context("Invalid user", func() {
+			Context("Invalid directory", func() {
 				It("Should not allow access for non existent directory", func() {
 					req.User = "test@mc.org" // valid user
 					req.DirectoryID = "test@mc.org"
@@ -105,6 +111,8 @@ var _ = Describe("IDService", func() {
 						User:        "admin@mc.org",
 						ProjectID:   "test",
 						DirectoryID: "test",
+						FileSize:    10,
+						ChunkSize:   10,
 					}
 				})
 
@@ -130,6 +138,46 @@ var _ = Describe("IDService", func() {
 				})
 			})
 		})
+
+		Describe("Existing Uploads", func() {
+			It("Should find an existing upload", func() {
+				req := IDRequest{
+					ProjectID:   "test",
+					DirectoryID: "test",
+					Host:        "host",
+					Checksum:    "abc123",
+					FileSize:    100,
+					ChunkSize:   10,
+					User:        "test@mc.org",
+				}
+				upload, err := s.ID(req)
+				Expect(err).To(BeNil())
+				Expect(upload.File.Blocks.Len()).To(BeNumerically("==", 10))
+
+				// Now submit again with exact same parameters. It should
+				// not create a new request
+				upload2, err := s.ID(req)
+				Expect(err).To(BeNil())
+				Expect(upload2.ID).To(Equal(upload.ID))
+
+				// Check that the bitset state is correct.
+				Expect(upload2.File.Blocks.Len()).To(BeNumerically("==", 10))
+			})
+
+			It("Should leave an upload in place", func() {
+				req := IDRequest{
+					ProjectID:   "test",
+					DirectoryID: "test",
+					Host:        "host",
+					Checksum:    "abc123567",
+					FileSize:    10,
+					ChunkSize:   10,
+					User:        "test@mc.org",
+					FileName:    "blocktest.txt",
+				}
+				s.ID(req)
+			})
+		})
 	})
 
 	Describe("Delete Method Tests", func() {
@@ -145,6 +193,8 @@ var _ = Describe("IDService", func() {
 					DirectoryID: "test",
 					Host:        "host",
 					User:        "test@mc.org",
+					FileSize:    10,
+					ChunkSize:   10,
 				}
 
 				u, _ = s.ID(req)
@@ -193,6 +243,8 @@ var _ = Describe("IDService", func() {
 					DirectoryID: "test",
 					Host:        "host",
 					User:        "admin@mc.org",
+					FileSize:    10,
+					ChunkSize:   10,
 				}
 
 				upload, err := s.ID(req)
@@ -217,6 +269,8 @@ var _ = Describe("IDService", func() {
 				DirectoryID: "test",
 				Host:        "host",
 				User:        "test@mc.org",
+				FileSize:    10,
+				ChunkSize:   10,
 			}
 
 			u, _ = s.ID(req)
