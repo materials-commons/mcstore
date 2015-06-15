@@ -90,6 +90,7 @@ func (u rUploads) ForUser(user string) ([]schema.Upload, error) {
 	return uploads, nil
 }
 
+// ForProject returns all uploads for a particular.
 func (u rUploads) ForProject(projectID string) ([]schema.Upload, error) {
 	rql := model.Uploads.T().GetAllByIndex("project_id", projectID)
 	var uploads []schema.Upload
@@ -107,13 +108,14 @@ func (u rUploads) Delete(uploadID string) error {
 	return model.Uploads.Qs(u.session).Delete(uploadID)
 }
 
-// Turn bytes representation of bitset back into a BitSet
+// toBitSet will turn a bytes representation of bitset back into a BitSet.
 func toBitSet(bitstr []byte) *bitset.BitSet {
 	b := &bitset.BitSet{}
 	b.UnmarshalJSON(bitstr)
 	return b
 }
 
+// toBitStr will turn a BitSet into a []byte array representation.
 func toBitStr(b *bitset.BitSet) []byte {
 	bytes, _ := b.MarshalJSON()
 	return bytes
