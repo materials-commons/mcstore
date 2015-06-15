@@ -1,63 +1,14 @@
 package mc
 
 import (
-	"os"
-
-	"io/ioutil"
-	"path/filepath"
-
-	"github.com/materials-commons/mcstore/pkg/app"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("SQLProjectDB", func() {
-	var (
-		projectReq ProjectReq
-	)
-	BeforeEach(func() {
-		os.Mkdir(".materialscommons", 0777)
-		projectReq = ProjectReq{
-			Path:      "/tmp",
-			Name:      "proj1",
-			ProjectID: "proj1id",
-		}
+	It("Should do something", func() {
+		Expect("")
 	})
-
-	AfterEach(func() {
-		os.RemoveAll(".materialscommons")
-	})
-
-	Describe("CreateProjectDB method tests", func() {
-		It("Should return an error if the path doesn't exist", func() {
-			os.RemoveAll(".materialscommons")
-			pdb, err := CreateProjectDB(projectReq, ".materialscommons")
-			Expect(err).To(Equal(app.ErrNotFound))
-			Expect(pdb).To(BeNil())
-		})
-
-		It("Should return an error if the project already exists", func() {
-			ioutil.WriteFile(filepath.Join(".materialscommons", "proj1id.db"), []byte("hello"), 0777)
-			pdb, err := CreateProjectDB(projectReq, ".materialscommons")
-			Expect(err).To(Equal(app.ErrExists))
-			Expect(pdb).To(BeNil())
-		})
-
-		It("Should create the project when it doesn't exist", func() {
-			pdb, err := CreateProjectDB(projectReq, ".materialscommons")
-			Expect(err).To(BeNil())
-			Expect(pdb).NotTo(BeNil())
-			db := pdb.db
-			var projects []Project
-			err = db.Select(&projects, "select * from project")
-			Expect(err).To(BeNil())
-			Expect(projects).To(HaveLen(1))
-			proj := projects[0]
-			Expect(proj.ProjectID).To(Equal("proj1id"))
-			Expect(proj.Name).To(Equal("proj1"))
-		})
-	})
-
 	//	Describe("InsertDir method tests", func() {
 	//		It("Should successfully insert and find the inserted directory", func() {
 	//			db := mcproject.db

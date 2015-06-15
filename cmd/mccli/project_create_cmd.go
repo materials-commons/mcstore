@@ -64,13 +64,13 @@ func projectCreateCLI(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	p := mc.ProjectReq{
+	p := mc.ProjectDBSpec{
 		Name:      args.projectName,
 		Path:      args.directoryPath,
 		ProjectID: args.projectID,
 	}
 	// TODO: Fix me
-	proj, err := mc.CreateProjectDB(p, ".materialscommons")
+	proj, err := mc.ProjectOpener.OpenProjectDB(p, mc.ProjectDBCreate)
 	if err != nil {
 		fmt.Println("Unable to create project:", err)
 		os.Exit(1)

@@ -7,6 +7,24 @@ type ProjectDB interface {
 	Ls(dir Directory) []File
 	InsertFile(f *File) (*File, error)
 	FindDirectory(path string) (*Directory, error)
+	Clone() ProjectDB
+}
+
+type ProjectDBSpec struct {
+	Name      string
+	ProjectID string
+	Path      string
+}
+
+type ProjectOpenFlags int
+
+const (
+	ProjectDBCreate ProjectOpenFlags = iota
+	ProjectDBMustExist
+)
+
+type ProjectDBOpener interface {
+	OpenProjectDB(dbSpec ProjectDBSpec, flags ProjectOpenFlags) (ProjectDB, error)
 }
 
 type ProjectDBLister interface {

@@ -2,11 +2,8 @@ package mc
 
 import (
 	"database/sql"
-	"fmt"
-	"path/filepath"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -16,78 +13,9 @@ type sqlProjectDB struct {
 	db *sqlx.DB
 }
 
-func OpenProjectDB(dbpath string) (*sqlProjectDB, error) {
-	if !file.Exists(dbpath) {
-		return nil, app.ErrNotFound
-	}
-
-	if db, err := openDB(dbpath); err != nil {
-		return nil, err
-	} else {
-		proj := &sqlProjectDB{
-			db: db,
-		}
-		return proj, nil
-	}
-}
-
 // TODO: Remove this reference, only here to get project building during refactor.
 func Find(dir string) (ProjectDB, error) {
 	return nil, app.ErrInvalid
-}
-
-// openDB will attempt to open the project.db file. The mustExist
-// flag specifies whether or not the database file must exist.
-func openDB(dbpath string) (*sqlx.DB, error) {
-	dbargs := fmt.Sprintf("file:%s?cached=shared&mode=rwc", dbpath)
-	db, err := sqlx.Open("sqlite3", dbargs)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
-
-type ProjectReq struct {
-	Name      string
-	ProjectID string
-	Path      string
-}
-
-// Create will create a new project database at the named path.
-// It will return an error if the project already exists.
-func CreateProjectDB(projectReq ProjectReq, path string) (*sqlProjectDB, error) {
-	dbfilePath := filepath.Join(path, projectReq.ProjectID+".db")
-
-	switch {
-	case !file.Exists(path):
-		return nil, app.ErrNotFound
-	case file.Exists(dbfilePath):
-		return nil, app.ErrExists
-	}
-
-	db, err := openDB(dbfilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := createSchema(db); err != nil {
-		db.Close()
-		return nil, err
-	}
-
-	mcproject := &sqlProjectDB{
-		db: db,
-	}
-	proj := &Project{
-		ProjectID: projectReq.ProjectID,
-		Name:      projectReq.Name,
-	}
-	proj, err = mcproject.insertProject(proj)
-	if err != nil {
-		db.Close()
-		return nil, err
-	}
-	return mcproject, nil
 }
 
 func (p *sqlProjectDB) Project() *Project {
@@ -163,4 +91,8 @@ func (p *sqlProjectDB) Directories() []Directory {
 func (p *sqlProjectDB) Ls(dir Directory) []File {
 	var files []File
 	return files
+}
+
+func (p *sqlProjectDB) Clone() ProjectDB {
+	return p
 }
