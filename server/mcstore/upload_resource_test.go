@@ -14,168 +14,206 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/parnurzeal/gorequest"
+	"github.com/willf/bitset"
 )
 
 var _ = fmt.Println
 
 var _ = Describe("UploadResource", func() {
-	var (
-		client        *gorequest.SuperAgent
-		server        *httptest.Server
-		container     *restful.Container
-		rr            *httptest.ResponseRecorder
-		uploadRequest CreateUploadRequest
-		uploads       dai.Uploads
-	)
+	Describe("findStartingBlock method tests", func() {
+		var (
+			blocks *bitset.BitSet
+		)
 
-	BeforeEach(func() {
-		client = c.NewGoRequest()
-		container = NewServicesContainerForTest()
-		server = httptest.NewServer(container)
-		rr = httptest.NewRecorder()
-		config.Set("mcurl", server.URL)
-		uploadRequest = CreateUploadRequest{
-			ProjectID:     "test",
-			DirectoryID:   "test",
-			DirectoryPath: "test/test",
-			FileName:      "testreq.txt",
-			FileSize:      4,
-			FileMTime:     time.Now().Format(time.RFC1123),
-			Checksum:      "abc123",
-		}
-		uploads = dai.NewRUploads(testutil.RSession())
+		BeforeEach(func() {
+			blocks = bitset.New(10)
+		})
+
+		It("Should return 1 if no blocks have been set", func() {
+			block := findStartingBlock(blocks)
+			Expect(block).To(BeNumerically("==", 1))
+		})
+
+		It("Should return 2 if the first block has been uploaded", func() {
+			// BitSet starts a zero. Flowjs starts at 1. So we have to adjust.
+			blocks.Set(0)
+			block := findStartingBlock(blocks)
+			Expect(block).To(BeNumerically("==", 2))
+		})
+
+		It("Should return 1 if only the last block as been uploaded", func() {
+			blocks.Set(9)
+			block := findStartingBlock(blocks)
+			Expect(block).To(BeNumerically("==", 1))
+		})
+
+		It("Should return 2 if only 2 has not been set (all others set)", func() {
+			complement := blocks.Complement()
+			complement.Clear(1) // second block
+			block := findStartingBlock(complement)
+			Expect(block).To(BeNumerically("==", 2))
+		})
 	})
 
-	var (
-		createUploadRequest = func(req CreateUploadRequest) (*CreateUploadResponse, error) {
-			r, body, errs := client.Post(mc.Api.Url("/upload")).Send(req).End()
-			if err := mc.Api.IsError(r, errs); err != nil {
-				return nil, err
+	Describe("http method tests", func() {
+		var (
+			client        *gorequest.SuperAgent
+			server        *httptest.Server
+			container     *restful.Container
+			rr            *httptest.ResponseRecorder
+			uploadRequest CreateUploadRequest
+			uploads       dai.Uploads
+		)
+
+		BeforeEach(func() {
+			client = c.NewGoRequest()
+			container = NewServicesContainerForTest()
+			server = httptest.NewServer(container)
+			rr = httptest.NewRecorder()
+			config.Set("mcurl", server.URL)
+			uploadRequest = CreateUploadRequest{
+				ProjectID:     "test",
+				DirectoryID:   "test",
+				DirectoryPath: "test/test",
+				FileName:      "testreq.txt",
+				FileSize:      4,
+				FileMTime:     time.Now().Format(time.RFC1123),
+				Checksum:      "abc123",
 			}
+			uploads = dai.NewRUploads(testutil.RSession())
+		})
 
-			var uploadResponse CreateUploadResponse
-			if err := mc.Api.ToJSON(body, &uploadResponse); err != nil {
-				return nil, err
+		var (
+			createUploadRequest = func(req CreateUploadRequest) (*CreateUploadResponse, error) {
+				r, body, errs := client.Post(mc.Api.Url("/upload")).Send(req).End()
+				if err := mc.Api.IsError(r, errs); err != nil {
+					return nil, err
+				}
+
+				var uploadResponse CreateUploadResponse
+				if err := mc.Api.ToJSON(body, &uploadResponse); err != nil {
+					return nil, err
+				}
+				return &uploadResponse, nil
 			}
-			return &uploadResponse, nil
-		}
-	)
+		)
 
-	AfterEach(func() {
-		server.Close()
-	})
+		AfterEach(func() {
+			server.Close()
+		})
 
-	Describe("create upload tests", func() {
-		Context("No existing uploads that match request", func() {
-			It("Should return an error when the user doesn't have permission", func() {
-				// Set apikey for user who doesn't have permission
-				config.Set("apikey", "test2")
-				r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-				err := mc.Api.IsError(r, errs)
-				Expect(err).NotTo(BeNil())
-				Expect(r.StatusCode).To(BeNumerically("==", 401))
+		Describe("create upload tests", func() {
+			Context("No existing uploads that match request", func() {
+				It("Should return an error when the user doesn't have permission", func() {
+					// Set apikey for user who doesn't have permission
+					config.Set("apikey", "test2")
+					r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err := mc.Api.IsError(r, errs)
+					Expect(err).NotTo(BeNil())
+					Expect(r.StatusCode).To(BeNumerically("==", 401))
+				})
+
+				It("Should return an error when the project doesn't exist", func() {
+					config.Set("apikey", "test")
+					uploadRequest.ProjectID = "does-not-exist"
+					r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err := mc.Api.IsError(r, errs)
+					Expect(err).NotTo(BeNil())
+					Expect(r.StatusCode).To(BeNumerically("==", 400))
+				})
+
+				It("Should return an error when the directory doesn't exist", func() {
+					config.Set("apikey", "test")
+					uploadRequest.DirectoryID = "does-not-exist"
+					r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err := mc.Api.IsError(r, errs)
+					Expect(err).NotTo(BeNil())
+					Expect(r.StatusCode).To(BeNumerically("==", 400))
+				})
+
+				It("Should return an error when the apikey doesn't exist", func() {
+					config.Set("apikey", "does-not-exist")
+					r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err := mc.Api.IsError(r, errs)
+					Expect(err).NotTo(BeNil())
+					Expect(r.StatusCode).To(BeNumerically("==", 401))
+				})
+
+				It("Should create a new request for a valid submit", func() {
+					config.Set("apikey", "test")
+					r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err := mc.Api.IsError(r, errs)
+					Expect(err).To(BeNil())
+					Expect(r.StatusCode).To(BeNumerically("==", 200))
+					var uploadResponse CreateUploadResponse
+					err = mc.Api.ToJSON(body, &uploadResponse)
+					Expect(err).To(BeNil())
+
+					uploadEntry, err := uploads.ByID(uploadResponse.RequestID)
+					Expect(err).To(BeNil())
+					Expect(uploadEntry.ID).To(Equal(uploadResponse.RequestID))
+					err = uploads.Delete(uploadEntry.ID)
+					Expect(err).To(BeNil())
+				})
 			})
 
-			It("Should return an error when the project doesn't exist", func() {
+			Context("Existing uploads that could match", func() {
+				It("Should find an existing upload rather than create a new one", func() {
+					//				config.Set("apikey", "test")
+					//				r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					//				err := mc.Api.IsError(r, errs)
+					//				Expect(err).To(BeNil())
+					//				var _ = body
+				})
+
+				It("Should create a new upload because the request has a different checksum", func() {
+
+				})
+			})
+		})
+
+		Describe("get uploads tests", func() {
+			It("Should return an error on a bad apikey", func() {
 				config.Set("apikey", "test")
-				uploadRequest.ProjectID = "does-not-exist"
-				r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+				resp, err := createUploadRequest(uploadRequest)
+				Expect(err).To(BeNil())
+
+				config.Set("apikey", "bad-key")
+				r, _, errs := client.Get(mc.Api.Url("/upload/test")).End()
+				err = mc.Api.IsError(r, errs)
+				Expect(err).ToNot(BeNil())
+				Expect(r.StatusCode).To(BeNumerically("==", 401))
+
+				err = uploads.Delete(resp.RequestID)
+				Expect(err).To(BeNil())
+			})
+
+			It("Should return an error on a bad project", func() {
+				config.Set("apikey", "test")
+				r, _, errs := client.Get(mc.Api.Url("/upload/bad-project-id")).End()
 				err := mc.Api.IsError(r, errs)
-				Expect(err).NotTo(BeNil())
+				Expect(err).ToNot(BeNil())
 				Expect(r.StatusCode).To(BeNumerically("==", 400))
 			})
 
-			It("Should return an error when the directory doesn't exist", func() {
+			It("Should get existing upload requests for a project", func() {
 				config.Set("apikey", "test")
-				uploadRequest.DirectoryID = "does-not-exist"
-				r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-				err := mc.Api.IsError(r, errs)
-				Expect(err).NotTo(BeNil())
-				Expect(r.StatusCode).To(BeNumerically("==", 400))
-			})
-
-			It("Should return an error when the apikey doesn't exist", func() {
-				config.Set("apikey", "does-not-exist")
-				r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-				err := mc.Api.IsError(r, errs)
-				Expect(err).NotTo(BeNil())
-				Expect(r.StatusCode).To(BeNumerically("==", 401))
-			})
-
-			It("Should create a new request for a valid submit", func() {
-				config.Set("apikey", "test")
-				r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-				err := mc.Api.IsError(r, errs)
+				resp, err := createUploadRequest(uploadRequest)
+				Expect(err).To(BeNil())
+				r, body, errs := client.Get(mc.Api.Url("/upload/test")).End()
+				err = mc.Api.IsError(r, errs)
 				Expect(err).To(BeNil())
 				Expect(r.StatusCode).To(BeNumerically("==", 200))
-				var uploadResponse CreateUploadResponse
-				err = mc.Api.ToJSON(body, &uploadResponse)
+				var entries []UploadEntry
+				err = mc.Api.ToJSON(body, &entries)
 				Expect(err).To(BeNil())
+				Expect(len(entries)).To(BeNumerically("==", 1))
+				entry := entries[0]
+				Expect(entry.RequestID).To(Equal(resp.RequestID))
 
-				uploadEntry, err := uploads.ByID(uploadResponse.RequestID)
-				Expect(err).To(BeNil())
-				Expect(uploadEntry.ID).To(Equal(uploadResponse.RequestID))
-				err = uploads.Delete(uploadEntry.ID)
+				err = uploads.Delete(resp.RequestID)
 				Expect(err).To(BeNil())
 			})
-		})
-
-		Context("Existing uploads that could match", func() {
-			It("Should find an existing upload rather than create a new one", func() {
-				//				config.Set("apikey", "test")
-				//				r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-				//				err := mc.Api.IsError(r, errs)
-				//				Expect(err).To(BeNil())
-				//				var _ = body
-			})
-
-			It("Should create a new upload because the request has a different checksum", func() {
-
-			})
-		})
-	})
-
-	Describe("get uploads tests", func() {
-		It("Should return an error on a bad apikey", func() {
-			config.Set("apikey", "test")
-			resp, err := createUploadRequest(uploadRequest)
-			Expect(err).To(BeNil())
-
-			config.Set("apikey", "bad-key")
-			r, _, errs := client.Get(mc.Api.Url("/upload/test")).End()
-			err = mc.Api.IsError(r, errs)
-			Expect(err).ToNot(BeNil())
-			Expect(r.StatusCode).To(BeNumerically("==", 401))
-
-			err = uploads.Delete(resp.RequestID)
-			Expect(err).To(BeNil())
-		})
-
-		It("Should return an error on a bad project", func() {
-			config.Set("apikey", "test")
-			r, _, errs := client.Get(mc.Api.Url("/upload/bad-project-id")).End()
-			err := mc.Api.IsError(r, errs)
-			Expect(err).ToNot(BeNil())
-			Expect(r.StatusCode).To(BeNumerically("==", 400))
-		})
-
-		It("Should get existing upload requests for a project", func() {
-			config.Set("apikey", "test")
-			resp, err := createUploadRequest(uploadRequest)
-			Expect(err).To(BeNil())
-			r, body, errs := client.Get(mc.Api.Url("/upload/test")).End()
-			err = mc.Api.IsError(r, errs)
-			Expect(err).To(BeNil())
-			Expect(r.StatusCode).To(BeNumerically("==", 200))
-			var entries []UploadEntry
-			err = mc.Api.ToJSON(body, &entries)
-			Expect(err).To(BeNil())
-			Expect(len(entries)).To(BeNumerically("==", 1))
-			entry := entries[0]
-			Expect(entry.RequestID).To(Equal(resp.RequestID))
-
-			err = uploads.Delete(resp.RequestID)
-			Expect(err).To(BeNil())
 		})
 	})
 })

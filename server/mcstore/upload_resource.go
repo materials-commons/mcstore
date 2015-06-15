@@ -8,6 +8,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
 	"github.com/materials-commons/mcstore/server/mcstore/uploads"
+	"github.com/willf/bitset"
 )
 
 // An uploadResource handles all upload requests.
@@ -83,7 +84,8 @@ type CreateUploadRequest struct {
 // uploadCreateResponse is the format of JSON sent back containing
 // the upload request ID.
 type CreateUploadResponse struct {
-	RequestID string `json:"request_id"`
+	RequestID     string `json:"request_id"`
+	StartingBlock uint   `json:"starting_block"`
 }
 
 // createUploadRequest services requests to create a new upload id. It validates
@@ -102,11 +104,35 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 		return nil, err
 	}
 
+	startingBlock := findStartingBlock(upload.File.Blocks)
+
 	resp := CreateUploadResponse{
-		RequestID: upload.ID,
+		RequestID:     upload.ID,
+		StartingBlock: startingBlock,
 	}
 
 	return &resp, nil
+}
+
+// findStartingBlock returns the block to start at. Blocks start
+// at 1, since this is what the flow.js client expects. This
+// method takes that into account.
+func findStartingBlock(blocks *bitset.BitSet) uint {
+	if blocks.None() {
+		// Nothing set, start at 1
+		return 1
+	}
+
+	// Else, create the complement of the bitset and
+	// return the first set.
+	complement := blocks.Complement()
+	if block, status := complement.NextSet(0); !status {
+		// This shouldn't happen, but safest case is to check
+		// for it and tell the client to resend everything.
+		return 1
+	} else {
+		return block + 1
+	}
 }
 
 // request2IDRequest fills out an id request to send to the idService. It handles request parameter errors.
