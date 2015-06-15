@@ -6,6 +6,7 @@ import (
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"path/filepath"
+	"strings"
 )
 
 type sqlProjectDBOpener struct {
@@ -16,20 +17,9 @@ var ProjectOpener sqlProjectDBOpener = sqlProjectDBOpener{
 	configer: NewOSUserConfiger(),
 }
 
-func (p sqlProjectDBOpener) OpenProjectDB(dbSpec ProjectDBSpec, flags ProjectOpenFlags) (ProjectDB, error) {
-	switch flags {
-	case ProjectDBCreate:
-		return p.createProjectDB(dbSpec)
-	case ProjectDBMustExist:
-		return p.openProjectDB(dbSpec)
-	default:
-		return nil, app.ErrInvalid
-	}
-}
-
-func (p sqlProjectDBOpener) createProjectDB(dbSpec ProjectDBSpec) (*sqlProjectDB, error) {
+func (p sqlProjectDBOpener) CreateProjectDB(dbSpec ProjectDBSpec) (ProjectDB, error) {
 	dirPath := p.configer.ConfigDir()
-	dbFilePath := filepath.Join(dirPath, dbSpec.ProjectID+".db")
+	dbFilePath := filepath.Join(dirPath, dbSpec.Name+".db")
 
 	if err := validateDBPaths(dirPath, dbFilePath); err != nil {
 		return nil, err
@@ -87,9 +77,9 @@ func (p sqlProjectDBOpener) loadDB(db *sqlx.DB, dbSpec ProjectDBSpec) (*sqlProje
 	return projectdb, nil
 }
 
-func (p sqlProjectDBOpener) openProjectDB(dbSpec ProjectDBSpec) (*sqlProjectDB, error) {
+func (p sqlProjectDBOpener) OpenProjectDB(name string) (ProjectDB, error) {
 	dirPath := p.configer.ConfigDir()
-	dbFilePath := filepath.Join(dirPath, dbSpec.ProjectID+".db")
+	dbFilePath := filepath.Join(dirPath, name+".db")
 
 	if !file.Exists(dbFilePath) {
 		return nil, app.ErrNotFound
@@ -103,4 +93,15 @@ func (p sqlProjectDBOpener) openProjectDB(dbSpec ProjectDBSpec) (*sqlProjectDB, 
 		}
 		return proj, nil
 	}
+}
+
+func (p sqlProjectDBOpener) PathToName(path string) string {
+	dbfile := filepath.Base(path)
+	lastDot := strings.LastIndex(dbfile, ".")
+
+	// Remove extension if it exists
+	if lastDot == -1 {
+		return dbfile
+	}
+	return dbfile[:lastDot]
 }

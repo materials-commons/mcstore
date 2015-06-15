@@ -38,11 +38,8 @@ func (p *mcprojects) All() ([]ProjectDB, error) {
 func (p *mcprojects) loadProjectDBEntries(projectDBPaths []string) []ProjectDB {
 	var projects []ProjectDB
 	for _, filePath := range projectDBPaths {
-		dbSpec := ProjectDBSpec{
-			Name: "",
-		}
-		// TODO: Fix how we open in path.
-		if projdb, err := p.dbOpener.OpenProjectDB(dbSpec, ProjectDBMustExist); err != nil {
+		name := p.dbOpener.PathToName(filePath)
+		if projdb, err := p.dbOpener.OpenProjectDB(name); err != nil {
 			app.Log.Errorf("Unable to open projectDB '%s': %s", filePath, err)
 		} else {
 			projects = append(projects, projdb)

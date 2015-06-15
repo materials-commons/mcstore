@@ -18,13 +18,10 @@ type ProjectDBSpec struct {
 
 type ProjectOpenFlags int
 
-const (
-	ProjectDBCreate ProjectOpenFlags = iota
-	ProjectDBMustExist
-)
-
 type ProjectDBOpener interface {
-	OpenProjectDB(dbSpec ProjectDBSpec, flags ProjectOpenFlags) (ProjectDB, error)
+	CreateProjectDB(dbSpec ProjectDBSpec) (ProjectDB, error)
+	OpenProjectDB(name string) (ProjectDB, error)
+	PathToName(path string) string
 }
 
 type ProjectDBLister interface {
