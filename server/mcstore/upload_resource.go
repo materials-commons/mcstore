@@ -226,10 +226,15 @@ func (r *uploadResource) deleteUploadRequest(request *restful.Request, response 
 func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	projectID := request.PathParameter("project")
 	entries, err := r.idService.UploadsForProject(projectID, user.ID)
-	if err != nil {
+	switch {
+	case err == app.ErrNotFound:
+		var uploads []UploadEntry
+		return uploads, nil
+	case err != nil:
 		return nil, err
+	default:
+		return uploads2uploadEntries(entries), nil
 	}
-	return uploads2uploadEntries(entries), nil
 }
 
 // uploads2uploadEntries converts schema.Upload array into an array of UploadEntry.
