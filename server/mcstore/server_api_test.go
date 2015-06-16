@@ -3,6 +3,8 @@ package mcstore
 import (
 	"time"
 
+	"net/http/httptest"
+
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -11,7 +13,6 @@ import (
 	"github.com/materials-commons/mcstore/testutil"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"net/http/httptest"
 )
 
 var _ = Describe("ServerApi", func() {
@@ -148,6 +149,37 @@ var _ = Describe("ServerApi", func() {
 	})
 
 	Describe("DeleteUploadRequest", func() {
+		var resp *CreateUploadResponse
 
+		AfterEach(func() {
+			if resp != nil {
+				uploads.Delete(resp.RequestID)
+			}
+		})
+
+		It("Should return an error if upload request doesn't exist", func() {
+			err := api.DeleteUploadRequest("does-not-exist")
+			Expect(err).NotTo(BeNil())
+		})
+
+		It("Should return an error if user doesn't have permission", func() {
+			var err error
+			resp, err = api.CreateUploadRequest(uploadRequest)
+			Expect(err).To(BeNil())
+
+			// Change to a user who doesn't have permission
+			config.Set("apikey", "test2")
+
+			err = api.DeleteUploadRequest(resp.RequestID)
+			Expect(err).NotTo(BeNil())
+		})
+
+		It("Should succeed if request exists and user has permission", func() {
+			var err error
+			resp, err = api.CreateUploadRequest(uploadRequest)
+			Expect(err).To(BeNil())
+			err = api.DeleteUploadRequest(resp.RequestID)
+			Expect(err).To(BeNil())
+		})
 	})
 })
