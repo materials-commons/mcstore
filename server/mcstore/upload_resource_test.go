@@ -344,7 +344,7 @@ var _ = Describe("UploadResource", func() {
 				var entries []UploadEntry
 				err = Api.ToJSON(body, &entries)
 				Expect(err).To(BeNil())
-				Expect(len(entries)).To(BeNumerically("==", 1))
+				Expect(entries).To(HaveLen(1))
 				entry := entries[0]
 				Expect(entry.RequestID).To(Equal(resp.RequestID))
 
