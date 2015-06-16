@@ -9,7 +9,6 @@ import (
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/gohandy/ezhttp"
 	c "github.com/materials-commons/mcstore/cmd/pkg/client"
-	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/testutil"
 	. "github.com/onsi/ginkgo"
@@ -87,13 +86,13 @@ var _ = Describe("UploadResource", func() {
 
 		var (
 			createUploadRequest = func(req CreateUploadRequest) (*CreateUploadResponse, error) {
-				r, body, errs := client.Post(mc.Api.Url("/upload")).Send(req).End()
-				if err := mc.Api.IsError(r, errs); err != nil {
+				r, body, errs := client.Post(Api.Url("/upload")).Send(req).End()
+				if err := Api.IsError(r, errs); err != nil {
 					return nil, err
 				}
 
 				var uploadResponse CreateUploadResponse
-				if err := mc.Api.ToJSON(body, &uploadResponse); err != nil {
+				if err := Api.ToJSON(body, &uploadResponse); err != nil {
 					return nil, err
 				}
 				return &uploadResponse, nil
@@ -109,8 +108,8 @@ var _ = Describe("UploadResource", func() {
 				It("Should return an error when the user doesn't have permission", func() {
 					// Set apikey for user who doesn't have permission
 					config.Set("apikey", "test2")
-					r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err := mc.Api.IsError(r, errs)
+					r, _, errs := client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err := Api.IsError(r, errs)
 					Expect(err).NotTo(BeNil())
 					Expect(r.StatusCode).To(BeNumerically("==", 401))
 				})
@@ -118,8 +117,8 @@ var _ = Describe("UploadResource", func() {
 				It("Should return an error when the project doesn't exist", func() {
 					config.Set("apikey", "test")
 					uploadRequest.ProjectID = "does-not-exist"
-					r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err := mc.Api.IsError(r, errs)
+					r, _, errs := client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err := Api.IsError(r, errs)
 					Expect(err).NotTo(BeNil())
 					Expect(r.StatusCode).To(BeNumerically("==", 400))
 				})
@@ -127,28 +126,28 @@ var _ = Describe("UploadResource", func() {
 				It("Should return an error when the directory doesn't exist", func() {
 					config.Set("apikey", "test")
 					uploadRequest.DirectoryID = "does-not-exist"
-					r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err := mc.Api.IsError(r, errs)
+					r, _, errs := client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err := Api.IsError(r, errs)
 					Expect(err).NotTo(BeNil())
 					Expect(r.StatusCode).To(BeNumerically("==", 400))
 				})
 
 				It("Should return an error when the apikey doesn't exist", func() {
 					config.Set("apikey", "does-not-exist")
-					r, _, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err := mc.Api.IsError(r, errs)
+					r, _, errs := client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err := Api.IsError(r, errs)
 					Expect(err).NotTo(BeNil())
 					Expect(r.StatusCode).To(BeNumerically("==", 401))
 				})
 
 				It("Should create a new request for a valid submit", func() {
 					config.Set("apikey", "test")
-					r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err := mc.Api.IsError(r, errs)
+					r, body, errs := client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err := Api.IsError(r, errs)
 					Expect(err).To(BeNil())
 					Expect(r.StatusCode).To(BeNumerically("==", 200))
 					var uploadResponse CreateUploadResponse
-					err = mc.Api.ToJSON(body, &uploadResponse)
+					err = Api.ToJSON(body, &uploadResponse)
 					Expect(err).To(BeNil())
 					Expect(uploadResponse.StartingBlock).To(BeNumerically("==", 1))
 
@@ -181,20 +180,20 @@ var _ = Describe("UploadResource", func() {
 
 				It("Should find an existing upload rather than create a new one", func() {
 					config.Set("apikey", "test")
-					r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err := mc.Api.IsError(r, errs)
+					r, body, errs := client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err := Api.IsError(r, errs)
 					Expect(err).To(BeNil())
 					var firstUploadResponse CreateUploadResponse
-					err = mc.Api.ToJSON(body, &firstUploadResponse)
+					err = Api.ToJSON(body, &firstUploadResponse)
 					Expect(err).To(BeNil())
 					Expect(firstUploadResponse.StartingBlock).To(BeNumerically("==", 1))
 
 					// Resend request - we should get the exact same request id back
-					r, body, errs = client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err = mc.Api.IsError(r, errs)
+					r, body, errs = client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err = Api.IsError(r, errs)
 					Expect(err).To(BeNil())
 					var secondUploadResponse CreateUploadResponse
-					err = mc.Api.ToJSON(body, &secondUploadResponse)
+					err = Api.ToJSON(body, &secondUploadResponse)
 					Expect(err).To(BeNil())
 					Expect(secondUploadResponse.StartingBlock).To(BeNumerically("==", firstUploadResponse.StartingBlock))
 					Expect(secondUploadResponse.RequestID).To(Equal(firstUploadResponse.RequestID))
@@ -206,22 +205,22 @@ var _ = Describe("UploadResource", func() {
 					// should result in two different requests.
 
 					config.Set("apikey", "test")
-					r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err := mc.Api.IsError(r, errs)
+					r, body, errs := client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err := Api.IsError(r, errs)
 					Expect(err).To(BeNil())
 					var firstUploadResponse CreateUploadResponse
-					err = mc.Api.ToJSON(body, &firstUploadResponse)
+					err = Api.ToJSON(body, &firstUploadResponse)
 					Expect(err).To(BeNil())
 					Expect(firstUploadResponse.StartingBlock).To(BeNumerically("==", 1))
 					addID(firstUploadResponse.RequestID)
 
 					// Send second request with a different checksum
 					uploadRequest.Checksum = "def456"
-					r, body, errs = client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err = mc.Api.IsError(r, errs)
+					r, body, errs = client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err = Api.IsError(r, errs)
 					Expect(err).To(BeNil())
 					var secondUploadResponse CreateUploadResponse
-					err = mc.Api.ToJSON(body, &secondUploadResponse)
+					err = Api.ToJSON(body, &secondUploadResponse)
 					Expect(err).To(BeNil())
 					Expect(secondUploadResponse.StartingBlock).To(BeNumerically("==", 1))
 					Expect(secondUploadResponse.RequestID).NotTo(Equal(firstUploadResponse.RequestID))
@@ -250,12 +249,12 @@ var _ = Describe("UploadResource", func() {
 
 				It("Should ask for second block after sending first block and then requesting upload again", func() {
 					config.Set("apikey", "test")
-					r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err := mc.Api.IsError(r, errs)
+					r, body, errs := client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err := Api.IsError(r, errs)
 					Expect(err).To(BeNil())
 					Expect(r.StatusCode).To(BeNumerically("==", 200))
 					var uploadResponse CreateUploadResponse
-					err = mc.Api.ToJSON(body, &uploadResponse)
+					err = Api.ToJSON(body, &uploadResponse)
 					Expect(err).To(BeNil())
 					Expect(uploadResponse.StartingBlock).To(BeNumerically("==", 1))
 					addID(uploadResponse.RequestID)
@@ -273,21 +272,39 @@ var _ = Describe("UploadResource", func() {
 					params["projectID"] = "test"
 					params["directoryID"] = "test"
 					params["fileID"] = ""
-					sc, err := ezclient.PostFileBytes(mc.Api.Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
+					sc, err := ezclient.PostFileBytes(Api.Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
 						[]byte("ab"), params)
 					Expect(err).To(BeNil())
 					Expect(sc).To(BeNumerically("==", 200))
 
 					// Now we will request this upload a second time.
-					r, body, errs = client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					err = mc.Api.IsError(r, errs)
+					r, body, errs = client.Post(Api.Url("/upload")).Send(uploadRequest).End()
+					err = Api.IsError(r, errs)
 					Expect(err).To(BeNil())
 					Expect(r.StatusCode).To(BeNumerically("==", 200))
 					var uploadResponse2 CreateUploadResponse
-					err = mc.Api.ToJSON(body, &uploadResponse2)
+					err = Api.ToJSON(body, &uploadResponse2)
 					Expect(err).To(BeNil())
 					Expect(uploadResponse2.StartingBlock).To(BeNumerically("==", 2))
 					Expect(uploadResponse2.RequestID).To(Equal(uploadResponse.RequestID))
+				})
+
+				It("Should return an error when sending a bad id", func() {
+					ezclient := ezhttp.NewClient()
+					params := make(map[string]string)
+					params["flowChunkNumber"] = "1"
+					params["flowTotalChunks"] = "2"
+					params["flowChunkSize"] = "2"
+					params["flowTotalSize"] = "4"
+					params["flowIdentifier"] = "i-dont-exist"
+					params["flowFileName"] = "testreq.txt"
+					params["flowRelativePath"] = "test/testreq.txt"
+					params["projectID"] = "test"
+					params["directoryID"] = "test"
+					params["fileID"] = ""
+					_, err := ezclient.PostFileBytes(Api.Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
+						[]byte("ab"), params)
+					Expect(err).NotTo(BeNil())
 				})
 			})
 		})
@@ -299,8 +316,8 @@ var _ = Describe("UploadResource", func() {
 				Expect(err).To(BeNil())
 
 				config.Set("apikey", "bad-key")
-				r, _, errs := client.Get(mc.Api.Url("/upload/test")).End()
-				err = mc.Api.IsError(r, errs)
+				r, _, errs := client.Get(Api.Url("/upload/test")).End()
+				err = Api.IsError(r, errs)
 				Expect(err).ToNot(BeNil())
 				Expect(r.StatusCode).To(BeNumerically("==", 401))
 
@@ -310,8 +327,9 @@ var _ = Describe("UploadResource", func() {
 
 			It("Should return an error on a bad project", func() {
 				config.Set("apikey", "test")
-				r, _, errs := client.Get(mc.Api.Url("/upload/bad-project-id")).End()
-				err := mc.Api.IsError(r, errs)
+				r, _, errs := client.Get(Api.Url("/upload/bad-project-id")).End()
+				err := Api.IsError(r, errs)
+				fmt.Println("err = ", err)
 				Expect(err).ToNot(BeNil())
 				Expect(r.StatusCode).To(BeNumerically("==", 400))
 			})
@@ -320,12 +338,12 @@ var _ = Describe("UploadResource", func() {
 				config.Set("apikey", "test")
 				resp, err := createUploadRequest(uploadRequest)
 				Expect(err).To(BeNil())
-				r, body, errs := client.Get(mc.Api.Url("/upload/test")).End()
-				err = mc.Api.IsError(r, errs)
+				r, body, errs := client.Get(Api.Url("/upload/test")).End()
+				err = Api.IsError(r, errs)
 				Expect(err).To(BeNil())
 				Expect(r.StatusCode).To(BeNumerically("==", 200))
 				var entries []UploadEntry
-				err = mc.Api.ToJSON(body, &entries)
+				err = Api.ToJSON(body, &entries)
 				Expect(err).To(BeNil())
 				Expect(len(entries)).To(BeNumerically("==", 1))
 				entry := entries[0]
