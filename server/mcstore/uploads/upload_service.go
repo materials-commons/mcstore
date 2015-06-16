@@ -71,6 +71,10 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 	dir := s.requestPath.dir(req.Request)
 	id := req.UploadID()
 
+	if !s.tracker.idExists(id) {
+		return app.ErrInvalid
+	}
+
 	if err := s.writeBlock(dir, req); err != nil {
 		app.Log.Errorf("Writing block %d for request %s failed: %s", req.FlowChunkNumber, id, err)
 		return err
