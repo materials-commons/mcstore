@@ -65,7 +65,7 @@ func NewIDService() *idService {
 		uploads:     dai.NewRUploads(session),
 		access:      access,
 		fops:        file.OS,
-		tracker:     requestBlockCountTracker,
+		tracker:     requestBlockTracker,
 		requestPath: &mcdirRequestPath{},
 	}
 }
@@ -80,7 +80,7 @@ func NewIDServiceUsingSession(session *r.Session) *idService {
 		uploads:     dai.NewRUploads(session),
 		access:      access,
 		fops:        file.OS,
-		tracker:     requestBlockCountTracker,
+		tracker:     requestBlockTracker,
 		requestPath: &mcdirRequestPath{},
 	}
 }
@@ -106,6 +106,9 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 
 	if existingUpload, err := s.uploads.Search(searchParams); err == nil {
 		// Found existing
+		if bset := s.tracker.getBlocks(existingUpload.ID); bset != nil {
+			existingUpload.File.Blocks = bset
+		}
 		return existingUpload, nil
 	}
 
