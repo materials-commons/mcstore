@@ -12,6 +12,7 @@ type tracker interface {
 	addToHash(id string, what []byte)
 	getBlocks(id string) *bitset.BitSet
 	isBlockSet(id string, block int) bool
+	idExists(id string) bool
 }
 
 var (

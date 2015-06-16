@@ -34,6 +34,14 @@ func newBlockTracker() *blockTracker {
 	}
 }
 
+func (t *blockTracker) idExists(id string) bool {
+	defer t.mutex.RUnlock()
+	t.mutex.RLock()
+
+	_, ok := t.reqBlocks[id]
+	return ok
+}
+
 // setBlock marks a block as having the data written for it.
 // The bitset starts counting at 0, but flowjs starts at 1
 // so we adjust for the block in here.
