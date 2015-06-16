@@ -7,6 +7,7 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
+	"github.com/materials-commons/gohandy/ezhttp"
 	c "github.com/materials-commons/mcstore/cmd/pkg/client"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
@@ -55,7 +56,7 @@ var _ = Describe("UploadResource", func() {
 		})
 	})
 
-	Describe("http method tests", func() {
+	Describe("Upload REST API method tests", func() {
 		var (
 			client        *gorequest.SuperAgent
 			server        *httptest.Server
@@ -77,6 +78,7 @@ var _ = Describe("UploadResource", func() {
 				DirectoryPath: "test/test",
 				FileName:      "testreq.txt",
 				FileSize:      4,
+				ChunkSize:     2,
 				FileMTime:     time.Now().Format(time.RFC1123),
 				Checksum:      "abc123",
 			}
@@ -148,6 +150,7 @@ var _ = Describe("UploadResource", func() {
 					var uploadResponse CreateUploadResponse
 					err = mc.Api.ToJSON(body, &uploadResponse)
 					Expect(err).To(BeNil())
+					Expect(uploadResponse.StartingBlock).To(BeNumerically("==", 1))
 
 					uploadEntry, err := uploads.ByID(uploadResponse.RequestID)
 					Expect(err).To(BeNil())
@@ -158,16 +161,133 @@ var _ = Describe("UploadResource", func() {
 			})
 
 			Context("Existing uploads that could match", func() {
-				It("Should find an existing upload rather than create a new one", func() {
-					//				config.Set("apikey", "test")
-					//				r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
-					//				err := mc.Api.IsError(r, errs)
-					//				Expect(err).To(BeNil())
-					//				var _ = body
+				var (
+					idsToDelete []string
+				)
+
+				BeforeEach(func() {
+					idsToDelete = []string{}
 				})
 
-				It("Should create a new upload because the request has a different checksum", func() {
+				AfterEach(func() {
+					for _, id := range idsToDelete {
+						uploads.Delete(id)
+					}
+				})
 
+				var addID = func(id string) {
+					idsToDelete = append(idsToDelete, id)
+				}
+
+				It("Should find an existing upload rather than create a new one", func() {
+					config.Set("apikey", "test")
+					r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err := mc.Api.IsError(r, errs)
+					Expect(err).To(BeNil())
+					var firstUploadResponse CreateUploadResponse
+					err = mc.Api.ToJSON(body, &firstUploadResponse)
+					Expect(err).To(BeNil())
+					Expect(firstUploadResponse.StartingBlock).To(BeNumerically("==", 1))
+
+					// Resend request - we should get the exact same request id back
+					r, body, errs = client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err = mc.Api.IsError(r, errs)
+					Expect(err).To(BeNil())
+					var secondUploadResponse CreateUploadResponse
+					err = mc.Api.ToJSON(body, &secondUploadResponse)
+					Expect(err).To(BeNil())
+					Expect(secondUploadResponse.StartingBlock).To(BeNumerically("==", firstUploadResponse.StartingBlock))
+					Expect(secondUploadResponse.RequestID).To(Equal(firstUploadResponse.RequestID))
+					addID(firstUploadResponse.RequestID)
+				})
+
+				It("Should create a new upload when the request has a different checksum", func() {
+					// Create two upload requests that are identical except for their checksums. This
+					// should result in two different requests.
+
+					config.Set("apikey", "test")
+					r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err := mc.Api.IsError(r, errs)
+					Expect(err).To(BeNil())
+					var firstUploadResponse CreateUploadResponse
+					err = mc.Api.ToJSON(body, &firstUploadResponse)
+					Expect(err).To(BeNil())
+					Expect(firstUploadResponse.StartingBlock).To(BeNumerically("==", 1))
+					addID(firstUploadResponse.RequestID)
+
+					// Send second request with a different checksum
+					uploadRequest.Checksum = "def456"
+					r, body, errs = client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err = mc.Api.IsError(r, errs)
+					Expect(err).To(BeNil())
+					var secondUploadResponse CreateUploadResponse
+					err = mc.Api.ToJSON(body, &secondUploadResponse)
+					Expect(err).To(BeNil())
+					Expect(secondUploadResponse.StartingBlock).To(BeNumerically("==", 1))
+					Expect(secondUploadResponse.RequestID).NotTo(Equal(firstUploadResponse.RequestID))
+					addID(secondUploadResponse.RequestID)
+				})
+			})
+
+			Context("Restarting upload requests", func() {
+				var (
+					idsToDelete []string
+				)
+
+				BeforeEach(func() {
+					idsToDelete = []string{}
+				})
+
+				AfterEach(func() {
+					for _, id := range idsToDelete {
+						uploads.Delete(id)
+					}
+				})
+
+				var addID = func(id string) {
+					idsToDelete = append(idsToDelete, id)
+				}
+
+				It("Should ask for second block after sending first block and then requesting upload again", func() {
+					config.Set("apikey", "test")
+					r, body, errs := client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err := mc.Api.IsError(r, errs)
+					Expect(err).To(BeNil())
+					Expect(r.StatusCode).To(BeNumerically("==", 200))
+					var uploadResponse CreateUploadResponse
+					err = mc.Api.ToJSON(body, &uploadResponse)
+					Expect(err).To(BeNil())
+					Expect(uploadResponse.StartingBlock).To(BeNumerically("==", 1))
+					addID(uploadResponse.RequestID)
+
+					// Second first block
+					ezclient := ezhttp.NewClient()
+					params := make(map[string]string)
+					params["flowChunkNumber"] = "1"
+					params["flowTotalChunks"] = "2"
+					params["flowChunkSize"] = "2"
+					params["flowTotalSize"] = "4"
+					params["flowIdentifier"] = uploadResponse.RequestID
+					params["flowFileName"] = "testreq.txt"
+					params["flowRelativePath"] = "test/testreq.txt"
+					params["projectID"] = "test"
+					params["directoryID"] = "test"
+					params["fileID"] = ""
+					sc, err := ezclient.PostFileBytes(mc.Api.Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
+						[]byte("ab"), params)
+					Expect(err).To(BeNil())
+					Expect(sc).To(BeNumerically("==", 200))
+
+					// Now we will request this upload a second time.
+					r, body, errs = client.Post(mc.Api.Url("/upload")).Send(uploadRequest).End()
+					err = mc.Api.IsError(r, errs)
+					Expect(err).To(BeNil())
+					Expect(r.StatusCode).To(BeNumerically("==", 200))
+					var uploadResponse2 CreateUploadResponse
+					err = mc.Api.ToJSON(body, &uploadResponse2)
+					Expect(err).To(BeNil())
+					Expect(uploadResponse2.StartingBlock).To(BeNumerically("==", 2))
+					Expect(uploadResponse2.RequestID).To(Equal(uploadResponse.RequestID))
 				})
 			})
 		})
