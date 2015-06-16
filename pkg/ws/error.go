@@ -56,6 +56,8 @@ func otherErrorToHTTPError(err error) *HTTPError {
 	switch err {
 	case app.ErrNotFound:
 		httpErr.statusCode = http.StatusBadRequest
+	case app.ErrInvalid:
+		httpErr.statusCode = http.StatusBadRequest
 	case app.ErrExists:
 		httpErr.statusCode = http.StatusForbidden
 	case app.ErrNoAccess:
