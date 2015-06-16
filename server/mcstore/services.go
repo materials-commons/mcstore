@@ -16,6 +16,11 @@ func NewServicesContainer() *restful.Container {
 
 	apikeyFilter := newAPIKeyFilter(dai.NewRUsers(db.RSessionMust()))
 	container.Filter(apikeyFilter.Filter)
+	// to add in filter for database sessions the code would look like
+	// the following. Note that this assumes we have changed the rest of
+	// the code to get the session from the variables.
+	// dbSessionFilter := &databaseSessionFilter
+	// container.Filter(dbSessionFilter.Filter).Filter(apikeyFilter.Filter)
 
 	uploadResource := createUploadsResource()
 	container.Add(uploadResource.WebService())
