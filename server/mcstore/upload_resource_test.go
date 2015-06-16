@@ -329,7 +329,6 @@ var _ = Describe("UploadResource", func() {
 				config.Set("apikey", "test")
 				r, _, errs := client.Get(Api.Url("/upload/bad-project-id")).End()
 				err := Api.IsError(r, errs)
-				fmt.Println("err = ", err)
 				Expect(err).ToNot(BeNil())
 				Expect(r.StatusCode).To(BeNumerically("==", 400))
 			})
