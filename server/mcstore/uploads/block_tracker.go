@@ -35,6 +35,8 @@ func newBlockTracker() *blockTracker {
 }
 
 // setBlock marks a block as having the data written for it.
+// The bitset starts counting at 0, but flowjs starts at 1
+// so we adjust for the block in here.
 func (t *blockTracker) setBlock(id string, block int) {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
