@@ -210,8 +210,13 @@ func (s *idService) Delete(requestID, user string) error {
 func (s *idService) UploadsForProject(projectID, user string) ([]schema.Upload, error) {
 	// getProj will validate the project and access.
 	_, err := s.getProj(projectID, user)
-	if err != nil {
+	switch {
+	case err == app.ErrNotFound:
+		// Invalid project
+		return nil, app.ErrInvalid
+	case err != nil:
 		return nil, err
+	default:
+		return s.uploads.ForProject(projectID)
 	}
-	return s.uploads.ForProject(projectID)
 }
