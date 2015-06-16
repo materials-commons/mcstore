@@ -31,7 +31,7 @@ var _ = Describe("IDService", func() {
 			uploads:     uploads,
 			access:      access,
 			fops:        file.MockOps(),
-			tracker:     requestBlockCountTracker,
+			tracker:     requestBlockTracker,
 			requestPath: &mockRequestPath{},
 		}
 		upload *schema.Upload
