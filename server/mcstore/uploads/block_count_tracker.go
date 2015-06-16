@@ -6,6 +6,8 @@ import (
 	"hash"
 	"io"
 	"sync"
+
+	"github.com/willf/bitset"
 )
 
 type requestBlockCount struct {
@@ -83,4 +85,8 @@ func (u *blockCountTracker) hash(id string) string {
 func (u *blockCountTracker) addToHash(id string, what []byte) {
 	h := u.tracker[id].h
 	io.WriteString(h, string(what))
+}
+
+func (u *blockCountTracker) getBlocks(id string) *bitset.BitSet {
+	return nil
 }

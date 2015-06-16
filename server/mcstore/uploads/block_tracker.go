@@ -93,3 +93,12 @@ func (t *blockTracker) addToHash(id string, what []byte) {
 	h := t.reqBlocks[id].h
 	io.Copy(h, bytes.NewBuffer(what))
 }
+
+func (t *blockTracker) getBlocks(id string) *bitset.BitSet {
+	defer t.mutex.Unlock()
+	t.mutex.Lock()
+	if val, ok := t.reqBlocks[id]; ok {
+		return val.bset
+	}
+	return nil
+}

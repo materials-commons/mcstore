@@ -1,5 +1,7 @@
 package uploads
 
+import "github.com/willf/bitset"
+
 type tracker interface {
 	setBlock(id string, block int)
 	done(id string) bool
@@ -8,6 +10,7 @@ type tracker interface {
 	clearBlock(id string, block int)
 	hash(id string) string
 	addToHash(id string, what []byte)
+	getBlocks(id string) *bitset.BitSet
 }
 
 var (
