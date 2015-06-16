@@ -95,7 +95,7 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 // on the block only if this block hasn't already been written.
 func (s *uploadService) writeBlock(dir string, req *UploadRequest) error {
 	id := req.UploadID()
-	if !s.tracker.isBlockSet(id) {
+	if !s.tracker.isBlockSet(id, int(req.FlowChunkNumber)) {
 		if err := s.writer.write(dir, req.Request); err != nil {
 			return err
 		}

@@ -45,7 +45,7 @@ func (t *blockTracker) setBlock(id string, block int) {
 }
 
 // isBlockSet returns true if the block is already set.
-func (t *blockTracker) isBlockSet(id string, block int) {
+func (t *blockTracker) isBlockSet(id string, block int) bool {
 	defer t.mutex.RUnlock()
 	t.mutex.RLock()
 	bset := t.reqBlocks[id].bset
