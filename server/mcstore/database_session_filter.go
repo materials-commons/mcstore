@@ -1,8 +1,10 @@
 package mcstore
+
 import (
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/db"
-	"net/http"
 )
 
 type databaseSessionFilter struct{}
