@@ -44,6 +44,14 @@ func (t *blockTracker) setBlock(id string, block int) {
 	bset.Set(uint(block - 1))
 }
 
+// isBlockSet returns true if the block is already set.
+func (t *blockTracker) isBlockSet(id string, block int) {
+	defer t.mutex.RUnlock()
+	t.mutex.RLock()
+	bset := t.reqBlocks[id].bset
+	return bset.Test(uint(block))
+}
+
 // load will load the blocks bitset for an id.
 func (t *blockTracker) load(id string, numBlocks int) {
 	defer t.mutex.Unlock()
@@ -96,11 +104,12 @@ func (t *blockTracker) addToHash(id string, what []byte) {
 	io.Copy(h, bytes.NewBuffer(what))
 }
 
+// getBlocks returns a clone of the current bitset.
 func (t *blockTracker) getBlocks(id string) *bitset.BitSet {
-	defer t.mutex.Unlock()
-	t.mutex.Lock()
+	defer t.mutex.RUnlock()
+	t.mutex.RLock()
 	if val, ok := t.reqBlocks[id]; ok {
-		return val.bset
+		return val.bset.Clone()
 	}
 	return nil
 }

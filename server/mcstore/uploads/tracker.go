@@ -11,9 +11,9 @@ type tracker interface {
 	hash(id string) string
 	addToHash(id string, what []byte)
 	getBlocks(id string) *bitset.BitSet
+	isBlockSet(id string, block int) bool
 }
 
 var (
-	requestBlockCountTracker tracker = newBlockCountTracker()
-	requestBlockTracker      tracker = newBlockTracker()
+	requestBlockTracker tracker = newBlockTracker()
 )
