@@ -69,19 +69,17 @@ func NewUploadServiceUsingSession(session *r.Session) *uploadService {
 // after all blocks have been uploaded.
 func (s *uploadService) Upload(req *UploadRequest) error {
 	dir := s.requestPath.dir(req.Request)
-	if err := s.writer.write(dir, req.Request); err != nil {
+	id := req.UploadID()
+
+	if err := s.writeBlock(dir, req); err != nil {
+		app.Log.Errorf("Writing block %d for request %s failed: %s", req.FlowChunkNumber, id, err)
 		return err
 	}
-
-	id := req.UploadID()
-	s.tracker.addToHash(id, req.Chunk)
-	s.tracker.setBlock(id, int(req.FlowChunkNumber))
 
 	if s.tracker.done(id) {
 		if file, err := s.assemble(req, dir); err != nil {
 			app.Log.Errorf("Assembly failed for request %s: %s", req.FlowIdentifier, err)
-			// Assembly failed. If file isn't nil then
-			// there is some cleanup to do in the database.
+			// Assembly failed. If file isn't nil then we need to cleanup state.
 			if file != nil {
 				if err := s.cleanup(req, file.ID); err != nil {
 					app.Log.Errorf("Attempted cleanup of failed assembly %s errored with: %s", req.FlowIdentifier, err)
@@ -89,6 +87,20 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 			}
 			return err
 		}
+	}
+	return nil
+}
+
+// writeBlock will write the request block and update state information
+// on the block only if this block hasn't already been written.
+func (s *uploadService) writeBlock(dir string, req *UploadRequest) error {
+	id := req.UploadID()
+	if !s.tracker.isBlockSet(id) {
+		if err := s.writer.write(dir, req.Request); err != nil {
+			return err
+		}
+		s.tracker.addToHash(id, req.Chunk)
+		s.tracker.setBlock(id, int(req.FlowChunkNumber))
 	}
 	return nil
 }
