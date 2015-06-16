@@ -123,8 +123,7 @@ func findStartingBlock(blocks *bitset.BitSet) uint {
 		return 1
 	}
 
-	// Else, create the complement of the bitset and
-	// return the first set.
+	// Create the complement and return first set.
 	complement := blocks.Complement()
 	if block, status := complement.NextSet(0); !status {
 		// This shouldn't happen, but safest case is to check
