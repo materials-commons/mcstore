@@ -233,7 +233,7 @@ func (i *indexer) indexFile(entry files.TreeEntry) error {
 				ProjectID:        args.projectID,
 				DirectoryID:      dir.DirectoryID,
 			}
-			params := req.ToMultipartParams()
+			params := req.ToParamsMap()
 			s, perr := i.ezclient.PostFileBytes(mc.Api.Url("/chunk"), entry.Finfo.Name(), "chunkData", buf[:n], params)
 			if perr != nil {
 				app.Log.Errorf("Posting file chunks failed: %d/%s", s, perr)

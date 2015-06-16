@@ -31,7 +31,7 @@ func (r *Request) UploadID() string {
 
 // ToMultipartParams converts a flow Request into a map of key/value pairs
 // suitable for mulitpart param fields.
-func (r *Request) ToMultipartParams() map[string]string {
+func (r *Request) ToParamsMap() map[string]string {
 	m := make(map[string]string)
 	m["flowChunkNumber"] = fmt.Sprintf("%d", r.FlowChunkNumber)
 	m["flowTotalChunks"] = fmt.Sprintf("%d", r.FlowTotalChunks)
