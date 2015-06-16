@@ -1,4 +1,4 @@
-package mc
+package mcstore
 
 import (
 	"crypto/tls"
@@ -6,7 +6,6 @@ import (
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
-	"github.com/materials-commons/mcstore/server/mcstore"
 	"github.com/parnurzeal/gorequest"
 )
 
@@ -25,13 +24,13 @@ func NewServerAPI() *ServerAPI {
 
 // CreateUploadRequest will request an upload request from the server. If an existing
 // upload matches the request then server will send the existing upload request.
-func (s *ServerAPI) CreateUploadRequest(req mcstore.CreateUploadRequest) (*mcstore.CreateUploadResponse, error) {
+func (s *ServerAPI) CreateUploadRequest(req CreateUploadRequest) (*CreateUploadResponse, error) {
 	r, body, errs := s.agent.Post(Api.Url("/upload")).Send(req).End()
 	if err := Api.IsError(r, errs); err != nil {
 		return nil, err
 	}
 
-	var uploadResponse mcstore.CreateUploadResponse
+	var uploadResponse CreateUploadResponse
 	if err := Api.ToJSON(body, &uploadResponse); err != nil {
 		return nil, err
 	}
@@ -54,12 +53,12 @@ func (s *ServerAPI) SendFlowData(req *flow.Request) error {
 }
 
 // ListUploadRequests will return all the upload requests for a given project ID.
-func (s *ServerAPI) ListUploadRequests(projectID string) ([]mcstore.UploadEntry, error) {
+func (s *ServerAPI) ListUploadRequests(projectID string) ([]UploadEntry, error) {
 	r, body, errs := s.agent.Get(Api.Url("/upload/" + projectID)).End()
 	if err := Api.IsError(r, errs); err != nil {
 		return nil, err
 	}
-	var entries []mcstore.UploadEntry
+	var entries []UploadEntry
 	err := Api.ToJSON(body, &entries)
 	return entries, err
 }
