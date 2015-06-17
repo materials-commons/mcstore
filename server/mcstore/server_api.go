@@ -3,10 +3,14 @@ package mcstore
 import (
 	"crypto/tls"
 
+	"path"
+
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/parnurzeal/gorequest"
+	"gnd.la/net/urlutil"
 )
 
 type ServerAPI struct {
@@ -67,4 +71,28 @@ func (s *ServerAPI) ListUploadRequests(projectID string) ([]UploadEntry, error) 
 func (s *ServerAPI) DeleteUploadRequest(uploadID string) error {
 	r, _, errs := s.agent.Delete(Url("/upload/" + uploadID)).End()
 	return ToError(r, errs)
+}
+
+// This really doesn't belong here as the server code is in a different server. However
+// it logically belongs here as far as the client is concerned.
+
+// userLogin contains the user password used to retrieve the users apikey.
+type userLogin struct {
+	Password string `json:"password"`
+}
+
+// GetUserAPIKey will return the users APIKey
+func (s *ServerAPI) GetUserAPIKey(username, password string) (apikey string, err error) {
+	l := userLogin{
+		Password: password,
+	}
+	apiURL := urlutil.MustJoin(MCUrl(), path.Join("api", "user", username, "apikey"))
+	r, body, errs := s.agent.Put(apiURL).Send(l).End()
+	if err := ToError(r, errs); err != nil {
+		return apikey, err
+	}
+
+	var u schema.User
+	err = ToJSON(body, &u)
+	return u.APIKey, err
 }
