@@ -133,8 +133,8 @@ type ProjectEntry struct {
 }
 
 func (r *projectsResource) getProject(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-//	projectID := request.PathParameter("id")
-//	r.projectService.getProject(projectID, user.ID, false)
+	//	projectID := request.PathParameter("id")
+	//	r.projectService.getProject(projectID, user.ID, false)
 	return nil, nil
 }
 
