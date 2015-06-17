@@ -132,6 +132,8 @@ def load_tables(conn):
     insert(user.__dict__, "users", conn)
     user = User("test2@mc.org", "test2")
     insert(user.__dict__, "users", conn)
+    user = User("test3@mc.org", "test3")
+    insert(user.__dict__, "users", conn)
 
     project = Project("test", "test@mc.org")
     project.id = "test"
@@ -197,6 +199,25 @@ def load_tables(conn):
         "datadir_id": ddir.id
     }
     insert(project2datadir, "project2datadir", conn)
+    uaccess = Access("test2", "test2", "test2@mc.org")
+    insert(uaccess.__dict__, "access", conn)
+
+    project = Project("test3", "test3@mc.org")
+    project.id = "test3"
+    insert(project.__dict__, "projects", conn)
+    ddir = DataDir("test3", "test3@mc.org", "")
+    ddir.id = "test3"
+    insert(ddir.__dict__, "datadirs", conn)
+    project2datadir = {
+        "project_id": project.id,
+        "datadir_id": ddir.id
+    }
+    insert(project2datadir, "project2datadir", conn)
+    uaccess = Access("test3", "test3", "test3@mc.org")
+    insert(uaccess.__dict__, "access", conn)
+
+    uaccess = Access("test3", "test3", "test@mc.org")
+    insert(uaccess.__dict__, "access", conn)
 
     print "Done..."
 
