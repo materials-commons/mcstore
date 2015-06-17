@@ -120,7 +120,7 @@ var _ = Describe("UploadResource", func() {
 					r, _, errs := client.Post(Url("/upload")).Send(uploadRequest).End()
 					err := ToError(r, errs)
 					Expect(err).NotTo(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 400))
+					Expect(r.StatusCode).To(BeNumerically("==", 404))
 				})
 
 				It("Should return an error when the directory doesn't exist", func() {
@@ -129,7 +129,7 @@ var _ = Describe("UploadResource", func() {
 					r, _, errs := client.Post(Url("/upload")).Send(uploadRequest).End()
 					err := ToError(r, errs)
 					Expect(err).NotTo(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 400))
+					Expect(r.StatusCode).To(BeNumerically("==", 404))
 				})
 
 				It("Should return an error when the apikey doesn't exist", func() {
