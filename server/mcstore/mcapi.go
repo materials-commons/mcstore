@@ -2,7 +2,6 @@ package mcstore
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -37,8 +36,19 @@ func ToError(resp *http.Response, errs []error) error {
 	switch {
 	case len(errs) != 0:
 		return app.ErrInvalid
+	case resp.StatusCode == http.StatusInternalServerError:
+		return app.ErrInternal
+	case resp.StatusCode == http.StatusBadRequest:
+		return app.ErrInvalid
+	case resp.StatusCode == http.StatusNotFound:
+		return app.ErrNotFound
+	case resp.StatusCode == http.StatusForbidden:
+		return app.ErrExists
+	case resp.StatusCode == http.StatusUnauthorized:
+		return app.ErrNoAccess
 	case resp.StatusCode > 299:
-		return fmt.Errorf("HTTP Error: %s", resp.Status)
+		app.Log.Errorf("Unclassified error %d: %s", resp.StatusCode, resp.Status)
+		return app.ErrUnclassified
 	default:
 		return nil
 	}

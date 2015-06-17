@@ -23,6 +23,9 @@ var (
 
 	// ErrCreate Create of object failed
 	ErrCreate = errors.New("unable to create")
+
+	// ErrUnclassified error is not classified
+	ErrUnclassified = errors.New("unclassified error")
 )
 
 // Error holds the error code and additional messages.
