@@ -21,11 +21,10 @@ type Project struct {
 }
 
 // NewProject creates a new Project instance.
-func NewProject(name, datadir, owner string) Project {
+func NewProject(name, owner string) Project {
 	now := time.Now()
 	return Project{
 		Name:      name,
-		DataDir:   datadir,
 		Owner:     owner,
 		Birthtime: now,
 		MTime:     now,
