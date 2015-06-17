@@ -65,6 +65,8 @@ func CUpload() *uploadCreater {
 	u.upload.File.Birthtime = now
 	u.upload.File.MTime = now
 	u.upload.File.RemoteMTime = now
+	u.upload.File.Blocks = bitset.New(1)
+	u.upload.File.BitString, _ = u.upload.File.Blocks.MarshalJSON()
 	return u
 }
 
