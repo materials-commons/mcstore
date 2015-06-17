@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/parnurzeal/gorequest"
 	"github.com/willf/bitset"
+	"net/http"
 )
 
 var _ = fmt.Println
@@ -111,7 +112,7 @@ var _ = Describe("UploadResource", func() {
 					r, _, errs := client.Post(Url("/upload")).Send(uploadRequest).End()
 					err := ToError(r, errs)
 					Expect(err).NotTo(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 401))
+					Expect(r.StatusCode).To(BeNumerically("==", http.StatusUnauthorized))
 				})
 
 				It("Should return an error when the project doesn't exist", func() {
@@ -120,7 +121,7 @@ var _ = Describe("UploadResource", func() {
 					r, _, errs := client.Post(Url("/upload")).Send(uploadRequest).End()
 					err := ToError(r, errs)
 					Expect(err).NotTo(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 404))
+					Expect(r.StatusCode).To(BeNumerically("==", http.StatusNotFound))
 				})
 
 				It("Should return an error when the directory doesn't exist", func() {
@@ -129,7 +130,7 @@ var _ = Describe("UploadResource", func() {
 					r, _, errs := client.Post(Url("/upload")).Send(uploadRequest).End()
 					err := ToError(r, errs)
 					Expect(err).NotTo(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 404))
+					Expect(r.StatusCode).To(BeNumerically("==", http.StatusNotFound))
 				})
 
 				It("Should return an error when the apikey doesn't exist", func() {
@@ -137,7 +138,7 @@ var _ = Describe("UploadResource", func() {
 					r, _, errs := client.Post(Url("/upload")).Send(uploadRequest).End()
 					err := ToError(r, errs)
 					Expect(err).NotTo(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 401))
+					Expect(r.StatusCode).To(BeNumerically("==", http.StatusUnauthorized))
 				})
 
 				It("Should create a new request for a valid submit", func() {
@@ -145,7 +146,7 @@ var _ = Describe("UploadResource", func() {
 					r, body, errs := client.Post(Url("/upload")).Send(uploadRequest).End()
 					err := ToError(r, errs)
 					Expect(err).To(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 200))
+					Expect(r.StatusCode).To(BeNumerically("==", http.StatusOK))
 					var uploadResponse CreateUploadResponse
 					err = ToJSON(body, &uploadResponse)
 					Expect(err).To(BeNil())
@@ -252,7 +253,7 @@ var _ = Describe("UploadResource", func() {
 					r, body, errs := client.Post(Url("/upload")).Send(uploadRequest).End()
 					err := ToError(r, errs)
 					Expect(err).To(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 200))
+					Expect(r.StatusCode).To(BeNumerically("==", http.StatusOK))
 					var uploadResponse CreateUploadResponse
 					err = ToJSON(body, &uploadResponse)
 					Expect(err).To(BeNil())
@@ -275,13 +276,13 @@ var _ = Describe("UploadResource", func() {
 					sc, err := ezclient.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
 						[]byte("ab"), params)
 					Expect(err).To(BeNil())
-					Expect(sc).To(BeNumerically("==", 200))
+					Expect(sc).To(BeNumerically("==", http.StatusOK))
 
 					// Now we will request this upload a second time.
 					r, body, errs = client.Post(Url("/upload")).Send(uploadRequest).End()
 					err = ToError(r, errs)
 					Expect(err).To(BeNil())
-					Expect(r.StatusCode).To(BeNumerically("==", 200))
+					Expect(r.StatusCode).To(BeNumerically("==", http.StatusOK))
 					var uploadResponse2 CreateUploadResponse
 					err = ToJSON(body, &uploadResponse2)
 					Expect(err).To(BeNil())
@@ -319,7 +320,7 @@ var _ = Describe("UploadResource", func() {
 				r, _, errs := client.Get(Url("/upload/test")).End()
 				err = ToError(r, errs)
 				Expect(err).ToNot(BeNil())
-				Expect(r.StatusCode).To(BeNumerically("==", 401))
+				Expect(r.StatusCode).To(BeNumerically("==", http.StatusUnauthorized))
 
 				err = uploads.Delete(resp.RequestID)
 				Expect(err).To(BeNil())
@@ -330,7 +331,7 @@ var _ = Describe("UploadResource", func() {
 				r, _, errs := client.Get(Url("/upload/bad-project-id")).End()
 				err := ToError(r, errs)
 				Expect(err).ToNot(BeNil())
-				Expect(r.StatusCode).To(BeNumerically("==", 400))
+				Expect(r.StatusCode).To(BeNumerically("==", http.StatusBadRequest))
 			})
 
 			It("Should get existing upload requests for a project", func() {
@@ -340,7 +341,7 @@ var _ = Describe("UploadResource", func() {
 				r, body, errs := client.Get(Url("/upload/test")).End()
 				err = ToError(r, errs)
 				Expect(err).To(BeNil())
-				Expect(r.StatusCode).To(BeNumerically("==", 200))
+				Expect(r.StatusCode).To(BeNumerically("==", http.StatusOK))
 				var entries []UploadEntry
 				err = ToJSON(body, &entries)
 				Expect(err).To(BeNil())
