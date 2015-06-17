@@ -20,12 +20,6 @@ type Files interface {
 	GetProject(fileID string) (*schema.Project, error)
 }
 
-// Groups allows manipulation and access to groups.
-type Groups interface {
-	ByID(id string) (*schema.Group, error)
-	ForOwner(owner string) ([]schema.Group, error)
-}
-
 // Uploads allows manipulation and access to upload requests.
 type UploadSearch struct {
 	ProjectID   string
@@ -48,6 +42,7 @@ type Uploads interface {
 type Projects interface {
 	ByID(id string) (*schema.Project, error)
 	ByName(name string, owner string) (*schema.Project, error)
+	ForUser(user string, ownedOnly bool) ([]schema.Project, error)
 	Insert(project *schema.Project) (*schema.Project, error)
 	HasDirectory(projectID, directoryID string) bool
 	AccessList(projectID string) ([]schema.Access, error)
