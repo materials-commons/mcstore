@@ -108,13 +108,13 @@ func (s *projectStatusCmd) displayStatusUploads(projectID string) {
 // getUploads queries the server for the uploads for the project.
 func (s *projectStatusCmd) getUploads(projectID string) ([]mcstore.UploadEntry, error) {
 	config.Set("apikey", "test")
-	r, body, errs := s.client.Get(mcstore.Api.Url("/upload/test")).End()
-	if err := mcstore.Api.IsError(r, errs); err != nil {
+	r, body, errs := s.client.Get(mcstore.Url("/upload/test")).End()
+	if err := mcstore.ToError(r, errs); err != nil {
 		return nil, err
 	}
 
 	var uploads []mcstore.UploadEntry
-	mcstore.Api.ToJSON(body, &uploads)
+	mcstore.ToJSON(body, &uploads)
 	return uploads, nil
 }
 

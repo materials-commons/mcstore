@@ -18,20 +18,20 @@ type ServerAPI struct {
 func NewServerAPI() *ServerAPI {
 	return &ServerAPI{
 		agent:  gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
-		client: Api.MCClient(),
+		client: MCClient(),
 	}
 }
 
 // CreateUploadRequest will request an upload request from the server. If an existing
 // upload matches the request then server will send the existing upload request.
 func (s *ServerAPI) CreateUploadRequest(req CreateUploadRequest) (*CreateUploadResponse, error) {
-	r, body, errs := s.agent.Post(Api.Url("/upload")).Send(req).End()
-	if err := Api.IsError(r, errs); err != nil {
+	r, body, errs := s.agent.Post(Url("/upload")).Send(req).End()
+	if err := ToError(r, errs); err != nil {
 		return nil, err
 	}
 
 	var uploadResponse CreateUploadResponse
-	if err := Api.ToJSON(body, &uploadResponse); err != nil {
+	if err := ToJSON(body, &uploadResponse); err != nil {
 		return nil, err
 	}
 	return &uploadResponse, nil
@@ -40,7 +40,7 @@ func (s *ServerAPI) CreateUploadRequest(req CreateUploadRequest) (*CreateUploadR
 // SendFlowData will send the data for a flow request.
 func (s *ServerAPI) SendFlowData(req *flow.Request) error {
 	params := req.ToParamsMap()
-	sc, err := s.client.PostFileBytes(Api.Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
+	sc, err := s.client.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
 		req.Chunk, params)
 	switch {
 	case err != nil:
@@ -54,17 +54,17 @@ func (s *ServerAPI) SendFlowData(req *flow.Request) error {
 
 // ListUploadRequests will return all the upload requests for a given project ID.
 func (s *ServerAPI) ListUploadRequests(projectID string) ([]UploadEntry, error) {
-	r, body, errs := s.agent.Get(Api.Url("/upload/" + projectID)).End()
-	if err := Api.IsError(r, errs); err != nil {
+	r, body, errs := s.agent.Get(Url("/upload/" + projectID)).End()
+	if err := ToError(r, errs); err != nil {
 		return nil, err
 	}
 	var entries []UploadEntry
-	err := Api.ToJSON(body, &entries)
+	err := ToJSON(body, &entries)
 	return entries, err
 }
 
 // DeleteUploadRequest will delete a given upload request.
 func (s *ServerAPI) DeleteUploadRequest(uploadID string) error {
-	r, _, errs := s.agent.Delete(Api.Url("/upload/" + uploadID)).End()
-	return Api.IsError(r, errs)
+	r, _, errs := s.agent.Delete(Url("/upload/" + uploadID)).End()
+	return ToError(r, errs)
 }

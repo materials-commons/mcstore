@@ -13,31 +13,27 @@ import (
 	"gnd.la/net/urlutil"
 )
 
-type mcapi struct{}
-
-var Api mcapi
-
-func (a mcapi) MCUrl() string {
+func MCUrl() string {
 	return config.GetString("mcurl")
 }
 
-func (a mcapi) MCClient() *ezhttp.EzClient {
-	mcurl := a.MCUrl()
+func MCClient() *ezhttp.EzClient {
+	mcurl := MCUrl()
 	if strings.HasPrefix(mcurl, "https") {
 		return ezhttp.NewSSLClient()
 	}
 	return ezhttp.NewClient()
 }
 
-func (a mcapi) Url(path string) string {
+func Url(path string) string {
 	values := url.Values{}
 	values.Add("apikey", config.GetString("apikey"))
-	mcurl := urlutil.MustJoin(a.MCUrl(), path)
+	mcurl := urlutil.MustJoin(MCUrl(), path)
 	mcurl = urlutil.AppendQuery(mcurl, values)
 	return mcurl
 }
 
-func (a mcapi) IsError(resp *http.Response, errs []error) error {
+func ToError(resp *http.Response, errs []error) error {
 	switch {
 	case len(errs) != 0:
 		return app.ErrInvalid
@@ -48,7 +44,7 @@ func (a mcapi) IsError(resp *http.Response, errs []error) error {
 	}
 }
 
-func (a mcapi) ToJSON(from string, to interface{}) error {
+func ToJSON(from string, to interface{}) error {
 	err := json.Unmarshal([]byte(from), to)
 	return err
 }

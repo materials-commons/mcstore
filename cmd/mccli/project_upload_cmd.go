@@ -144,13 +144,13 @@ func (u *uploader) createUploadRequest() {
 	}
 
 	var resp mcstore.CreateUploadResponse
-	fmt.Println("url =", mcstore.Api.Url("/upload"))
-	r, body, errs := u.client.Post(mcstore.Api.Url("/upload")).Send(req).End()
-	if err := mcstore.Api.IsError(r, errs); err != nil {
+	fmt.Println("url =", mcstore.Url("/upload"))
+	r, body, errs := u.client.Post(mcstore.Url("/upload")).Send(req).End()
+	if err := mcstore.ToError(r, errs); err != nil {
 		fmt.Println("got err from Post:", err)
 		return
 	}
-	mcstore.Api.ToJSON(body, &resp)
+	mcstore.ToJSON(body, &resp)
 	fmt.Printf("%#v\n", resp)
 }
 

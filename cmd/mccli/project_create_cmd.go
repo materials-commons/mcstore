@@ -234,7 +234,7 @@ func (i *indexer) indexFile(entry files.TreeEntry) error {
 				DirectoryID:      dir.DirectoryID,
 			}
 			params := req.ToParamsMap()
-			s, perr := i.ezclient.PostFileBytes(mcstore.Api.Url("/chunk"), entry.Finfo.Name(), "chunkData", buf[:n], params)
+			s, perr := i.ezclient.PostFileBytes(mcstore.Url("/chunk"), entry.Finfo.Name(), "chunkData", buf[:n], params)
 			if perr != nil {
 				app.Log.Errorf("Posting file chunks failed: %d/%s", s, perr)
 			}
@@ -285,12 +285,12 @@ func toProjectPath(dirpath string) string {
 }
 
 func sendRequest(client *gorequest.SuperAgent, path string, req interface{}, resp interface{}) error {
-	r, body, errs := client.Post(mcstore.Api.Url(path)).Send(req).End()
-	if err := mcstore.Api.IsError(r, errs); err != nil {
+	r, body, errs := client.Post(mcstore.Url(path)).Send(req).End()
+	if err := mcstore.ToError(r, errs); err != nil {
 		fmt.Println("Unable to create project:", err)
 		return err
 	}
 
-	mcstore.Api.ToJSON(body, resp)
+	mcstore.ToJSON(body, resp)
 	return nil
 }
