@@ -51,13 +51,13 @@ var _ = Describe("RFiles", func() {
 				rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(file.ID))
 				err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
 				Expect(err).To(BeNil())
-				Expect(len(p2df)).To(BeNumerically("==", 1))
+				Expect(p2df).To(HaveLen(1))
 
 				var dir2df []schema.DataDir2DataFile
 				rql = r.Table("datadir2datafile").Filter(r.Row.Field("datafile_id").Eq(file.ID))
 				err = model.DirFiles.Qs(session).Rows(rql, &dir2df)
 				Expect(err).To(BeNil())
-				Expect(len(dir2df)).To(BeNumerically("==", 1))
+				Expect(dir2df).To(HaveLen(1))
 
 				deleteFile(file.ID)
 			})
@@ -87,13 +87,13 @@ var _ = Describe("RFiles", func() {
 				rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(newFile.ID))
 				err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
 				Expect(err).To(BeNil())
-				Expect(len(p2df)).To(BeNumerically("==", 1))
+				Expect(p2df).To(HaveLen(1))
 
 				var dir2df []schema.DataDir2DataFile
 				rql = r.Table("datadir2datafile").Filter(r.Row.Field("datafile_id").Eq(newFile.ID))
 				err = model.DirFiles.Qs(session).Rows(rql, &dir2df)
 				Expect(err).To(BeNil())
-				Expect(len(dir2df)).To(BeNumerically("==", 1))
+				Expect(dir2df).To(HaveLen(1))
 
 				deleteFile(newFile.ID)
 			})
@@ -125,7 +125,7 @@ var _ = Describe("RFiles", func() {
 					It("Should find tfile in the test project", func() {
 						projects, err := rfiles.getProjects("tfile")
 						Expect(err).To(BeNil())
-						Expect(len(projects)).To(BeNumerically("==", 1))
+						Expect(projects).To(HaveLen(1))
 						proj := projects[0]
 						Expect(proj.DataFileID).To(Equal("tfile"))
 						Expect(proj.ProjectID).To(Equal("test"))
@@ -136,7 +136,7 @@ var _ = Describe("RFiles", func() {
 					It("Should find tfile in the test dir", func() {
 						dirs, err := rfiles.getDirs("tfile")
 						Expect(err).To(BeNil())
-						Expect(len(dirs)).To(BeNumerically("==", 1))
+						Expect(dirs).To(HaveLen(1))
 						dir := dirs[0]
 						Expect(dir.DataFileID).To(Equal("tfile"))
 						Expect(dir.DataDirID).To(Equal("test"))

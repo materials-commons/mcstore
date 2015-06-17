@@ -33,7 +33,7 @@ var _ = Describe("RUploads", func() {
 			Expect(newUpload.Owner).To(Equal("test@mc.org"))
 			uploads, err := ruploads.ForUser("test@mc.org")
 			Expect(err).To(BeNil())
-			Expect(len(uploads)).To(BeNumerically("==", 1))
+			Expect(uploads).To(HaveLen(1))
 			err = ruploads.Delete(uploads[0].ID)
 			Expect(err).To(BeNil())
 		})
