@@ -315,7 +315,7 @@ var _ = Describe("IDService", func() {
 			It("Should fail on bad project", func() {
 				uploads, err := s.UploadsForProject("no-such-project", "test@mc.org")
 				Expect(err).NotTo(BeNil())
-				Expect(err).To(Equal(app.ErrNotFound))
+				Expect(err).To(Equal(app.ErrInvalid))
 				Expect(uploads).To(BeNil())
 			})
 
