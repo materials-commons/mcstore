@@ -7,7 +7,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	dmocks "github.com/materials-commons/mcstore/pkg/db/dai/mocks"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/testutil"
+	"github.com/materials-commons/mcstore/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -123,8 +123,8 @@ var _ = Describe("FinishRequest", func() {
 
 		Context("Connect to database", func() {
 			BeforeEach(func() {
-				files = dai.NewRFiles(testutil.RSession())
-				dirs = dai.NewRDirs(testutil.RSession())
+				files = dai.NewRFiles(testdb.RSession())
+				dirs = dai.NewRDirs(testdb.RSession())
 
 				// insert file we are going to test against
 				tfile := schema.NewFile("testfile1.txt", "test@mc.org")

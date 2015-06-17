@@ -11,7 +11,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
-	"github.com/materials-commons/mcstore/testutil"
+	"github.com/materials-commons/mcstore/testdb"
 )
 
 var _ = fmt.Println
@@ -19,11 +19,11 @@ var _ = fmt.Println
 var _ = Describe("IDService", func() {
 
 	var (
-		users    = dai.NewRUsers(testutil.RSession())
-		files    = dai.NewRFiles(testutil.RSession())
-		dirs     = dai.NewRDirs(testutil.RSession())
-		projects = dai.NewRProjects(testutil.RSession())
-		uploads  = dai.NewRUploads(testutil.RSession())
+		users    = dai.NewRUsers(testdb.RSession())
+		files    = dai.NewRFiles(testdb.RSession())
+		dirs     = dai.NewRDirs(testdb.RSession())
+		projects = dai.NewRProjects(testdb.RSession())
+		uploads  = dai.NewRUploads(testdb.RSession())
 		access   = domain.NewAccess(projects, files, users)
 		s        = &idService{
 			dirs:        dirs,

@@ -10,7 +10,7 @@ import (
 	"github.com/materials-commons/gohandy/ezhttp"
 	c "github.com/materials-commons/mcstore/cmd/pkg/client"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
-	"github.com/materials-commons/mcstore/testutil"
+	"github.com/materials-commons/mcstore/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/parnurzeal/gorequest"
@@ -81,7 +81,7 @@ var _ = Describe("UploadResource", func() {
 				FileMTime:     time.Now().Format(time.RFC1123),
 				Checksum:      "abc123",
 			}
-			uploads = dai.NewRUploads(testutil.RSession())
+			uploads = dai.NewRUploads(testdb.RSession())
 		})
 
 		var (

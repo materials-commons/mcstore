@@ -7,7 +7,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/model"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/testutil"
+	"github.com/materials-commons/mcstore/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -18,7 +18,7 @@ var _ = Describe("RFiles", func() {
 	var rfiles rFiles
 
 	BeforeEach(func() {
-		rfiles = NewRFiles(testutil.RSession())
+		rfiles = NewRFiles(testdb.RSession())
 	})
 
 	Describe("ByID", func() {
@@ -46,7 +46,7 @@ var _ = Describe("RFiles", func() {
 				Expect(newFile.ID).To(Equal("test1.txt"))
 
 				// Check that the join tables were updated.
-				session := testutil.RSession()
+				session := testdb.RSession()
 				var p2df []schema.Project2DataFile
 				rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(file.ID))
 				err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
@@ -82,7 +82,7 @@ var _ = Describe("RFiles", func() {
 				Expect(newFile.ID).NotTo(Equal(""))
 
 				// Check that the join tables were updated.
-				session := testutil.RSession()
+				session := testdb.RSession()
 				var p2df []schema.Project2DataFile
 				rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(newFile.ID))
 				err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
@@ -187,7 +187,7 @@ var _ = Describe("RFiles", func() {
 })
 
 func deleteFile(fileID string) {
-	session := testutil.RSession()
+	session := testdb.RSession()
 	model.Files.Qs(session).Delete(fileID)
 
 	rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(fileID))

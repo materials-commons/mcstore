@@ -2,7 +2,7 @@ package dai
 
 import (
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/testutil"
+	"github.com/materials-commons/mcstore/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -11,7 +11,7 @@ var _ = Describe("RUsers", func() {
 	var rusers Users
 
 	BeforeEach(func() {
-		rusers = NewRUsers(testutil.RSession())
+		rusers = NewRUsers(testdb.RSession())
 	})
 
 	Describe("ByID", func() {

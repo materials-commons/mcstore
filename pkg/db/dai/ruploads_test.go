@@ -3,7 +3,7 @@ package dai
 import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/testutil"
+	"github.com/materials-commons/mcstore/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -12,7 +12,7 @@ var _ = Describe("RUploads", func() {
 	var ruploads Uploads
 
 	BeforeEach(func() {
-		ruploads = NewRUploads(testutil.RSession())
+		ruploads = NewRUploads(testdb.RSession())
 	})
 
 	Describe("For User", func() {

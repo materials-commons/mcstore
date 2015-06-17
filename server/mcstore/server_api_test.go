@@ -10,7 +10,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
-	"github.com/materials-commons/mcstore/testutil"
+	"github.com/materials-commons/mcstore/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -31,7 +31,7 @@ var _ = Describe("ServerApi", func() {
 		rr = httptest.NewRecorder()
 		config.Set("mcurl", server.URL)
 		config.Set("apikey", "test")
-		uploads = dai.NewRUploads(testutil.RSession())
+		uploads = dai.NewRUploads(testdb.RSession())
 		api = NewServerAPI()
 		uploadRequest = CreateUploadRequest{
 			ProjectID:     "test",

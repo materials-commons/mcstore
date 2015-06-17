@@ -6,7 +6,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
 	"github.com/materials-commons/mcstore/server/mcstore/uploads"
-	"github.com/materials-commons/mcstore/testutil"
+	"github.com/materials-commons/mcstore/testdb"
 )
 
 // NewServicesContainer creates a new restful.Container made up of all
@@ -43,7 +43,7 @@ func createProjectsResource() rest.Service {
 
 func NewServicesContainerForTest() *restful.Container {
 	container := restful.NewContainer()
-	apikeyFilter := newAPIKeyFilter(dai.NewRUsers(testutil.RSession()))
+	apikeyFilter := newAPIKeyFilter(dai.NewRUsers(testdb.RSession()))
 	container.Filter(apikeyFilter.Filter)
 
 	uploadResource := createUploadsResourceForTest()
@@ -55,12 +55,12 @@ func NewServicesContainerForTest() *restful.Container {
 }
 
 func createUploadsResourceForTest() rest.Service {
-	session := testutil.RSession()
+	session := testdb.RSession()
 	return newUploadResource(uploads.NewUploadServiceUsingSession(session),
 		uploads.NewIDServiceUsingSession(session), newDirServiceUsingSession(session))
 }
 
 func createProjectsResourceForTest() rest.Service {
-	session := testutil.RSession()
+	session := testdb.RSession()
 	return newProjectsResource(newDirServiceUsingSession(session), newProjectServiceUsingSession(session))
 }
