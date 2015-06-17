@@ -57,30 +57,30 @@ var _ = Describe("ProjectService", func() {
 		})
 	})
 
-	Describe("getProject Method Tests", func() {
-		It("Should succeed if project exists and create is false", func() {
-			mprojects.On("ByName").SetError(nil).SetProject(p)
-			proj, created, err := s.getProject("proj1", "a@b.com", false)
-			Expect(err).To(BeNil())
-			Expect(created).To(BeFalse())
-			Expect(proj).NotTo(BeNil())
-		})
-
-		It("Should succeed if project doesn't exist and create is true", func() {
-			mprojects.On("ByName").SetError(app.ErrNotFound).SetProject(nil)
-			mprojects.On("Insert").SetError(nil).SetProject(p)
-			proj, created, err := s.getProject("proj1", "a@b.com", true)
-			Expect(err).To(BeNil())
-			Expect(created).To(BeTrue())
-			Expect(proj).NotTo(BeNil())
-		})
-
-		It("Should fail if project doesn't exist and create is false", func() {
-			mprojects.On("ByName").SetError(app.ErrNotFound).SetProject(nil)
-			proj, created, err := s.getProject("proj1", "a@b.com", false)
-			Expect(err).To(Equal(app.ErrNotFound))
-			Expect(created).To(BeFalse())
-			Expect(proj).To(BeNil())
-		})
-	})
+	//	Describe("getProject Method Tests", func() {
+	//		It("Should succeed if project exists and create is false", func() {
+	//			mprojects.On("ByName").SetError(nil).SetProject(p)
+	//			proj, created, err := s.getProject("proj1", "a@b.com", false)
+	//			Expect(err).To(BeNil())
+	//			Expect(created).To(BeFalse())
+	//			Expect(proj).NotTo(BeNil())
+	//		})
+	//
+	//		It("Should succeed if project doesn't exist and create is true", func() {
+	//			mprojects.On("ByName").SetError(app.ErrNotFound).SetProject(nil)
+	//			mprojects.On("Insert").SetError(nil).SetProject(p)
+	//			proj, created, err := s.getProject("proj1", "a@b.com", true)
+	//			Expect(err).To(BeNil())
+	//			Expect(created).To(BeTrue())
+	//			Expect(proj).NotTo(BeNil())
+	//		})
+	//
+	//		It("Should fail if project doesn't exist and create is false", func() {
+	//			mprojects.On("ByName").SetError(app.ErrNotFound).SetProject(nil)
+	//			proj, created, err := s.getProject("proj1", "a@b.com", false)
+	//			Expect(err).To(Equal(app.ErrNotFound))
+	//			Expect(created).To(BeFalse())
+	//			Expect(proj).To(BeNil())
+	//		})
+	//	})
 })
