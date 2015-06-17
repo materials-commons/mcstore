@@ -12,6 +12,9 @@ type rProjects struct {
 	session *r.Session
 }
 
+const OwnedProjects = true
+const AllProjects = false
+
 // NewRProjects creates a new instance of rProjects.
 func NewRProjects(session *r.Session) rProjects {
 	return rProjects{
@@ -47,6 +50,37 @@ func (p rProjects) ByName(name string, owner string) (*schema.Project, error) {
 	default:
 		return &projects[0], nil
 	}
+}
+
+// ForUser
+func (p rProjects) ForUser(user string, ownedOnly bool) ([]schema.Project, error) {
+	if ownedOnly {
+		return p.projectsOwnedByUser(user)
+	} else {
+		return p.projectsUserHasAccessTo(user)
+	}
+}
+
+// projectsOwnerByUser returns all projects owned by the user.
+func (p rProjects) projectsOwnedByUser(user string) ([]schema.Project, error) {
+	var projects []schema.Project
+	rql := r.Table("projects").GetAllByIndex("owner", user)
+	if err := model.Projects.Qs(p.session).Rows(rql, &projects); err != nil {
+		return nil, err
+	}
+	return projects, nil
+}
+
+// projectsUserHasAccessTo returns all projects that user can access, including
+// projects the user owns.
+func (p rProjects) projectsUserHasAccessTo(user string) ([]schema.Project, error) {
+	var projects []schema.Project
+	rql := r.Table("access").GetAllByIndex("user_id", user).
+		EqJoin("project_id", r.Table("projects")).Zip()
+	if err := model.Projects.Qs(p.session).Rows(rql, &projects); err != nil {
+		return nil, err
+	}
+	return projects, nil
 }
 
 // Insert creates a new project for the given owner. It also creates the directory associated

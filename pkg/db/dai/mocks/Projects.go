@@ -34,6 +34,13 @@ func (m *Projects) ByName(name, owner string) (*schema.Project, error) {
 	return r0, r1
 }
 
+func (m *Projects) ForUser(user string, ownedOnly bool) ([]schema.Project, error) {
+	ret := m.Called(user, ownedOnly)
+	r0 := ret.Get(0).([]schema.Project)
+	r1 := ret.Error(1)
+	return r0, r1
+}
+
 func (m *Projects) Insert(project *schema.Project) (*schema.Project, error) {
 	ret := m.Called(project)
 	r0 := ret.Get(0).(*schema.Project)
@@ -55,10 +62,11 @@ func (m *Projects) AccessList(projectID string) ([]schema.Access, error) {
 }
 
 type pentry struct {
-	project *schema.Project
-	hasDir  bool
-	err     error
-	access  []schema.Access
+	project  *schema.Project
+	hasDir   bool
+	err      error
+	access   []schema.Access
+	projects []schema.Project
 }
 
 type Projects2 struct {
@@ -89,6 +97,11 @@ func (m *Projects2) ByName(name, owner string) (*schema.Project, error) {
 	return e.project, e.err
 }
 
+func (m *Projects2) ForUser(user string, ownedOnly bool) ([]schema.Project, error) {
+	e := m.lookup("ForUser")
+	return e.projects, e.err
+}
+
 func (m *Projects2) Insert(project *schema.Project) (*schema.Project, error) {
 	e := m.lookup("Insert")
 	return e.project, e.err
@@ -117,6 +130,11 @@ func (m *Projects2) SetError(err error) *Projects2 {
 
 func (m *Projects2) SetProject(project *schema.Project) *Projects2 {
 	m.method[m.currentMethod].project = project
+	return m
+}
+
+func (m *Projects2) SetProjects(projects []schema.Project) *Projects2 {
+	m.method[m.currentMethod].projects = projects
 	return m
 }
 
