@@ -72,6 +72,15 @@ func (r *projectsResource) WebService() *restful.WebService {
 		Reads(GetDirectoryRequest{}).
 		Writes(GetDirectoryResponse{}))
 
+	ws.Route(ws.GET("{id}").To(rest.RouteHandler(r.getProject)).
+		Doc("Gets project details").
+		Param(ws.PathParameter("id", "project id").DataType("string")).
+		Writes(ProjectEntry{}))
+
+	ws.Route(ws.GET("").To(rest.RouteHandler(r.getUsersProjects)).
+		Doc("Gets all projects user has access to").
+		Writes([]ProjectEntry{}))
+
 	return ws
 }
 
@@ -118,4 +127,16 @@ func (r *projectsResource) getDirectory(request *restful.Request, response *rest
 		}
 		return resp, nil
 	}
+}
+
+type ProjectEntry struct {
+}
+
+func (r *projectsResource) getProject(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	projectID := request.PathParameter("id")
+	return r.projectService.getProject(projectID, user.ID, false)
+}
+
+func (r *projectsResource) getUsersProjects(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	return nil, nil
 }
