@@ -1,2 +1,2 @@
-# mcdstore
+# mcstore
 Materials Commons Data Storage
