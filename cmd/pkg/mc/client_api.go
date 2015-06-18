@@ -20,8 +20,16 @@ func (c *ClientAPI) UploadDirectory(projectID string, path string) error {
 	return nil
 }
 
-func (c *ClientAPI) UploadProject(projectID string) error {
-	return nil
+func (c *ClientAPI) UploadProject(projectName string, numThreads int) error {
+	projectDB, err := ProjectOpener.OpenProjectDB(projectName)
+	if err != nil {
+		return err
+	}
+	uploader := &projectUploader{
+		db:         projectDB,
+		numThreads: numThreads,
+	}
+	return uploader.upload()
 }
 
 func (c *ClientAPI) ProjectStatus(projectID string) error {
@@ -34,8 +42,9 @@ type Project struct {
 	ProjectID string
 }
 
-func (c *ClientAPI) CreateProject(project Project) error {
-	return nil
+func (c *ClientAPI) CreateProject(projectSpec ProjectDBSpec) error {
+	_, err := ProjectOpener.CreateProjectDB(projectSpec)
+	return err
 }
 
 type Directory struct {

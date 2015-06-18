@@ -87,6 +87,20 @@ func (p *sqlProjectDB) InsertFile(f *File) (*File, error) {
 	return f, err
 }
 
+func (p *sqlProjectDB) FindFile(fileName string, dirID int64) (*File, error) {
+	query := `select * from files where directory = $1 and name = $2`
+	var f File
+	err := p.db.Get(&f, query, dirID, fileName)
+	switch {
+	case err == sql.ErrNoRows:
+		return nil, app.ErrNotFound
+	case err != nil:
+		return nil, err
+	default:
+		return &f, nil
+	}
+}
+
 func (p *sqlProjectDB) UpdateFile(f *File) error {
 	sql := `
 	       update files set

@@ -5,6 +5,9 @@ import (
 
 	"path"
 
+	"path/filepath"
+	"strings"
+
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -95,4 +98,41 @@ func (s *ServerAPI) GetUserAPIKey(username, password string) (apikey string, err
 	var u schema.User
 	err = ToJSON(body, &u)
 	return u.APIKey, err
+}
+
+type DirectoryRequest struct {
+	ProjectName string
+	ProjectID   string
+	Path        string
+}
+
+func (s *ServerAPI) GetDirectory(req DirectoryRequest) (emptyDirectoryID string, err error) {
+	var projectBasedPath string
+	if projectBasedPath, err = toProjectPath(req.ProjectName, req.Path); err != nil {
+		return emptyDirectoryID, err
+	}
+
+	getDirReq := GetDirectoryRequest{
+		Path:      projectBasedPath,
+		ProjectID: req.ProjectID,
+	}
+	r, body, errs := s.agent.Post(Url("/projects/directory")).Send(getDirReq).End()
+	if err = ToError(r, errs); err != nil {
+		return emptyDirectoryID, err
+	}
+
+	var dirResponse GetDirectoryResponse
+	if err = ToJSON(body, &dirResponse); err != nil {
+		return emptyDirectoryID, err
+	}
+
+	return dirResponse.DirectoryID, nil
+}
+
+func toProjectPath(projectName, path string) (string, error) {
+	i := strings.Index(path, projectName)
+	if i == -1 {
+		return "", app.ErrInvalid
+	}
+	return filepath.ToSlash(path[i:]), nil
 }

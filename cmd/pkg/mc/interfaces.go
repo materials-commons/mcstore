@@ -8,6 +8,7 @@ type ProjectDB interface {
 	Directories() []Directory
 	Ls(dir Directory) []File
 	InsertFile(f *File) (*File, error)
+	FindFile(fileName string, dirID int64) (*File, error)
 	UpdateFile(f *File) error
 	FindDirectory(path string) (*Directory, error)
 	Clone() ProjectDB
