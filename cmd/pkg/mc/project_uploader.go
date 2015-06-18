@@ -116,9 +116,9 @@ func (u *uploader) handleFileEntry(entry files.TreeEntry) {
 		file := u.getFileByName(entry.Finfo.Name(), dir.ID)
 		switch {
 		case file == nil:
-			u.uploadFile(entry, dir)
+			u.uploadFile(entry, file, dir)
 		case entry.Finfo.ModTime().Unix() > file.LastUpload.Unix():
-			u.uploadFile(entry, dir)
+			u.uploadFile(entry, file, dir)
 		default:
 			// nothing to do
 		}
@@ -153,8 +153,8 @@ func (u *uploader) getFileByName(name string, dirID int64) *File {
 	}
 }
 
-func (u *uploader) uploadFile(entry files.TreeEntry, dir *Directory) {
-	uploadResponse := u.getUploadResponse(dir.DirectoryID, entry)
+func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory) {
+	uploadResponse, checksum := u.getUploadResponse(dir.DirectoryID, entry)
 	requestID := uploadResponse.RequestID
 	// TODO: do something with the starting block (its ignored for now)
 	var n int
@@ -165,6 +165,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, dir *Directory) {
 	defer f.Close()
 	buf := make([]byte, 1024*1024)
 	totalChunks := numChunks(entry.Finfo.Size())
+	var uploadResp *mcstore.UploadChunkResponse
 	for {
 		n, err = f.Read(buf)
 		if n != 0 {
@@ -181,7 +182,10 @@ func (u *uploader) uploadFile(entry files.TreeEntry, dir *Directory) {
 				DirectoryID:      dir.DirectoryID,
 				Chunk:            buf[:n],
 			}
-			u.sendFlowReq(req)
+			uploadResp = u.sendFlowReq(req)
+			if uploadResp.Done {
+				break
+			}
 			chunkNumber++
 		}
 		if err != nil {
@@ -190,13 +194,31 @@ func (u *uploader) uploadFile(entry files.TreeEntry, dir *Directory) {
 	}
 
 	if err != nil && err != io.EOF {
-		// do something
+		app.Log.Errorf("Unable to complete read on file for upload: %s", entry.Path)
 	} else {
 		// done, so update the database with the entry.
+		if file == nil || file.Checksum != checksum {
+			// create new entry
+			newFile := File{
+				FileID:     uploadResp.FileID,
+				Name:       entry.Finfo.Name(),
+				Checksum:   checksum,
+				Size:       entry.Finfo.Size(),
+				MTime:      entry.Finfo.ModTime(),
+				LastUpload: time.Now(),
+				Directory:  dir.ID,
+			}
+			u.db.InsertFile(&newFile)
+		} else {
+			// update existing entry
+			file.MTime = entry.Finfo.ModTime()
+			file.LastUpload = time.Now()
+			u.db.UpdateFile(file)
+		}
 	}
 }
 
-func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) *mcstore.CreateUploadResponse {
+func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) (*mcstore.CreateUploadResponse, string) {
 	// retry forever
 	checksum, _ := file.HashStr(md5.New(), entry.Path)
 	uploadReq := mcstore.CreateUploadRequest{
@@ -213,10 +235,9 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 		if resp, err := u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
 			sleepRandom()
 		} else {
-			return resp
+			return resp, checksum
 		}
 	}
-	return nil
 }
 
 func numChunks(size int64) int32 {
@@ -225,13 +246,13 @@ func numChunks(size int64) int32 {
 	return int32(n)
 }
 
-func (u *uploader) sendFlowReq(req *flow.Request) {
+func (u *uploader) sendFlowReq(req *flow.Request) *mcstore.UploadChunkResponse {
 	// try forever
 	for {
-		if err := u.serverAPI.SendFlowData(req); err != nil {
+		if resp, err := u.serverAPI.SendFlowData(req); err != nil {
 			sleepRandom()
 		} else {
-			break
+			return resp
 		}
 	}
 }
@@ -240,5 +261,5 @@ func sleepRandom() {
 	// sleep a random amount between 1 and 10 seconds
 	rand.Seed(time.Now().Unix())
 	randomSleepTime := rand.Intn(10) + 1
-	time.Sleep(int64(randomSleepTime))
+	time.Sleep(time.Duration(randomSleepTime))
 }

@@ -45,17 +45,21 @@ func (s *ServerAPI) CreateUploadRequest(req CreateUploadRequest) (*CreateUploadR
 }
 
 // SendFlowData will send the data for a flow request.
-func (s *ServerAPI) SendFlowData(req *flow.Request) error {
+func (s *ServerAPI) SendFlowData(req *flow.Request) (*UploadChunkResponse, error) {
 	params := req.ToParamsMap()
-	sc, err := s.client.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
+	sc, err, body := s.client.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
 		req.Chunk, params)
 	switch {
 	case err != nil:
-		return err
+		return nil, err
 	case sc != 200:
-		return app.ErrInternal
+		return nil, app.ErrInternal
 	default:
-		return nil
+		var uploadResp UploadChunkResponse
+		if err := ToJSON(body, &uploadResp); err != nil {
+			return nil, err
+		}
+		return &uploadResp, nil
 	}
 }
 

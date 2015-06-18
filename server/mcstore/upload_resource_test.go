@@ -273,10 +273,14 @@ var _ = Describe("UploadResource", func() {
 					params["projectID"] = "test"
 					params["directoryID"] = "test"
 					params["fileID"] = ""
-					sc, err := ezclient.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
+					sc, err, body := ezclient.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
 						[]byte("ab"), params)
 					Expect(err).To(BeNil())
 					Expect(sc).To(BeNumerically("==", http.StatusOK))
+					var chunkResp UploadChunkResponse
+					err = ToJSON(body, &chunkResp)
+					Expect(err).To(BeNil())
+					Expect(chunkResp.Done).To(BeFalse())
 
 					// Now we will request this upload a second time.
 					r, body, errs = client.Post(Url("/upload")).Send(uploadRequest).End()
@@ -303,7 +307,7 @@ var _ = Describe("UploadResource", func() {
 					params["projectID"] = "test"
 					params["directoryID"] = "test"
 					params["fileID"] = ""
-					_, err := ezclient.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
+					_, err, _ := ezclient.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
 						[]byte("ab"), params)
 					Expect(err).NotTo(BeNil())
 				})

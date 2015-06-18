@@ -18,10 +18,15 @@ type UploadRequest struct {
 	*flow.Request
 }
 
+type UploadStatus struct {
+	FileID string
+	Done   bool
+}
+
 // UploadService takes care of uploading blocks and constructing the
 // file when all blocks have been uploaded.
 type UploadService interface {
-	Upload(req *UploadRequest) error
+	Upload(req *UploadRequest) (*UploadStatus, error)
 }
 
 // uploadService is an implementation of UploadService.
@@ -67,18 +72,20 @@ func NewUploadServiceUsingSession(session *r.Session) *uploadService {
 
 // Upload performs uploading a block and constructing the file
 // after all blocks have been uploaded.
-func (s *uploadService) Upload(req *UploadRequest) error {
+func (s *uploadService) Upload(req *UploadRequest) (*UploadStatus, error) {
 	dir := s.requestPath.dir(req.Request)
 	id := req.UploadID()
 
 	if !s.tracker.idExists(id) {
-		return app.ErrInvalid
+		return nil, app.ErrInvalid
 	}
 
 	if err := s.writeBlock(dir, req); err != nil {
 		app.Log.Errorf("Writing block %d for request %s failed: %s", req.FlowChunkNumber, id, err)
-		return err
+		return nil, err
 	}
+
+	uploadStatus := &UploadStatus{}
 
 	if s.tracker.done(id) {
 		if file, err := s.assemble(req, dir); err != nil {
@@ -89,10 +96,14 @@ func (s *uploadService) Upload(req *UploadRequest) error {
 					app.Log.Errorf("Attempted cleanup of failed assembly %s errored with: %s", req.FlowIdentifier, err)
 				}
 			}
-			return err
+			return nil, err
+		} else {
+			uploadStatus.FileID = file.ID
+			uploadStatus.Done = true
 		}
+
 	}
-	return nil
+	return uploadStatus, nil
 }
 
 // writeBlock will write the request block and update state information

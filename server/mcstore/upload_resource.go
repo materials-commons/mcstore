@@ -52,8 +52,9 @@ func (r *uploadResource) WebService() *restful.WebService {
 		Reads(CreateUploadRequest{}).
 		Writes(CreateUploadResponse{}))
 
-	ws.Route(ws.POST("/chunk").To(rest.RouteHandler1(r.uploadFileChunk)).
+	ws.Route(ws.POST("/chunk").To(rest.RouteHandler(r.uploadFileChunk)).
 		Consumes("multipart/form-data").
+		Writes(UploadChunkResponse{}).
 		Doc("Upload a file chunk"))
 
 	ws.Route(ws.DELETE("{id}").To(rest.RouteHandler1(r.deleteUploadRequest)).
@@ -176,7 +177,6 @@ func (r *uploadResource) request2IDRequest(request *restful.Request, userID stri
 	}
 
 	return cr, nil
-
 }
 
 // getDirectoryID returns the directoryID. A user can pass either a directoryID
@@ -200,18 +200,30 @@ func (r *uploadResource) getDirectoryID(req CreateUploadRequest) (directoryID st
 	}
 }
 
+type UploadChunkResponse struct {
+	FileID string `json:"file_id"`
+	Done   bool   `json:"done"`
+}
+
 // uploadFileChunk uploads a new file chunk.
-func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) error {
+func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	flowRequest, err := form2FlowRequest(request)
 	if err != nil {
 		r.log.Errorf("Error converting form to flow.Request: %s", err)
-		return err
+		return nil, err
 	}
 
 	req := uploads.UploadRequest{
 		Request: flowRequest,
 	}
-	return r.uploadService.Upload(&req)
+
+	if uploadStatus, err := r.uploadService.Upload(&req); err != nil {
+		return nil, err
+	} else {
+		var _ = uploadStatus
+		uploadResp := &UploadChunkResponse{}
+		return uploadResp, nil
+	}
 }
 
 // deleteUploadRequest will delete an existing upload request. It validates that

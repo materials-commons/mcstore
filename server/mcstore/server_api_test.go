@@ -105,16 +105,18 @@ var _ = Describe("ServerApi", func() {
 
 		It("Should fail on an invalid request id", func() {
 			flowReq.FlowIdentifier = "i-dont-exist"
-			err = api.SendFlowData(&flowReq)
+			cresp, err := api.SendFlowData(&flowReq)
 			Expect(err).To(Equal(app.ErrInvalid))
+			Expect(cresp).To(BeNil())
 		})
 
 		It("Should Send the data an increment and increment starting block", func() {
 			resp, err = api.CreateUploadRequest(uploadRequest)
 			Expect(err).To(BeNil())
 			flowReq.FlowIdentifier = resp.RequestID
-			err = api.SendFlowData(&flowReq)
+			cresp, err := api.SendFlowData(&flowReq)
 			Expect(err).To(BeNil())
+			Expect(cresp.Done).To(BeFalse())
 
 			resp2, err := api.CreateUploadRequest(uploadRequest)
 			Expect(err).To(BeNil())

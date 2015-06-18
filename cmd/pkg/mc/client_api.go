@@ -36,23 +36,12 @@ func (c *ClientAPI) ProjectStatus(projectID string) error {
 	return nil
 }
 
-type Project struct {
-	Name      string
-	Path      string
-	ProjectID string
-}
-
 func (c *ClientAPI) CreateProject(projectSpec ProjectDBSpec) error {
 	_, err := ProjectOpener.CreateProjectDB(projectSpec)
 	return err
 }
 
-type Directory struct {
-	Path        string
-	ProjectName string
-}
-
-func (c *ClientAPI) CreateDirectory(dir Directory) error {
+func (c *ClientAPI) CreateDirectory(projectName, path string) error {
 	return nil
 }
 
