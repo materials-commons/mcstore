@@ -10,7 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Filetree", func() {
+var _ = Describe("Walker", func() {
 	var (
 		testPath string
 		walker   PWalker
