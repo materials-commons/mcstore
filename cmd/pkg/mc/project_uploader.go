@@ -9,7 +9,8 @@ import (
 	"math"
 	"os"
 
-	"github.com/golang/go/src/path/filepath"
+	"path/filepath"
+
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
