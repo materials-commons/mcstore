@@ -47,6 +47,7 @@ type idService struct {
 	dirs        dai.Dirs
 	projects    dai.Projects
 	uploads     dai.Uploads
+	files       dai.Files
 	access      domain.Access
 	fops        file.Operations
 	tracker     tracker
@@ -63,6 +64,7 @@ func NewIDService() *idService {
 		dirs:        dai.NewRDirs(session),
 		projects:    dai.NewRProjects(session),
 		uploads:     dai.NewRUploads(session),
+		files:       dai.NewRFiles(session),
 		access:      access,
 		fops:        file.OS,
 		tracker:     requestBlockTracker,
@@ -78,6 +80,7 @@ func NewIDServiceUsingSession(session *r.Session) *idService {
 		dirs:        dai.NewRDirs(session),
 		projects:    dai.NewRProjects(session),
 		uploads:     dai.NewRUploads(session),
+		files:       dai.NewRFiles(session),
 		access:      access,
 		fops:        file.OS,
 		tracker:     requestBlockTracker,
@@ -87,6 +90,7 @@ func NewIDServiceUsingSession(session *r.Session) *idService {
 
 // ID will create a new Upload request or return an existing one.
 func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
+	///files, err := s.files.AllByChecksum(req.Checksum)
 	proj, err := s.getProj(req.ProjectID, req.User)
 	if err != nil {
 		fmt.Println("getProj err", err)
