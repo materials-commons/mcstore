@@ -32,13 +32,13 @@ func NewServerAPI() *ServerAPI {
 // CreateUploadRequest will request an upload request from the server. If an existing
 // upload matches the request then server will send the existing upload request.
 func (s *ServerAPI) CreateUploadRequest(req CreateUploadRequest) (*CreateUploadResponse, error) {
-	r, body, errs := s.agent.Post(Url("/upload")).Send(req).End()
-	if err := ToError(r, errs); err != nil {
+	var uploadResponse CreateUploadResponse
+	sc, err := s.client.JSON(&req).JSONPost(Url("/upload"), &uploadResponse)
+	if err != nil {
 		return nil, err
 	}
-
-	var uploadResponse CreateUploadResponse
-	if err := ToJSON(body, &uploadResponse); err != nil {
+	err = HTTPStatusToError(sc)
+	if err != nil {
 		return nil, err
 	}
 	return &uploadResponse, nil
