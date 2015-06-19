@@ -45,6 +45,12 @@ func (m *Dirs) Insert(dir *schema.Directory) (*schema.Directory, error) {
 	return r0, r1
 }
 
+func (m *Dirs) Delete(dirID string) error {
+	ret := m.Called(dirID)
+	r0 := ret.Error(0)
+	return r0
+}
+
 type dentry struct {
 	dir   *schema.Directory
 	err   error
@@ -87,6 +93,11 @@ func (m *Dirs2) Files(dirID string) ([]schema.File, error) {
 func (m *Dirs2) Insert(dir *schema.Directory) (*schema.Directory, error) {
 	e := m.lookup("Insert")
 	return e.dir, e.err
+}
+
+func (m *Dirs2) Delete(dirID string) error {
+	e := m.lookup("Delete")
+	return e.err
 }
 
 func (m *Dirs2) On(method string) *Dirs2 {

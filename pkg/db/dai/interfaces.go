@@ -54,4 +54,5 @@ type Dirs interface {
 	ByPath(path, projectID string) (*schema.Directory, error)
 	Files(dirID string) ([]schema.File, error)
 	Insert(dir *schema.Directory) (*schema.Directory, error)
+	Delete(dirID string) error
 }
