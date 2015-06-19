@@ -3,6 +3,8 @@ package mcstore
 import (
 	"time"
 
+	"fmt"
+
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -77,7 +79,7 @@ type CreateUploadRequest struct {
 	DirectoryPath string `json:"directory_path"`
 	FileName      string `json:"filename"`
 	FileSize      int64  `json:"filesize"`
-	ChunkSize     int    `json:"chunk_size"`
+	ChunkSize     int32  `json:"chunk_size"`
 	FileMTime     string `json:"filemtime"`
 	Checksum      string `json: "checksum"`
 }
@@ -93,14 +95,17 @@ type CreateUploadResponse struct {
 // the given request, and ensures that the returned upload id is unique. Upload
 // requests are persisted until deleted or a successful upload occurs.
 func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	fmt.Println("in createUploadRequest")
 	cr, err := r.request2IDRequest(request, user.ID)
 	if err != nil {
+		fmt.Println("request2IDRequest failed", err)
 		app.Log.Debugf("request2IDRequst failed", err)
 		return nil, err
 	}
 
 	upload, err := r.idService.ID(cr)
 	if err != nil {
+		fmt.Println("idService.ID failed", err)
 		app.Log.Debugf("idService.ID failed", err)
 		return nil, err
 	}
@@ -141,7 +146,8 @@ func (r *uploadResource) request2IDRequest(request *restful.Request, userID stri
 	var cr uploads.IDRequest
 
 	if err := request.ReadEntity(&req); err != nil {
-		app.Log.Debugf("makeIDRequest ReadEntity failed: %s", err)
+		fmt.Println("request2IDRequest ReadEntity failed", err)
+		app.Log.Debugf("request2IDRequest ReadEntity failed: %s", err)
 		return cr, err
 	}
 
@@ -149,7 +155,7 @@ func (r *uploadResource) request2IDRequest(request *restful.Request, userID stri
 
 	fileMTime, err := time.Parse(time.RFC1123, req.FileMTime)
 	if err != nil {
-		app.Log.Debugf("makeIDRequest time.Parse failed on %s: %s", req.FileMTime, err)
+		app.Log.Debugf("request2IDRequest time.Parse failed on %s: %s", req.FileMTime, err)
 		return cr, err
 	}
 
@@ -220,8 +226,10 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 	if uploadStatus, err := r.uploadService.Upload(&req); err != nil {
 		return nil, err
 	} else {
-		var _ = uploadStatus
-		uploadResp := &UploadChunkResponse{}
+		uploadResp := &UploadChunkResponse{
+			FileID: uploadStatus.FileID,
+			Done: uploadStatus.Done,
+		}
 		return uploadResp, nil
 	}
 }

@@ -3,6 +3,8 @@ package uploads
 import (
 	"path/filepath"
 
+	"fmt"
+
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -11,6 +13,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
+
+var _ = fmt.Println
 
 // A UploadRequest contains the block to upload and the
 // information required to write that block.
@@ -156,7 +160,7 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 	app.Log.Infof("successfully upload fileID %s", file.ID)
 
 	s.cleanupUploadRequest(req.UploadID())
-	return nil, nil
+	return file, nil
 }
 
 // createFile creates the database file entry.
