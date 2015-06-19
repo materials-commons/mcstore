@@ -33,21 +33,26 @@ func Url(path string) string {
 }
 
 func ToError(resp *http.Response, errs []error) error {
+	if len(errs) != 0 {
+		return app.ErrInvalid
+	}
+	return HTTPStatusToError(resp.StatusCode)
+}
+
+func HTTPStatusToError(status int) error {
 	switch {
-	case len(errs) != 0:
-		return app.ErrInvalid
-	case resp.StatusCode == http.StatusInternalServerError:
+	case status == http.StatusInternalServerError:
 		return app.ErrInternal
-	case resp.StatusCode == http.StatusBadRequest:
+	case status == http.StatusBadRequest:
 		return app.ErrInvalid
-	case resp.StatusCode == http.StatusNotFound:
+	case status == http.StatusNotFound:
 		return app.ErrNotFound
-	case resp.StatusCode == http.StatusForbidden:
+	case status == http.StatusForbidden:
 		return app.ErrExists
-	case resp.StatusCode == http.StatusUnauthorized:
+	case status == http.StatusUnauthorized:
 		return app.ErrNoAccess
-	case resp.StatusCode > 299:
-		app.Log.Errorf("Unclassified error %d: %s", resp.StatusCode, resp.Status)
+	case status > 299:
+		app.Log.Errorf("Unclassified error %d", status)
 		return app.ErrUnclassified
 	default:
 		return nil
