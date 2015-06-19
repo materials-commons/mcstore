@@ -28,7 +28,7 @@ type IDRequest struct {
 	FileName    string
 	FileSize    int64
 	Checksum    string
-	ChunkSize   int
+	ChunkSize   int32
 	FileMTime   time.Time
 	Host        string
 	Birthtime   time.Time
@@ -89,11 +89,13 @@ func NewIDServiceUsingSession(session *r.Session) *idService {
 func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 	proj, err := s.getProj(req.ProjectID, req.User)
 	if err != nil {
+		fmt.Println("getProj err", err)
 		return nil, err
 	}
 
 	dir, err := s.getDir(req.DirectoryID, proj.ID, req.User)
 	if err != nil {
+		fmt.Println("getDir err", err)
 		return nil, err
 	}
 
@@ -127,10 +129,12 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 		Create()
 	u, err := s.uploads.Insert(&upload)
 	if err != nil {
+		fmt.Println("insert err", err)
 		return nil, err
 	}
 
 	if err := s.initUpload(u.ID, req.FileSize, req.ChunkSize); err != nil {
+		fmt.Println("initUpload err", err)
 		s.uploads.Delete(u.ID)
 		return nil, err
 	}
@@ -168,7 +172,7 @@ func (s *idService) getDir(directoryID, projectID, user string) (*schema.Directo
 }
 
 // initUpload
-func (s *idService) initUpload(id string, fileSize int64, chunkSize int) error {
+func (s *idService) initUpload(id string, fileSize int64, chunkSize int32) error {
 	if err := s.requestPath.mkdirFromID(id); err != nil {
 		return err
 	}
@@ -178,7 +182,7 @@ func (s *idService) initUpload(id string, fileSize int64, chunkSize int) error {
 }
 
 // numBlocks
-func numBlocks(fileSize int64, chunkSize int) int {
+func numBlocks(fileSize int64, chunkSize int32) int {
 	// round up to nearest number of blocks
 	d := float64(fileSize) / float64(chunkSize)
 	n := int(math.Ceil(d))
