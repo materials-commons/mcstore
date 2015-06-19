@@ -80,6 +80,10 @@ func (s *dirService) createDir(projectID, path string) (*schema.Directory, error
 // validDirPath verifies that the directory path starts with the project name.
 // It handles both Linux (/) and Windows (\) style slashes.
 func validDirPath(projName, dirPath string) bool {
+	if projName == dirPath {
+		return true
+	}
+
 	slash := strings.Index(dirPath, "/")
 	if slash == -1 {
 		slash = strings.Index(dirPath, "\\")
