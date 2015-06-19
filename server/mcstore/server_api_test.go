@@ -5,6 +5,8 @@ import (
 
 	"net/http/httptest"
 
+	"fmt"
+
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -14,6 +16,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var _ = fmt.Println
 
 var _ = Describe("ServerApi", func() {
 	var (
@@ -182,6 +186,51 @@ var _ = Describe("ServerApi", func() {
 			Expect(err).To(BeNil())
 			err = api.DeleteUploadRequest(resp.RequestID)
 			Expect(err).To(BeNil())
+		})
+	})
+
+	Describe("GetDirectory", func() {
+		var (
+			dirs       dai.Dirs = dai.NewRDirs(testdb.RSession())
+			dirID      string
+			dirRequest DirectoryRequest
+		)
+
+		BeforeEach(func() {
+			dirID = ""
+			dirRequest = DirectoryRequest{
+				ProjectName: "test",
+				ProjectID:   "test",
+				Path:        "/tmp/test/abc",
+			}
+		})
+
+		AfterEach(func() {
+			if dirID != "" {
+				dirs.Delete(dirID)
+			}
+		})
+
+		It("Should fail if directory doesn't include the project name", func() {
+			var err error
+			dirRequest.Path = "/tmp/test2/abc"
+			dirID, err := api.GetDirectory(dirRequest)
+			Expect(err).To(Equal(app.ErrInvalid))
+			Expect(dirID).To(Equal(""))
+		})
+
+		It("Should retrieve an existing directory", func() {
+			dirRequest.Path = "/tmp/test"
+			dirid, err := api.GetDirectory(dirRequest)
+			Expect(err).To(BeNil())
+			Expect(dirid).To(Equal("test"))
+		})
+
+		It("Should create a new directory when it doesn't exist", func() {
+			var err error
+			dirID, err = api.GetDirectory(dirRequest)
+			Expect(err).To(BeNil())
+			Expect(dirID).To(ContainSubstring("-"))
 		})
 	})
 })
