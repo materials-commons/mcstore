@@ -126,7 +126,10 @@ var _ = Describe("SQLProjectDB", func() {
 	})
 
 	Describe("InsertFile method tests", func() {
-		var fid int64
+		var (
+			fid   int64
+			dirID int64
+		)
 
 		BeforeEach(func() {
 			now := time.Now()
@@ -140,6 +143,7 @@ var _ = Describe("SQLProjectDB", func() {
 			dir, err = projectDB.InsertDirectory(dir)
 			Expect(err).To(BeNil())
 			Expect(dir.ID).ToNot(BeNumerically("==", 0))
+			dirID = dir.ID
 
 			f := &File{
 				FileID:    "fileid123",
@@ -166,6 +170,10 @@ var _ = Describe("SQLProjectDB", func() {
 			expectedSize := (64 * 1024 * 1024 * 1024)
 			Expect(f0.Size).To(BeNumerically("==", expectedSize))
 			Expect(f0.ID).To(Equal(fid))
+
+			f, err := projectDB.FindFile("test.txt", dirID)
+			Expect(err).To(BeNil())
+			Expect(f.ID).To(BeNumerically("==", fid))
 		})
 	})
 
@@ -236,6 +244,14 @@ var _ = Describe("SQLProjectDB", func() {
 			Expect(err).To(BeNil(), "Get failed %s", err)
 			Expect(dbproj.ProjectID).To(Equal("proj2id"))
 			Expect(dbproj.LastUpload).To(BeTemporally("==", now))
+		})
+	})
+
+	Describe("Project", func() {
+		It("Should retrieve the project", func() {
+			proj := projectDB.Project()
+			Expect(proj).ToNot(BeNil())
+			Expect(proj.ProjectID).To(Equal("proj1id"))
 		})
 	})
 })
