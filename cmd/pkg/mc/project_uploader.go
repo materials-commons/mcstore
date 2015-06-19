@@ -11,12 +11,16 @@ import (
 
 	"path/filepath"
 
+	"fmt"
+
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstore"
 )
+
+var _ = fmt.Println
 
 type projectUploader struct {
 	db         ProjectDB
@@ -100,7 +104,7 @@ func (u *uploader) handleDirEntry(entry files.TreeEntry) {
 }
 
 func (u *uploader) createDirectory(entry files.TreeEntry) {
-	dirPath := filepath.ToSlash(entry.Finfo.Name())
+	dirPath := filepath.ToSlash(entry.Path)
 	req := mcstore.DirectoryRequest{
 		ProjectName: u.project.Name,
 		ProjectID:   u.project.ProjectID,
@@ -203,6 +207,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 				Chunk:            buf[:n],
 			}
 			uploadResp = u.sendFlowDataWithRetry(req)
+			fmt.Printf("uploadResp = %#v\n", uploadResp)
 			if uploadResp.Done {
 				break
 			}
@@ -241,12 +246,13 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) (*mcstore.CreateUploadResponse, string) {
 	// retry forever
 	checksum, _ := file.HashStr(md5.New(), entry.Path)
+	chunkSize := int32(1000*1000)
 	uploadReq := mcstore.CreateUploadRequest{
 		ProjectID:   u.project.ProjectID,
 		DirectoryID: directoryID,
 		FileName:    entry.Finfo.Name(),
 		FileSize:    entry.Finfo.Size(),
-		ChunkSize:   1024 * 1024,
+		ChunkSize:   chunkSize,
 		FileMTime:   entry.Finfo.ModTime().Format(time.RFC1123),
 		Checksum:    checksum,
 	}
@@ -259,6 +265,7 @@ func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRe
 	fn := func() bool {
 		var err error
 		if resp, err = u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
+			fmt.Println("CreateUploadRequest returned err", err)
 			return false
 		}
 		return true
@@ -278,6 +285,7 @@ func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunk
 	fn := func() bool {
 		var err error
 		if resp, err = u.serverAPI.SendFlowData(req); err != nil {
+			fmt.Println("SendFlowData returned err", err)
 			return false
 		}
 		return true
