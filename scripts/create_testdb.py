@@ -45,6 +45,7 @@ class DataDir(object):
         self.birthtime = r.now()
         self.mtime = self.birthtime
         self.parent = parent
+        self.project = ""
 
 
 class User(object):
@@ -147,6 +148,7 @@ def load_tables(conn):
 
     ddir = DataDir("test", "test@mc.org", "")
     ddir.id = "test"
+    ddir.project = project_id
     created_ddir = insert(ddir.__dict__, "datadirs", conn)
     ddir_id = created_ddir['id']
 
@@ -159,6 +161,7 @@ def load_tables(conn):
     # Create a subdirectory
     ddir = DataDir("test/test2", "test@mc.org", "test")
     ddir.id = "test/test2"
+    ddir.project = project_id
     created_ddir = insert(ddir.__dict__, "datadirs", conn)
     ddir_id = created_ddir['id']
     project2datadir = {
@@ -193,6 +196,7 @@ def load_tables(conn):
     insert(project.__dict__, "projects", conn)
     ddir = DataDir("test2", "test2@mc.org", "")
     ddir.id = "test2"
+    ddir.project = project.id
     insert(ddir.__dict__, "datadirs", conn)
     project2datadir = {
         "project_id": project.id,
@@ -207,6 +211,7 @@ def load_tables(conn):
     insert(project.__dict__, "projects", conn)
     ddir = DataDir("test3", "test3@mc.org", "")
     ddir.id = "test3"
+    ddir.project = project.id
     insert(ddir.__dict__, "datadirs", conn)
     project2datadir = {
         "project_id": project.id,

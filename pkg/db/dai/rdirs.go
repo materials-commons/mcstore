@@ -2,9 +2,9 @@ package dai
 
 import (
 	r "github.com/dancannon/gorethink"
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/model"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/pkg/app"
 )
 
 // rDirs implements the Dirs interface for RethinkDB.
