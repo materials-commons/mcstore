@@ -42,23 +42,26 @@ func (p *projectUploader) upload() error {
 }
 
 type uploader struct {
-	db        ProjectDB
-	serverAPI *mcstore.ServerAPI
-	project   *Project
-	minWait   int
-	maxWait   int
+	db         ProjectDB
+	serverAPI  *mcstore.ServerAPI
+	project    *Project
+	minWait    int
+	maxWait    int
+	retryCount int
 }
 
 const defaultMinWaitBeforeRetry = 100
 const defaultMaxWaitBeforeRetry = 5000
+const retryForever = -1
 
 func newUploader(db ProjectDB, project *Project) *uploader {
 	return &uploader{
-		db:        db.Clone(),
-		project:   project,
-		serverAPI: mcstore.NewServerAPI(),
-		minWait:   defaultMinWaitBeforeRetry,
-		maxWait:   defaultMaxWaitBeforeRetry,
+		db:         db.Clone(),
+		project:    project,
+		serverAPI:  mcstore.NewServerAPI(),
+		minWait:    defaultMinWaitBeforeRetry,
+		maxWait:    defaultMaxWaitBeforeRetry,
+		retryCount: retryForever,
 	}
 }
 
@@ -97,28 +100,33 @@ func (u *uploader) handleDirEntry(entry files.TreeEntry) {
 }
 
 func (u *uploader) createDirectory(entry files.TreeEntry) {
-	// Loop forever asking server for the directory
 	dirPath := filepath.ToSlash(entry.Finfo.Name())
 	req := mcstore.DirectoryRequest{
 		ProjectName: u.project.Name,
 		ProjectID:   u.project.ProjectID,
 		Path:        dirPath,
 	}
-	for {
-		if dirID, err := u.serverAPI.GetDirectory(req); err != nil {
-			// sleep a random amount of time and then retry the request
-			u.sleepRandom()
-		} else {
-			dir := &Directory{
-				DirectoryID: dirID,
-				Path:        dirPath,
-			}
-			if _, err := u.db.InsertDirectory(dir); err != nil {
-				app.Log.Panicf("Local database returned err, panic!: %s", err)
-			}
-			return
-		}
+	dirID := u.getDirectoryWithRetry(req)
+	dir := &Directory{
+		DirectoryID: dirID,
+		Path:        dirPath,
 	}
+	if _, err := u.db.InsertDirectory(dir); err != nil {
+		app.Log.Panicf("Local database returned err, panic!: %s", err)
+	}
+}
+
+func (u *uploader) getDirectoryWithRetry(req mcstore.DirectoryRequest) string {
+	var dirID string
+	fn := func() bool {
+		var err error
+		if dirID, err = u.serverAPI.GetDirectory(req); err != nil {
+			return false
+		}
+		return true
+	}
+	u.withRetry(fn)
+	return dirID
 }
 
 func (u *uploader) handleFileEntry(entry files.TreeEntry) {
@@ -194,7 +202,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 				DirectoryID:      dir.DirectoryID,
 				Chunk:            buf[:n],
 			}
-			uploadResp = u.sendFlowReq(req)
+			uploadResp = u.sendFlowDataWithRetry(req)
 			if uploadResp.Done {
 				break
 			}
@@ -242,14 +250,21 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 		FileMTime:   entry.Finfo.ModTime().Format(time.RFC1123),
 		Checksum:    checksum,
 	}
+	resp := u.createUploadRequestWithRetry(uploadReq)
+	return resp, checksum
+}
 
-	for {
-		if resp, err := u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
-			u.sleepRandom()
-		} else {
-			return resp, checksum
+func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRequest) *mcstore.CreateUploadResponse {
+	var resp *mcstore.CreateUploadResponse
+	fn := func() bool {
+		var err error
+		if resp, err = u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
+			return false
 		}
+		return true
 	}
+	u.withRetry(fn)
+	return resp
 }
 
 func numChunks(size int64) int32 {
@@ -258,14 +273,33 @@ func numChunks(size int64) int32 {
 	return int32(n)
 }
 
-func (u *uploader) sendFlowReq(req *flow.Request) *mcstore.UploadChunkResponse {
-	// try forever
-	for {
-		if resp, err := u.serverAPI.SendFlowData(req); err != nil {
-			u.sleepRandom()
-		} else {
-			return resp
+func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunkResponse {
+	var resp *mcstore.UploadChunkResponse
+	fn := func() bool {
+		var err error
+		if resp, err = u.serverAPI.SendFlowData(req); err != nil {
+			return false
 		}
+		return true
+	}
+	u.withRetry(fn)
+	return resp
+}
+
+func (u *uploader) withRetry(fn func() bool) {
+	retryCounter := 0
+	for {
+		if fn() {
+			break
+		}
+
+		if u.retryCount != retryForever {
+			retryCounter++
+			if retryCounter > u.retryCount {
+				app.Log.Panicf("Retries exceeded aborting")
+			}
+		}
+		u.sleepRandom()
 	}
 }
 
