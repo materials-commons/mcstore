@@ -28,11 +28,7 @@ func (p *projectUploader) upload() error {
 	project := db.Project()
 
 	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
-		u := &uploader{
-			db:        p.db.Clone(),
-			serverAPI: mcstore.NewServerAPI(),
-			project:   project,
-		}
+		u := newUploader(p.db, project)
 		u.uploadEntries(done, entries, result)
 	}
 	walker := files.PWalker{
@@ -49,6 +45,21 @@ type uploader struct {
 	db        ProjectDB
 	serverAPI *mcstore.ServerAPI
 	project   *Project
+	minWait   int
+	maxWait   int
+}
+
+const defaultMinWaitBeforeRetry = 100
+const defaultMaxWaitBeforeRetry = 5000
+
+func newUploader(db ProjectDB, project *Project) *uploader {
+	return &uploader{
+		db:        db.Clone(),
+		project:   project,
+		serverAPI: mcstore.NewServerAPI(),
+		minWait:   defaultMinWaitBeforeRetry,
+		maxWait:   defaultMaxWaitBeforeRetry,
+	}
 }
 
 func (u *uploader) uploadEntries(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
@@ -96,7 +107,7 @@ func (u *uploader) createDirectory(entry files.TreeEntry) {
 	for {
 		if dirID, err := u.serverAPI.GetDirectory(req); err != nil {
 			// sleep a random amount of time and then retry the request
-			sleepRandom()
+			u.sleepRandom()
 		} else {
 			dir := &Directory{
 				DirectoryID: dirID,
@@ -234,7 +245,7 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 
 	for {
 		if resp, err := u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
-			sleepRandom()
+			u.sleepRandom()
 		} else {
 			return resp, checksum
 		}
@@ -251,16 +262,16 @@ func (u *uploader) sendFlowReq(req *flow.Request) *mcstore.UploadChunkResponse {
 	// try forever
 	for {
 		if resp, err := u.serverAPI.SendFlowData(req); err != nil {
-			sleepRandom()
+			u.sleepRandom()
 		} else {
 			return resp
 		}
 	}
 }
 
-func sleepRandom() {
-	// sleep a random amount between 1 and 10 seconds
+func (u *uploader) sleepRandom() {
+	// sleep a random amount between minWait and maxWait
 	rand.Seed(time.Now().Unix())
-	randomSleepTime := rand.Intn(10) + 1
+	randomSleepTime := rand.Intn(u.maxWait) + u.minWait
 	time.Sleep(time.Duration(randomSleepTime))
 }
