@@ -44,8 +44,7 @@ func validateDBPaths(dirPath, dbFilePath string) error {
 	}
 }
 
-// openDB will attempt to open the project.db file. The mustExist
-// flag specifies whether or not the database file must exist.
+// openDB will attempt to open the project.db file.
 func (p sqlProjectDBOpener) openSqlDB(dbpath string) (*sqlx.DB, error) {
 	dbargs := fmt.Sprintf("file:%s?cached=shared&mode=rwc", dbpath)
 	db, err := sqlx.Open("sqlite3", dbargs)
