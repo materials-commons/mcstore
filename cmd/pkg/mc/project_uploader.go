@@ -246,7 +246,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) (*mcstore.CreateUploadResponse, string) {
 	// retry forever
 	checksum, _ := file.HashStr(md5.New(), entry.Path)
-	chunkSize := int32(1000*1000)
+	chunkSize := int32(1000 * 1000)
 	uploadReq := mcstore.CreateUploadRequest{
 		ProjectID:   u.project.ProjectID,
 		DirectoryID: directoryID,
