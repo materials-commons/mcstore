@@ -39,6 +39,15 @@ func (f rFiles) ByChecksum(checksum string) (*schema.File, error) {
 	return &file, nil
 }
 
+func (f rFiles) AllByChecksum(checksum string) ([]schema.File, error) {
+	rql := model.Files.T().GetAllByIndex("checksum")
+	var files []schema.File
+	if err := model.Files.Qs(f.session).Rows(rql, &files); err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
 // ByPath looks up a file by its name in a specific directory. It only returns the
 // current file, not hidden files.
 func (f rFiles) ByPath(name, dirID string) (*schema.File, error) {

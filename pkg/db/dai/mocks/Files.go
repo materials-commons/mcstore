@@ -33,6 +33,13 @@ func (m *Files) ByChecksum(checksum string) (*schema.File, error) {
 	return r0, r1
 }
 
+func (m *Files) AllByChecksum(checksum string) ([]schema.File, error) {
+	ret := m.Called(checksum)
+	r0 := ret.Get(0).([]schema.File)
+	r1 := ret.Error(1)
+	return r0, r1
+}
+
 func (m *Files) ByPath(name, dirID string) (*schema.File, error) {
 	ret := m.Called(name, dirID)
 	r0 := ret.Get(0).(*schema.File)
@@ -77,6 +84,7 @@ type fentry struct {
 	file    *schema.File
 	err     error
 	project *schema.Project
+	files   []schema.File
 }
 
 type Files2 struct {
@@ -105,6 +113,11 @@ func (m *Files2) ByID(id string) (*schema.File, error) {
 func (m *Files2) ByChecksum(checksum string) (*schema.File, error) {
 	e := m.lookup("ByChecksum")
 	return e.file, e.err
+}
+
+func (m *Files2) AllByChecksum(checksum string) ([]schema.File, error) {
+	e := m.lookup("AllByChecksum")
+	return e.files, e.err
 }
 
 func (m *Files2) ByPath(name, dirID string) (*schema.File, error) {
@@ -150,6 +163,11 @@ func (m *Files2) SetError(err error) *Files2 {
 
 func (m *Files2) SetFile(file *schema.File) *Files2 {
 	m.method[m.currentMethod].file = file
+	return m
+}
+
+func (m *Files2) SetFiles(files []schema.File) *Files2 {
+	m.method[m.currentMethod].files = files
 	return m
 }
 
