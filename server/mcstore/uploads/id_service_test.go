@@ -142,16 +142,17 @@ var _ = Describe("IDService", func() {
 
 		Describe("Existing Uploads", func() {
 			It("Should find an existing upload", func() {
+				var err error
 				req := IDRequest{
 					ProjectID:   "test",
 					DirectoryID: "test",
 					Host:        "host",
-					Checksum:    "abc123",
+					Checksum:    "abc124",
 					FileSize:    100,
 					ChunkSize:   10,
 					User:        "test@mc.org",
 				}
-				upload, err := s.ID(req)
+				upload, err = s.ID(req)
 				Expect(err).To(BeNil())
 				Expect(upload.File.Blocks.Len()).To(BeNumerically("==", 10))
 
@@ -163,20 +164,6 @@ var _ = Describe("IDService", func() {
 
 				// Check that the bitset state is correct.
 				Expect(upload2.File.Blocks.Len()).To(BeNumerically("==", 10))
-			})
-
-			It("Should leave an upload in place", func() {
-				req := IDRequest{
-					ProjectID:   "test",
-					DirectoryID: "test",
-					Host:        "host",
-					Checksum:    "abc123567",
-					FileSize:    10,
-					ChunkSize:   10,
-					User:        "test@mc.org",
-					FileName:    "blocktest.txt",
-				}
-				s.ID(req)
 			})
 		})
 	})
