@@ -99,6 +99,7 @@ var _ = Describe("ProjectUploader", func() {
 	Describe("uploadFile", func() {
 		It("Should upload the file", func() {
 			t1DirPath := filepath.Join(projPath, "t1")
+			os.MkdirAll(t1DirPath, 0777)
 			fpath := filepath.Join(t1DirPath, "uploadfile.txt")
 			f, err := os.Create(fpath)
 			Expect(err).To(BeNil())
