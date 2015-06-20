@@ -50,7 +50,7 @@ type idService struct {
 	files       dai.Files
 	access      domain.Access
 	fops        file.Operations
-	tracker     tracker
+	tracker     *blockTracker
 	requestPath requestPath
 }
 
@@ -126,8 +126,8 @@ func (s *idService) createUploadRequest(req IDRequest, proj *schema.Project, dir
 
 // findExisting checks if there is an outstanding upload request, or a file that already matches
 // the upload request. If it finds a match it will return the corresponding upload request. In
-// the case of an existing already uploaded file, it will return an upload request with all blocks
-// already marked as uploaded.
+// the case of an already uploaded file it will return an upload request with all blocks marked
+// as uploaded.
 func (s *idService) findExisting(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
 	if _, err := s.files.ByChecksum(req.Checksum); err == nil {
 		return s.createFinishedUpload(req, proj, dir)

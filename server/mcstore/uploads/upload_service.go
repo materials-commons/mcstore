@@ -35,7 +35,7 @@ type UploadService interface {
 
 // uploadService is an implementation of UploadService.
 type uploadService struct {
-	tracker     tracker
+	tracker     *blockTracker
 	files       dai.Files
 	uploads     dai.Uploads
 	dirs        dai.Dirs
