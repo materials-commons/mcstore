@@ -7,19 +7,16 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/pkg/domain"
 )
 
-type directoryAccessFilter struct {
+type directoryFilter struct {
 	projects dai.Projects
 	dirs     dai.Dirs
-	access   domain.Access
 }
 
-func newDirectoryAccessFilter(dirs dai.Dirs, projects dai.Projects, access domain.Access) *directoryAccessFilter {
+func newDirectoryAccessFilter(dirs dai.Dirs, projects dai.Projects) *directoryFilter {
 	return &projectAccessFilter{
 		projects: projects,
-		access:   access,
 		dirs:     dirs,
 	}
 }
@@ -28,8 +25,7 @@ type directoryIDAccess struct {
 	DirectoryID string `json:"directory_id"`
 }
 
-func (f *directoryAccessFilter) Filter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
-	user := request.Attribute("user").(schema.User)
+func (f *directoryFilter) Filter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	project := request.Attribute("project").(schema.Project)
 	var d directoryIDAccess
 
@@ -38,8 +34,8 @@ func (f *directoryAccessFilter) Filter(request *restful.Request, response *restf
 		return
 	}
 
-	if directory, err := f.getDirectoryValidatingAccess(d.DirectoryID, project.ID, user.ID); err != nil {
-		response.WriteErrorString(http.StatusUnauthorized, "No access to project")
+	if directory, err := f.getDirectory(d.DirectoryID, project.ID); err != nil {
+		response.WriteErrorString(http.StatusNotAcceptable, "Unknown directory_id")
 	} else {
 		request.SetAttribute("directory", *directory)
 		chain.ProcessFilter(request, response)
@@ -48,15 +44,13 @@ func (f *directoryAccessFilter) Filter(request *restful.Request, response *restf
 
 // getDirectoryValidatingAccess retrieves the directory with the given directoryID. It checks access to the
 // directory and validates that the directory exists in the given project.
-func (f *directoryAccessFilter) getDirectoryValidatingAccess(directoryID, projectID, user string) (*schema.Directory, error) {
+func (f *directoryFilter) getDirectory(directoryID, projectID string) (*schema.Directory, error) {
 	dir, err := f.dirs.ByID(directoryID)
 	switch {
 	case err != nil:
 		return nil, err
 	case !f.projects.HasDirectory(projectID, directoryID):
 		return nil, app.ErrInvalid
-	case !f.access.AllowedByOwner(projectID, user):
-		return nil, app.ErrNoAccess
 	default:
 		return dir, nil
 	}
