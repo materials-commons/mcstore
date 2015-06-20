@@ -88,21 +88,31 @@ func NewIDServiceUsingSession(session *r.Session) *idService {
 	}
 }
 
-func (s *idService) ID2(req IDRequest) (*schema.Upload, error) {
+// ID will create a new Upload request or return an existing one.
+func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 	var (
 		err  error
 		proj *schema.Project
 		dir  *schema.Directory
 	)
 
+	// Check that project exists and user has access
 	if proj, err = s.getProjectValidatingAccess(req.ProjectID, req.User); err != nil {
 		return nil, err
 	}
 
+	// Check that directory exists and user has access
 	if dir, err = s.getDirectoryValidatingAccess(req.DirectoryID, req.ProjectID, req.User); err != nil {
 		return nil, err
 	}
 
+	return s.createUploadRequest(req, proj, dir)
+}
+
+// createUploadRequest will create an upload. It checks if there is a matching file or an existing upload.
+// If it finds a matching file it returns a finished upload. If it finds an existing upload it returns it,
+// otherwise it returns a new upload.
+func (s *idService) createUploadRequest(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
 	upload, err := s.findExisting(req, proj, dir)
 	switch {
 	case err == app.ErrNotFound:
@@ -114,30 +124,31 @@ func (s *idService) ID2(req IDRequest) (*schema.Upload, error) {
 	}
 }
 
+// findExisting checks if there is an outstanding upload request, or a file that already matches
+// the upload request. If it finds a match it will return the corresponding upload request. In
+// the case of an existing already uploaded file, it will return an upload request with all blocks
+// already marked as uploaded.
 func (s *idService) findExisting(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
-	if file, err := s.files.ByChecksum(req); err == nil {
-		return s.createUploadFromFile(req, file)
+	if _, err := s.files.ByChecksum(req.Checksum); err == nil {
+		return s.createFinishedUpload(req, proj, dir)
 	}
 	return s.findMatchingUploadRequest(req)
 }
 
-func (s *idService) createUploadFromFile(req IDRequest, file *schema.File) (*schema.Upload, error) {
-	// We have the real uploaded file. There are 4 cases:
-	//   1. This file matches the project, directory and name we want to upload, so
-	//      we create a finished upload request because there is nothing to do.
-	//
-	//   2. This file matches the project and directory, but not name, so we create
-	//      a new file entry pointing at this one and return a finished upload request.
-	//
-	//   3. This entry is in a different project and/or directory and there isn't a matching
-	//      one in the given project/directory, so create a new file entry pointing at this
-	//      one and return a finished upload request.
-	//
-	//   4. This entry is in a different project and/or directory and there is a matching
-	//      one in the given project/directory. Return a finished upload request.
-	return nil, nil
+// createFinishedUpload will create an upload entry with all blocks marked as uploaded.
+func (s *idService) createFinishedUpload(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
+	// Create a new upload request and then set all blocks as already uploaded.
+	if upload, err := s.createNewUploadRequest(req, proj, dir); err != nil {
+		return nil, err
+	} else {
+		s.tracker.markAllBlocks(upload.ID)
+		upload.SetFBlocks(s.tracker.getBlocks(upload.ID))
+		return upload, nil
+	}
 }
 
+// findMatchingUploadRequest will search the set of upload requests and see if there
+// is already an outstanding upload request that matches this one.
 func (s *idService) findMatchingUploadRequest(req IDRequest) (*schema.Upload, error) {
 	searchParams := dai.UploadSearch{
 		ProjectID:   req.ProjectID,
@@ -156,6 +167,7 @@ func (s *idService) findMatchingUploadRequest(req IDRequest) (*schema.Upload, er
 	return nil, app.ErrNotFound
 }
 
+// createNewUploadRequest creates a new upload request and inserts it into the database.
 func (s *idService) createNewUploadRequest(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
 	n := uint(numBlocks(req.FileSize, req.ChunkSize))
 	upload := schema.CUpload().
@@ -184,80 +196,7 @@ func (s *idService) createNewUploadRequest(req IDRequest, proj *schema.Project, 
 	return u, nil
 }
 
-// ID will create a new Upload request or return an existing one.
-func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
-	///files, err := s.files.AllByChecksum(req.Checksum)
-	proj, err := s.getProjectValidatingAccess(req.ProjectID, req.User)
-	if err != nil {
-		fmt.Println("getProj err", err)
-		return nil, err
-	}
-
-	dir, err := s.getDirectoryValidatingAccess(req.DirectoryID, proj.ID, req.User)
-	if err != nil {
-		fmt.Println("getDir err", err)
-		return nil, err
-	}
-
-	searchParams := dai.UploadSearch{
-		ProjectID:   proj.ID,
-		DirectoryID: dir.ID,
-		FileName:    req.FileName,
-		Checksum:    req.Checksum,
-	}
-
-	if existingUpload, err := s.uploads.Search(searchParams); err == nil {
-		// Found existing
-		if bset := s.tracker.getBlocks(existingUpload.ID); bset != nil {
-			existingUpload.File.Blocks = bset
-		}
-		return existingUpload, nil
-	}
-
-	n := uint(numBlocks(req.FileSize, req.ChunkSize))
-	upload := schema.CUpload().
-		Owner(req.User).
-		Project(req.ProjectID, proj.Name).
-		ProjectOwner(proj.Owner).
-		Directory(req.DirectoryID, dir.Name).
-		Host(req.Host).
-		FName(req.FileName).
-		FSize(req.FileSize).
-		FChecksum(req.Checksum).
-		FRemoteMTime(req.FileMTime).
-		FBlocks(bitset.New(n)).
-		Create()
-	u, err := s.uploads.Insert(&upload)
-	if err != nil {
-		fmt.Println("insert err", err)
-		return nil, err
-	}
-
-	if err := s.initUpload(u.ID, req.FileSize, req.ChunkSize); err != nil {
-		fmt.Println("initUpload err", err)
-		s.uploads.Delete(u.ID)
-		return nil, err
-	}
-	return u, nil
-}
-
-func (s *idService) getAndValidateDependencies(req IDRequest) (*schema.Project, *schema.Directory, error) {
-	proj, err := s.getProjectValidatingAccess(req.ProjectID, req.User)
-	if err != nil {
-		fmt.Println("getProj err", err)
-		return nil, nil, err
-	}
-
-	dir, err := s.getDirectoryValidatingAccess(req.DirectoryID, proj.ID, req.User)
-	if err != nil {
-		fmt.Println("getDir err", err)
-		return nil, nil, err
-	}
-
-	return proj, dir, nil
-}
-
-// getProj retrieves the project with the given projectID. It checks that the
+// getProjectValidatingAccess retrieves the project with the given projectID. It checks that the
 // given user has access to that project.
 func (s *idService) getProjectValidatingAccess(projectID, user string) (*schema.Project, error) {
 	project, err := s.projects.ByID(projectID)
@@ -271,7 +210,7 @@ func (s *idService) getProjectValidatingAccess(projectID, user string) (*schema.
 	}
 }
 
-// getDir retrieves the directory with the given directoryID. It checks access to the
+// getDirectoryValidatingAccess retrieves the directory with the given directoryID. It checks access to the
 // directory and validates that the directory exists in the given project.
 func (s *idService) getDirectoryValidatingAccess(directoryID, projectID, user string) (*schema.Directory, error) {
 	dir, err := s.dirs.ByID(directoryID)
