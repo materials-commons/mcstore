@@ -26,6 +26,7 @@ var _ = Describe("IDService", func() {
 		uploads  = dai.NewRUploads(testdb.RSession())
 		access   = domain.NewAccess(projects, files, users)
 		s        = &idService{
+			files:       files,
 			dirs:        dirs,
 			projects:    projects,
 			uploads:     uploads,
