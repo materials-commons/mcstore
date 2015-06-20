@@ -84,6 +84,14 @@ func (t *blockTracker) clearBlock(id string, block int) {
 	bset.SetTo(uint(block-1), false)
 }
 
+func (t *blockTracker) markAllBlocks(id string) {
+	defer t.mutex.Unlock()
+	t.mutex.Lock()
+	bset := t.reqBlocks[id].bset
+	bset.ClearAll()
+	bset = bset.Complement()
+}
+
 // done returns true if all blocks have been marked for an id.
 func (t *blockTracker) done(id string) bool {
 	defer t.mutex.RUnlock()
