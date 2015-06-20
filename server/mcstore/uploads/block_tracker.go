@@ -169,7 +169,7 @@ func (t *blockTracker) withWriteLock(id string, fn func(b *blockTrackerEntry)) {
 	}
 }
 
-// withWriteLock will take out a write lock, look up the given id in the hash
+// withWriteLockNotExist will take out a write lock, look up the given id in the hash
 // and call the given function with the lock if it doesn't find an entry.
 func (t *blockTracker) withWriteLockNotExist(id string, fn func(b *blockTrackerEntry)) {
 	defer t.mutex.Unlock()
