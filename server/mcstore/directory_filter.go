@@ -15,7 +15,7 @@ type directoryFilter struct {
 }
 
 func newDirectoryAccessFilter(dirs dai.Dirs, projects dai.Projects) *directoryFilter {
-	return &projectAccessFilter{
+	return &directoryFilter{
 		projects: projects,
 		dirs:     dirs,
 	}
