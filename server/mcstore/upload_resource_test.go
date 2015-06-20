@@ -80,7 +80,7 @@ var _ = Describe("UploadResource", func() {
 				FileSize:      4,
 				ChunkSize:     2,
 				FileMTime:     time.Now().Format(time.RFC1123),
-				Checksum:      "abc123",
+				Checksum:      "abc123456",
 			}
 			uploads = dai.NewRUploads(testdb.RSession())
 		})
