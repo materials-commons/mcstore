@@ -267,7 +267,6 @@ func (s *idService) Delete(requestID, user string) error {
 
 // ListForProject will return all the uploads associated with a project.
 func (s *idService) UploadsForProject(projectID, user string) ([]schema.Upload, error) {
-	// getProj will validate the project and access.
 	_, err := s.getProjectValidatingAccess(projectID, user)
 	switch {
 	case err == app.ErrNotFound:
