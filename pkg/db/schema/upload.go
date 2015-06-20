@@ -35,6 +35,14 @@ type Upload struct {
 	File          FileUpload `gorethink:"file"`           // File being uploaded
 }
 
+// SetFBlocks sets the blocks and BitString. It does nothing if blocks is nil.
+func (u *Upload) SetFBlocks(blocks *bitset.BitSet) {
+	if blocks != nil {
+		u.File.Blocks = blocks
+		u.File.BitString, _ = blocks.MarshalJSON()
+	}
+}
+
 // private type to hang helper methods off of.
 type uploadList struct{}
 
