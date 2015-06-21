@@ -95,7 +95,7 @@ type uploadRequester struct {
 
 func newUploadRequester(session *rethinkdb.Session) *uploadRequester {
 	return &uploadRequester{
-		idService:  uploads.NewIDServiceUsingSession(session),
+		idService:  uploads.NewIDService(session),
 		dirService: newDirServiceUsingSession(session),
 	}
 }
@@ -247,7 +247,7 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 // the requesting user has access to delete the request.
 func (r *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
 	session := request.Attribute("session").(*rethinkdb.Session)
-	idService := uploads.NewIDServiceUsingSession(session)
+	idService := uploads.NewIDService(session)
 	uploadID := request.PathParameter("id")
 	return idService.Delete(uploadID, user.ID)
 }
@@ -256,7 +256,7 @@ func (r *uploadResource) deleteUploadRequest(request *restful.Request, response 
 // has access to the project.
 func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	session := request.Attribute("session").(*rethinkdb.Session)
-	idService := uploads.NewIDServiceUsingSession(session)
+	idService := uploads.NewIDService(session)
 	projectID := request.PathParameter("project")
 	entries, err := idService.UploadsForProject(projectID, user.ID)
 	switch {

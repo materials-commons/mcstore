@@ -55,7 +55,7 @@ type idService struct {
 
 // NewIDServiceUsingSession creates a new idService that connects to the database using
 // the given session.
-func NewIDServiceUsingSession(session *r.Session) *idService {
+func NewIDService(session *r.Session) *idService {
 	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	return &idService{
 		dirs:        dai.NewRDirs(session),
