@@ -3,7 +3,6 @@ package mcstore
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/db"
-	"github.com/materials-commons/mcstore/pkg/ws/rest"
 )
 
 // NewServicesContainer creates a new restful.Container made up of all
@@ -22,13 +21,8 @@ func NewServicesContainer() *restful.Container {
 	uploadResource := newUploadResource()
 	container.Add(uploadResource.WebService())
 
-	projectsResource := createProjectsResource()
+	projectsResource := newProjectsResource()
 	container.Add(projectsResource.WebService())
 
 	return container
-}
-
-// projectsResource creates a new projects resource.
-func createProjectsResource() rest.Service {
-	return newProjectsResource(newDirService(), newProjectService())
 }

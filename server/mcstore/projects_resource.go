@@ -1,6 +1,7 @@
 package mcstore
 
 import (
+	rethinkdb "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -10,9 +11,7 @@ import (
 // An projectsResource holds the state and services needed for the
 // projects REST resource.
 type projectsResource struct {
-	log            *app.Logger
-	dirService     DirService
-	projectService ProjectService
+	log *app.Logger
 }
 
 //////////////////////// Request/Response Definitions /////////////////////
@@ -48,11 +47,9 @@ type GetDirectoryResponse struct {
 }
 
 // newProjectsResource creates a new projects resource.
-func newProjectsResource(dirService DirService, projectService ProjectService) *projectsResource {
+func newProjectsResource() *projectsResource {
 	return &projectsResource{
-		log:            app.NewLog("resource", "projects"),
-		dirService:     dirService,
-		projectService: projectService,
+		log: app.NewLog("resource", "projects"),
 	}
 }
 
@@ -87,13 +84,15 @@ func (r *projectsResource) WebService() *restful.WebService {
 // createProject services the create project request. It will ensure that the user
 // doesn't have a project matching the given project name.
 func (r *projectsResource) createProject(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	session := request.Attribute("session").(*rethinkdb.Session)
 	var req CreateProjectRequest
 	if err := request.ReadEntity(&req); err != nil {
 		app.Log.Debugf("createProject ReadEntity failed: %s", err)
 		return nil, err
 	}
 
-	proj, existing, err := r.projectService.createProject(req.Name, user.ID, req.MustNotExist)
+	projectService := newProjectServiceUsingSession(session)
+	proj, existing, err := projectService.createProject(req.Name, user.ID, req.MustNotExist)
 	switch {
 	case err != nil:
 		return nil, err
@@ -110,13 +109,15 @@ func (r *projectsResource) createProject(request *restful.Request, response *res
 // by their path relative to the project. The getDirectory service will create a directory
 // that doesn't exist.
 func (r *projectsResource) getDirectory(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	session := request.Attribute("session").(*rethinkdb.Session)
 	var req GetDirectoryRequest
 	if err := request.ReadEntity(&req); err != nil {
 		app.Log.Debugf("getDirectory ReadEntity failed: %s", err)
 		return nil, err
 	}
 
-	dir, err := r.dirService.createDir(req.ProjectID, req.Path)
+	dirService := newDirServiceUsingSession(session)
+	dir, err := dirService.createDir(req.ProjectID, req.Path)
 	switch {
 	case err != nil:
 		return nil, err
