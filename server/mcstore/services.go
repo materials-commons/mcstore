@@ -3,7 +3,6 @@ package mcstore
 import (
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/db"
-	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/testdb"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
 	"github.com/materials-commons/mcstore/server/mcstore/uploads"
@@ -14,14 +13,13 @@ import (
 func NewServicesContainer() *restful.Container {
 	container := restful.NewContainer()
 
-	apikeyFilter := newAPIKeyFilter(dai.NewRUsers(db.RSessionMust()))
+	databaseSessionFilter := &databaseSessionFilter{
+		session: db.RSession,
+	}
+	container.Filter(databaseSessionFilter.Filter)
+
+	apikeyFilter := newAPIKeyFilter()
 	container.Filter(apikeyFilter.Filter)
-	// to add in filter for database sessions the code would look like
-	// the following. Note that this assumes we have changed the rest of
-	// the code to get the session from the variables.
-	// dbSessionFilter := &databaseSessionFilter
-	// container.Filter(dbSessionFilter.Filter)
-	// container.Filter(apikeyFilter.Filter)
 
 	uploadResource := createUploadsResource()
 	container.Add(uploadResource.WebService())
@@ -44,7 +42,12 @@ func createProjectsResource() rest.Service {
 
 func NewServicesContainerForTest() *restful.Container {
 	container := restful.NewContainer()
-	apikeyFilter := newAPIKeyFilter(dai.NewRUsers(testdb.RSession()))
+	databaseSessionFilter := &databaseSessionFilter{
+		session: testdb.RSessionErr,
+	}
+	container.Filter(databaseSessionFilter.Filter)
+
+	apikeyFilter := newAPIKeyFilter()
 	container.Filter(apikeyFilter.Filter)
 
 	uploadResource := createUploadsResourceForTest()
