@@ -5,6 +5,7 @@ import (
 
 	"sync"
 
+	r "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -13,15 +14,13 @@ import (
 // apikeyFilter implements a filter for checking the apikey
 // passed in with a request.
 type apikeyFilter struct {
-	users   dai.Users
 	apikeys map[string]*schema.User
 	mutex   sync.RWMutex
 }
 
 // newAPIKeyFilter creates a new apikeyFilter instance.
-func newAPIKeyFilter(users dai.Users) *apikeyFilter {
+func newAPIKeyFilter() *apikeyFilter {
 	return &apikeyFilter{
-		users:   users,
 		apikeys: make(map[string]*schema.User),
 	}
 }
@@ -30,22 +29,22 @@ func newAPIKeyFilter(users dai.Users) *apikeyFilter {
 // valid. If the apikey is found it sets the "user" attribute to the user structure. If
 // the apikey is invalid then the filter doesn't pass the request on, and instead returns
 // an http.StatusUnauthorized.
-func (f *apikeyFilter) Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
-	apikey := req.Request.URL.Query().Get("apikey")
-	user, found := f.getUser(apikey)
+func (f *apikeyFilter) Filter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+	apikey := request.Request.URL.Query().Get("apikey")
+	session := request.Attribute("session").(*r.Session)
+	rusers := dai.NewRUsers(session)
+	user, found := f.getUser(apikey, rusers)
 	if !found {
-		resp.WriteErrorString(http.StatusUnauthorized, "Not authorized")
-		return
+		response.WriteErrorString(http.StatusUnauthorized, "Not authorized")
+	} else {
+		request.SetAttribute("user", *user)
+		chain.ProcessFilter(request, response)
 	}
-
-	req.SetAttribute("user", *user)
-	chain.ProcessFilter(req, resp)
 }
 
-// getUser matches the user with the apikey. If it cannot find
-// a match then it returns false. getUser caches the key/user
-// pair in f.apikeys.
-func (f *apikeyFilter) getUser(apikey string) (*schema.User, bool) {
+// getUser matches the user with the apikey. If it cannot find a match then it returns false.
+// getUser caches the key/user pair in f.apikeys.
+func (f *apikeyFilter) getUser(apikey string, users dai.Users) (*schema.User, bool) {
 	if apikey == "" {
 		// No key was passed.
 		return nil, false
@@ -53,7 +52,7 @@ func (f *apikeyFilter) getUser(apikey string) (*schema.User, bool) {
 
 	user, found := f.getUserWithReadLock(apikey)
 	if !found {
-		user, err := f.users.ByAPIKey(apikey)
+		user, err := users.ByAPIKey(apikey)
 		if err != nil {
 			return nil, false
 		}
