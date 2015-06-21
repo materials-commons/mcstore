@@ -9,7 +9,6 @@ import (
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
-	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
@@ -44,25 +43,9 @@ type uploadService struct {
 	fops        file.Operations
 }
 
-// NewUploadService creates a new uploadService connecting
-// to the default database. It will panic if it cannot
-// establish a connection to the database.
-func NewUploadService() *uploadService {
-	session := db.RSessionMust()
-	return &uploadService{
-		tracker:     requestBlockTracker,
-		files:       dai.NewRFiles(session),
-		uploads:     dai.NewRUploads(session),
-		dirs:        dai.NewRDirs(session),
-		writer:      &blockRequestWriter{},
-		requestPath: &mcdirRequestPath{},
-		fops:        file.OS,
-	}
-}
-
-// NewUploadServiceUsingSession creates a new idService that connects to the database using
+// NewUploadService creates a new idService that connects to the database using
 // the given session.
-func NewUploadServiceUsingSession(session *r.Session) *uploadService {
+func NewUploadService(session *r.Session) *uploadService {
 	return &uploadService{
 		tracker:     requestBlockTracker,
 		files:       dai.NewRFiles(session),

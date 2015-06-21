@@ -231,7 +231,7 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 		Request: flowRequest,
 	}
 
-	uploadService := uploads.NewUploadServiceUsingSession(session)
+	uploadService := uploads.NewUploadService(session)
 	if uploadStatus, err := uploadService.Upload(&req); err != nil {
 		return nil, err
 	} else {
