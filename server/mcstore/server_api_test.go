@@ -19,7 +19,7 @@ import (
 
 var _ = fmt.Println
 
-var _ = Describe("ServerApi", func() {
+var _ = Describe("ServerAPI", func() {
 	var (
 		api           *ServerAPI
 		server        *httptest.Server
@@ -45,7 +45,7 @@ var _ = Describe("ServerApi", func() {
 			FileSize:      4,
 			ChunkSize:     2,
 			FileMTime:     time.Now().Format(time.RFC1123),
-			Checksum:      "abc123",
+			Checksum:      "abc12345",
 		}
 	})
 
