@@ -5,7 +5,7 @@ import (
 
 	"fmt"
 
-	r "github.com/dancannon/gorethink"
+	rethinkdb "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -93,7 +93,7 @@ type uploadRequester struct {
 	dirService DirService
 }
 
-func newUploadRequester(session *r.Session) *uploadRequester {
+func newUploadRequester(session *rethinkdb.Session) *uploadRequester {
 	return &uploadRequester{
 		idService:  uploads.NewIDServiceUsingSession(session),
 		dirService: newDirServiceUsingSession(session),
@@ -103,8 +103,8 @@ func newUploadRequester(session *r.Session) *uploadRequester {
 // createUploadRequest services requests to create a new upload id. It validates
 // the given request, and ensures that the returned upload id is unique. Upload
 // requests are persisted until deleted or a successful upload occurs.
-func (ur *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	session := request.Attribute("session").(*r.Session)
+func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	session := request.Attribute("session").(*rethinkdb.Session)
 	uploadRequester := newUploadRequester(session)
 	cr, err := uploadRequester.request2IDRequest(request, user.ID)
 	if err != nil {
@@ -219,11 +219,11 @@ type UploadChunkResponse struct {
 }
 
 // uploadFileChunk uploads a new file chunk.
-func (ur *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	session := request.Attribute("session").(*r.Session)
+func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	session := request.Attribute("session").(*rethinkdb.Session)
 	flowRequest, err := form2FlowRequest(request)
 	if err != nil {
-		ur.log.Errorf("Error converting form to flow.Request: %s", err)
+		r.log.Errorf("Error converting form to flow.Request: %s", err)
 		return nil, err
 	}
 
@@ -245,8 +245,8 @@ func (ur *uploadResource) uploadFileChunk(request *restful.Request, response *re
 
 // deleteUploadRequest will delete an existing upload request. It validates that
 // the requesting user has access to delete the request.
-func (ur *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
-	session := request.Attribute("session").(*r.Session)
+func (r *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
+	session := request.Attribute("session").(*rethinkdb.Session)
 	idService := uploads.NewIDServiceUsingSession(session)
 	uploadID := request.PathParameter("id")
 	return idService.Delete(uploadID, user.ID)
@@ -254,8 +254,8 @@ func (ur *uploadResource) deleteUploadRequest(request *restful.Request, response
 
 // listProjectUploadRequests returns the upload requests for the project if the requester
 // has access to the project.
-func (ur *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	session := request.Attribute("session").(*r.Session)
+func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	session := request.Attribute("session").(*rethinkdb.Session)
 	idService := uploads.NewIDServiceUsingSession(session)
 	projectID := request.PathParameter("project")
 	entries, err := idService.UploadsForProject(projectID, user.ID)
