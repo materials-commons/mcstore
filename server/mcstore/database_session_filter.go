@@ -7,16 +7,20 @@ import (
 	"github.com/emicklei/go-restful"
 )
 
+// databaseSessionFilter is a filter than creates new database sessions. It takes a
+// function that creates new instances of the session.
 type databaseSessionFilter struct {
 	session func() (*r.Session, error)
 }
 
-func (f *databaseSessionFilter) Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
+// Filter will create a new database session and place it in the session request attribute. When control
+// returns to the filter it will close the session.
+func (f *databaseSessionFilter) Filter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	if session, err := f.session(); err != nil {
-		resp.WriteErrorString(http.StatusInternalServerError, "Unable to connect to database")
+		response.WriteErrorString(http.StatusInternalServerError, "Unable to connect to database")
 	} else {
-		req.SetAttribute("session", session)
-		chain.ProcessFilter(req, resp)
+		request.SetAttribute("session", session)
+		chain.ProcessFilter(request, response)
 		session.Close()
 	}
 }
