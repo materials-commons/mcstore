@@ -18,10 +18,7 @@ var _ = fmt.Println
 
 // An uploadResource handles all upload requests.
 type uploadResource struct {
-	log           *app.Logger
-//	idService     uploads.IDService
-//	uploadService uploads.UploadService
-//	dirService    DirService
+	log *app.Logger
 }
 
 // UploadEntry is a client side representation of an upload.
@@ -37,12 +34,9 @@ type UploadEntry struct {
 }
 
 // newUploadResource creates a new upload resource
-func newUploadResource(uploadService uploads.UploadService, idService uploads.IDService, dirService DirService) rest.Service {
+func newUploadResource() rest.Service {
 	return &uploadResource{
-		log:           app.NewLog("resource", "upload"),
-//		idService:     idService,
-//		uploadService: uploadService,
-//		dirService:    dirService,
+		log: app.NewLog("resource", "upload"),
 	}
 }
 
@@ -94,20 +88,31 @@ type CreateUploadResponse struct {
 	StartingBlock uint   `json:"starting_block"`
 }
 
+type uploadRequester struct {
+	idService  uploads.IDService
+	dirService DirService
+}
+
+func newUploadRequester(session *r.Session) *uploadRequester {
+	return &uploadRequester{
+		idService:  uploads.NewIDServiceUsingSession(session),
+		dirService: newDirServiceUsingSession(session),
+	}
+}
+
 // createUploadRequest services requests to create a new upload id. It validates
 // the given request, and ensures that the returned upload id is unique. Upload
 // requests are persisted until deleted or a successful upload occurs.
-func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+func (ur *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	session := request.Attribute("session").(*r.Session)
-	idService := uploads.NewIDServiceUsingSession(session)
-
-	cr, err := r.request2IDRequest(request, user.ID)
+	uploadRequester := newUploadRequester(session)
+	cr, err := uploadRequester.request2IDRequest(request, user.ID)
 	if err != nil {
 		app.Log.Debugf("request2IDRequst failed", err)
 		return nil, err
 	}
 
-	upload, err := idService.ID(cr)
+	upload, err := uploadRequester.idService.ID(cr)
 	if err != nil {
 		app.Log.Debugf("idService.ID failed", err)
 		return nil, err
@@ -123,28 +128,8 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 	return &resp, nil
 }
 
-// findStartingBlock returns the block to start at. Blocks start
-// at 1, since this is what the flow.js client expects. This
-// method takes that into account.
-func findStartingBlock(blocks *bitset.BitSet) uint {
-	if blocks.None() {
-		// Nothing set, start at 1
-		return 1
-	}
-
-	// Create the complement and return first set.
-	complement := blocks.Complement()
-	if block, status := complement.NextSet(0); !status {
-		// This shouldn't happen, but safest case is to check
-		// for it and tell the client to resend everything.
-		return 1
-	} else {
-		return block + 1
-	}
-}
-
 // request2IDRequest fills out an id request to send to the idService. It handles request parameter errors.
-func (r *uploadResource) request2IDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
+func (u *uploadRequester) request2IDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
 	var req CreateUploadRequest
 	var cr uploads.IDRequest
 
@@ -165,7 +150,7 @@ func (r *uploadResource) request2IDRequest(request *restful.Request, userID stri
 		req.ChunkSize = 1024 * 1024
 	}
 
-	directoryID, err := r.getDirectoryID(req)
+	directoryID, err := u.getDirectoryID(req)
 	if err != nil {
 		app.Log.Debugf("makeIDRequest getDirectoryID failed: %s", err)
 		return cr, err
@@ -191,7 +176,7 @@ func (r *uploadResource) request2IDRequest(request *restful.Request, userID stri
 // or a directory path. If a directory path is passed in, then the method will
 // get the directoryID associated with that path in the project. If the path
 // doesn't exist it will create it.
-func (r *uploadResource) getDirectoryID(req CreateUploadRequest) (directoryID string, err error) {
+func (u *uploadRequester) getDirectoryID(req CreateUploadRequest) (directoryID string, err error) {
 	switch {
 	case req.DirectoryID == "" && req.DirectoryPath == "":
 		app.Log.Debugf("No directoryID or directoryPath specified")
@@ -199,12 +184,32 @@ func (r *uploadResource) getDirectoryID(req CreateUploadRequest) (directoryID st
 	case req.DirectoryID != "":
 		return req.DirectoryID, nil
 	default:
-		dir, err := r.dirService.createDir(req.ProjectID, req.DirectoryPath)
+		dir, err := u.dirService.createDir(req.ProjectID, req.DirectoryPath)
 		if err != nil {
 			app.Log.Debugf("CreateDir %s %s failed: %s", req.ProjectID, req.DirectoryPath, err)
 			return "", err
 		}
 		return dir.ID, nil
+	}
+}
+
+// findStartingBlock returns the block to start at. Blocks start
+// at 1, since this is what the flow.js client expects. This
+// method takes that into account.
+func findStartingBlock(blocks *bitset.BitSet) uint {
+	if blocks.None() {
+		// Nothing set, start at 1
+		return 1
+	}
+
+	// Create the complement and return first set.
+	complement := blocks.Complement()
+	if block, status := complement.NextSet(0); !status {
+		// This shouldn't happen, but safest case is to check
+		// for it and tell the client to resend everything.
+		return 1
+	} else {
+		return block + 1
 	}
 }
 
@@ -214,10 +219,11 @@ type UploadChunkResponse struct {
 }
 
 // uploadFileChunk uploads a new file chunk.
-func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+func (ur *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	session := request.Attribute("session").(*r.Session)
 	flowRequest, err := form2FlowRequest(request)
 	if err != nil {
-		r.log.Errorf("Error converting form to flow.Request: %s", err)
+		ur.log.Errorf("Error converting form to flow.Request: %s", err)
 		return nil, err
 	}
 
@@ -225,12 +231,13 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 		Request: flowRequest,
 	}
 
-	if uploadStatus, err := r.uploadService.Upload(&req); err != nil {
+	uploadService := uploads.NewUploadServiceUsingSession(session)
+	if uploadStatus, err := uploadService.Upload(&req); err != nil {
 		return nil, err
 	} else {
 		uploadResp := &UploadChunkResponse{
 			FileID: uploadStatus.FileID,
-			Done: uploadStatus.Done,
+			Done:   uploadStatus.Done,
 		}
 		return uploadResp, nil
 	}
@@ -238,16 +245,20 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 
 // deleteUploadRequest will delete an existing upload request. It validates that
 // the requesting user has access to delete the request.
-func (r *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
+func (ur *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
+	session := request.Attribute("session").(*r.Session)
+	idService := uploads.NewIDServiceUsingSession(session)
 	uploadID := request.PathParameter("id")
-	return r.idService.Delete(uploadID, user.ID)
+	return idService.Delete(uploadID, user.ID)
 }
 
 // listProjectUploadRequests returns the upload requests for the project if the requester
 // has access to the project.
-func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+func (ur *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	session := request.Attribute("session").(*r.Session)
+	idService := uploads.NewIDServiceUsingSession(session)
 	projectID := request.PathParameter("project")
-	entries, err := r.idService.UploadsForProject(projectID, user.ID)
+	entries, err := idService.UploadsForProject(projectID, user.ID)
 	switch {
 	case err == app.ErrNotFound:
 		var uploads []UploadEntry
