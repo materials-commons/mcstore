@@ -16,8 +16,8 @@ type FileUpload struct {
 	RemoteMTime time.Time      `gorethink:"remote_mtime"` // CTime of the remote file
 	ChunkSize   int            `gorethink:"chunk_size"`   // Chunk transfer size
 	ChunkCount  int            `gorethink:"chunk_count"`  // Number of chunks expected
+	BitString   []byte         `gorethink:"bitstring"`    // bit string representation of blocks
 	Blocks      *bitset.BitSet // Block state. If set block as has been uploaded
-	BitString   []byte
 }
 
 // A Upload models a user upload request. It allows for users to restart
@@ -33,6 +33,7 @@ type Upload struct {
 	Birthtime     time.Time  `gorethink:"birthtime"`      // When was upload started
 	Host          string     `gorethink:"host"`           // Host requesting the upload
 	File          FileUpload `gorethink:"file"`           // File being uploaded
+	IsExisting    bool       `gorethink:"is_existing"`    // Is this an upload request that matches an uploaded file
 }
 
 // SetFBlocks sets the blocks and BitString. It does nothing if blocks is nil.
