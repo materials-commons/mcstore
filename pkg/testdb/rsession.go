@@ -5,13 +5,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db"
 )
 
-var session *r.Session
-
 func RSession() *r.Session {
-	if session == nil {
-		session = db.RSessionUsingMust("localhost:30815", "mctestdb")
-	}
-	return session
+	return db.RSessionUsingMust("localhost:30815", "mctestdb")
 }
 
 // RSessionErr always returns a nil err. It will panic if it cannot
