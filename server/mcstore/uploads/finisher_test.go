@@ -7,7 +7,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	dmocks "github.com/materials-commons/mcstore/pkg/db/dai/mocks"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/testdb"
+	"github.com/materials-commons/mcstore/pkg/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

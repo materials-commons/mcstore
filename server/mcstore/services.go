@@ -6,7 +6,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
 	"github.com/materials-commons/mcstore/server/mcstore/uploads"
-	"github.com/materials-commons/mcstore/testdb"
+	"github.com/materials-commons/mcstore/pkg/testdb"
 )
 
 // NewServicesContainer creates a new restful.Container made up of all

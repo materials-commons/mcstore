@@ -15,7 +15,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstore"
-	"github.com/materials-commons/mcstore/testdb"
+	"github.com/materials-commons/mcstore/pkg/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

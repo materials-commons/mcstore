@@ -11,7 +11,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
-	"github.com/materials-commons/mcstore/testdb"
+	"github.com/materials-commons/mcstore/pkg/testdb"
 )
 
 var _ = fmt.Println

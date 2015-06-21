@@ -10,7 +10,7 @@ import (
 	"github.com/materials-commons/gohandy/ezhttp"
 	c "github.com/materials-commons/mcstore/cmd/pkg/client"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
-	"github.com/materials-commons/mcstore/testdb"
+	"github.com/materials-commons/mcstore/pkg/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/parnurzeal/gorequest"
