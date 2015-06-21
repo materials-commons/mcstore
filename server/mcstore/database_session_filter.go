@@ -3,14 +3,16 @@ package mcstore
 import (
 	"net/http"
 
+	r "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
-	"github.com/materials-commons/mcstore/pkg/db"
 )
 
-type databaseSessionFilter struct{}
+type databaseSessionFilter struct {
+	session func() (*r.Session, error)
+}
 
 func (f *databaseSessionFilter) Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
-	if session, err := db.RSession(); err != nil {
+	if session, err := f.session(); err != nil {
 		resp.WriteErrorString(http.StatusInternalServerError, "Unable to connect to database")
 		return
 	} else {
