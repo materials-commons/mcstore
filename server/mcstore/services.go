@@ -20,7 +20,8 @@ func NewServicesContainer() *restful.Container {
 	// the following. Note that this assumes we have changed the rest of
 	// the code to get the session from the variables.
 	// dbSessionFilter := &databaseSessionFilter
-	// container.Filter(dbSessionFilter.Filter).Filter(apikeyFilter.Filter)
+	// container.Filter(dbSessionFilter.Filter)
+	// container.Filter(apikeyFilter.Filter)
 
 	uploadResource := createUploadsResource()
 	container.Add(uploadResource.WebService())
