@@ -36,8 +36,8 @@ func directoryFilter(request *restful.Request, response *restful.Response, chain
 		return
 	}
 
-	filterDAI := newDirectoryFilterDAI(session)
-	if directory, err := filterDAI.getDirectory(d.DirectoryID, project.ID); err != nil {
+	f := newDirectoryFilterDAI(session)
+	if directory, err := f.getDirectory(d.DirectoryID, project.ID); err != nil {
 		response.WriteErrorString(http.StatusNotAcceptable, "Unknown directory_id")
 	} else {
 		request.SetAttribute("directory", *directory)
