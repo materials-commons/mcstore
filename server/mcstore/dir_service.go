@@ -6,7 +6,6 @@ import (
 
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
@@ -24,23 +23,9 @@ type dirService struct {
 	access   domain.Access
 }
 
-// newDirService creates a new dirService. It uses db.RSessionMust() to
-// create a session for the database. It will panic if it cannot connect
-// to the database.
-func newDirService() *dirService {
-	session := db.RSessionMust()
-
-	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
-	return &dirService{
-		dirs:     dai.NewRDirs(session),
-		projects: dai.NewRProjects(session),
-		access:   access,
-	}
-}
-
-// newDirServiceUsingSession creates a new idService that connects to the database using
+// newDirService creates a new idService that connects to the database using
 // the given session.
-func newDirServiceUsingSession(session *r.Session) *dirService {
+func newDirService(session *r.Session) *dirService {
 	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	return &dirService{
 		dirs:     dai.NewRDirs(session),

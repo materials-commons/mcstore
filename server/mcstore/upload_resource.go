@@ -96,7 +96,7 @@ type uploadRequester struct {
 func newUploadRequester(session *rethinkdb.Session) *uploadRequester {
 	return &uploadRequester{
 		idService:  uploads.NewIDService(session),
-		dirService: newDirServiceUsingSession(session),
+		dirService: newDirService(session),
 	}
 }
 
