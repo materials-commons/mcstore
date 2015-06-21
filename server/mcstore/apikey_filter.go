@@ -3,6 +3,8 @@ package mcstore
 import (
 	"net/http"
 
+	"sync"
+
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -13,6 +15,7 @@ import (
 type apikeyFilter struct {
 	users   dai.Users
 	apikeys map[string]*schema.User
+	mutex   sync.RWMutex
 }
 
 // newAPIKeyFilter creates a new apikeyFilter instance.
@@ -48,15 +51,34 @@ func (f *apikeyFilter) getUser(apikey string) (*schema.User, bool) {
 		return nil, false
 	}
 
-	user, found := f.apikeys[apikey]
+	user, found := f.getUserWithReadLock(apikey)
 	if !found {
 		user, err := f.users.ByAPIKey(apikey)
 		if err != nil {
 			return nil, false
 		}
-		f.apikeys[apikey] = user
+		f.setUserWithWriteLock(apikey, user)
 		return user, true
 	}
 
 	return user, true
+}
+
+// getUserWithReadLock will acquire a read lock and look the user up in the
+// hash table cache.
+func (f *apikeyFilter) getUserWithReadLock(apikey string) (*schema.User, bool) {
+	defer f.mutex.RUnlock()
+	f.mutex.RLock()
+
+	user, found := f.apikeys[apikey]
+	return user, found
+}
+
+// setUserWithWriteLock will acquire a write lock and add the user to the
+// hash table cache.
+func (f *apikeyFilter) setUserWithWriteLock(apikey string, user *schema.User) {
+	defer f.mutex.Unlock()
+	f.mutex.Lock()
+
+	f.apikeys[apikey] = user
 }
