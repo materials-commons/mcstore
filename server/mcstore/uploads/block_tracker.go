@@ -184,8 +184,8 @@ func (t *blockTracker) withWriteLockNotExist(id string, fn func(b *blockTrackerE
 // withReadLock will take out a read lock, look up the given id in the
 // hash and call the given function with the lock if it finds an entry.
 func (t *blockTracker) withReadLock(id string, fn func(b *blockTrackerEntry)) {
-	defer t.mutex.Unlock()
-	t.mutex.Lock()
+	defer t.mutex.RUnlock()
+	t.mutex.RLock()
 	if val, ok := t.reqBlocks[id]; ok {
 		fn(val)
 	} else {
