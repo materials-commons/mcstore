@@ -10,7 +10,6 @@ import (
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
@@ -52,24 +51,6 @@ type idService struct {
 	fops        file.Operations
 	tracker     *blockTracker
 	requestPath requestPath
-}
-
-// NewIDService creates a new idService. It uses db.RSessionMust() to get
-// a session to connect to the database. It will panic if it cannot connect to
-// the database.
-func NewIDService() *idService {
-	session := db.RSessionMust()
-	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
-	return &idService{
-		dirs:        dai.NewRDirs(session),
-		projects:    dai.NewRProjects(session),
-		uploads:     dai.NewRUploads(session),
-		files:       dai.NewRFiles(session),
-		access:      access,
-		fops:        file.OS,
-		tracker:     requestBlockTracker,
-		requestPath: &mcdirRequestPath{},
-	}
 }
 
 // NewIDServiceUsingSession creates a new idService that connects to the database using
@@ -142,6 +123,7 @@ func (s *idService) createFinishedUpload(req IDRequest, proj *schema.Project, di
 		return nil, err
 	} else {
 		s.tracker.markAllBlocks(upload.ID)
+		s.tracker.setIsExistingFile(upload.ID, true)
 		upload.SetFBlocks(s.tracker.getBlocks(upload.ID))
 		return upload, nil
 	}
