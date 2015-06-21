@@ -53,7 +53,7 @@ type idService struct {
 	requestPath requestPath
 }
 
-// NewIDServiceUsingSession creates a new idService that connects to the database using
+// NewIDService creates a new idService that connects to the database using
 // the given session.
 func NewIDService(session *r.Session) *idService {
 	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
