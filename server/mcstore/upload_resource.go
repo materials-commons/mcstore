@@ -5,6 +5,7 @@ import (
 
 	"fmt"
 
+	r "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -13,12 +14,14 @@ import (
 	"github.com/willf/bitset"
 )
 
+var _ = fmt.Println
+
 // An uploadResource handles all upload requests.
 type uploadResource struct {
 	log           *app.Logger
-	idService     uploads.IDService
-	uploadService uploads.UploadService
-	dirService    DirService
+//	idService     uploads.IDService
+//	uploadService uploads.UploadService
+//	dirService    DirService
 }
 
 // UploadEntry is a client side representation of an upload.
@@ -37,9 +40,9 @@ type UploadEntry struct {
 func newUploadResource(uploadService uploads.UploadService, idService uploads.IDService, dirService DirService) rest.Service {
 	return &uploadResource{
 		log:           app.NewLog("resource", "upload"),
-		idService:     idService,
-		uploadService: uploadService,
-		dirService:    dirService,
+//		idService:     idService,
+//		uploadService: uploadService,
+//		dirService:    dirService,
 	}
 }
 
@@ -95,17 +98,17 @@ type CreateUploadResponse struct {
 // the given request, and ensures that the returned upload id is unique. Upload
 // requests are persisted until deleted or a successful upload occurs.
 func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	fmt.Println("in createUploadRequest")
+	session := request.Attribute("session").(*r.Session)
+	idService := uploads.NewIDServiceUsingSession(session)
+
 	cr, err := r.request2IDRequest(request, user.ID)
 	if err != nil {
-		fmt.Println("request2IDRequest failed", err)
 		app.Log.Debugf("request2IDRequst failed", err)
 		return nil, err
 	}
 
-	upload, err := r.idService.ID(cr)
+	upload, err := idService.ID(cr)
 	if err != nil {
-		fmt.Println("idService.ID failed", err)
 		app.Log.Debugf("idService.ID failed", err)
 		return nil, err
 	}
@@ -146,7 +149,6 @@ func (r *uploadResource) request2IDRequest(request *restful.Request, userID stri
 	var cr uploads.IDRequest
 
 	if err := request.ReadEntity(&req); err != nil {
-		fmt.Println("request2IDRequest ReadEntity failed", err)
 		app.Log.Debugf("request2IDRequest ReadEntity failed: %s", err)
 		return cr, err
 	}
