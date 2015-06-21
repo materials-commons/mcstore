@@ -3,6 +3,7 @@ package mcstore
 import (
 	"net/http"
 
+	r "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
@@ -10,13 +11,17 @@ import (
 	"github.com/materials-commons/mcstore/pkg/domain"
 )
 
-type projectAccessFilter struct {
+type projectAccessFilterDAI struct {
 	projects dai.Projects
 	access   domain.Access
 }
 
-func newProjectAccessFilter(projects dai.Projects, access domain.Access) *projectAccessFilter {
-	return &projectAccessFilter{
+func newProjectAccessFilterDAI(session *r.Session) *projectAccessFilterDAI {
+	files := dai.NewRFiles(session)
+	users := dai.NewRUsers(session)
+	projects := dai.NewRProjects(session)
+	access := domain.NewAccess(projects, files, users)
+	return &projectAccessFilterDAI{
 		projects: projects,
 		access:   access,
 	}
@@ -26,8 +31,9 @@ type projectIDAccess struct {
 	ProjectID string `json:"project_id"`
 }
 
-func (f *projectAccessFilter) Filter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+func projectAccessFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	user := request.Attribute("user").(schema.User)
+	session := request.Attribute("session").(*r.Session)
 	var p projectIDAccess
 
 	if err := request.ReadEntity(&p); err != nil {
@@ -35,9 +41,9 @@ func (f *projectAccessFilter) Filter(request *restful.Request, response *restful
 		return
 	}
 
+	f := newProjectAccessFilterDAI(session)
 	if project, err := f.getProjectValidatingAccess(p.ProjectID, user.ID); err != nil {
 		response.WriteErrorString(http.StatusUnauthorized, "No access to project")
-		return
 	} else {
 		request.SetAttribute("project", *project)
 		chain.ProcessFilter(request, response)
@@ -46,7 +52,7 @@ func (f *projectAccessFilter) Filter(request *restful.Request, response *restful
 
 // getProjectValidatingAccess retrieves the project with the given projectID. It checks that the
 // given user has access to that project.
-func (f *projectAccessFilter) getProjectValidatingAccess(projectID, user string) (*schema.Project, error) {
+func (f *projectAccessFilterDAI) getProjectValidatingAccess(projectID, user string) (*schema.Project, error) {
 	project, err := f.projects.ByID(projectID)
 	switch {
 	case err != nil:
