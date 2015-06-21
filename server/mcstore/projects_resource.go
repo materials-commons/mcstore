@@ -91,7 +91,7 @@ func (r *projectsResource) createProject(request *restful.Request, response *res
 		return nil, err
 	}
 
-	projectService := newProjectServiceUsingSession(session)
+	projectService := newProjectService(session)
 	proj, existing, err := projectService.createProject(req.Name, user.ID, req.MustNotExist)
 	switch {
 	case err != nil:

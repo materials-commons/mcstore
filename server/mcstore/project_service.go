@@ -3,7 +3,6 @@ package mcstore
 import (
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
@@ -23,22 +22,9 @@ type projectService struct {
 	access   domain.Access
 }
 
-// newProjectService creates a new instance of the ProjectService. NewProjectService will panic
-// if it cannot attach to the database.
-func newProjectService() *projectService {
-	session := db.RSessionMust()
-	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
-
-	return &projectService{
-		projects: dai.NewRProjects(session),
-		dirs:     dai.NewRDirs(session),
-		access:   access,
-	}
-}
-
-// newProjectServiceUsingSession creates a new idService that connects to the database using
+// newProjectService creates a new idService that connects to the database using
 // the given session.
-func newProjectServiceUsingSession(session *r.Session) *projectService {
+func newProjectService(session *r.Session) *projectService {
 	return &projectService{
 		projects: dai.NewRProjects(session),
 		dirs:     dai.NewRDirs(session),
