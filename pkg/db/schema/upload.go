@@ -23,17 +23,18 @@ type FileUpload struct {
 // A Upload models a user upload request. It allows for users to restart
 // upload requests.
 type Upload struct {
-	ID            string     `gorethink:"id,omitempty"`
-	Owner         string     `gorethink:"owner"`          // Who started the upload
-	DirectoryID   string     `gorethink:"directory_id"`   // Directory to upload to
-	DirectoryName string     `gorethink:"directory_name"` // Name of directory
-	ProjectID     string     `gorethink:"project_id"`     // Project to upload to
-	ProjectOwner  string     `gorethink:"project_owner"`  // Owner of project
-	ProjectName   string     `gorethink:"project_name"`   // Name of project
-	Birthtime     time.Time  `gorethink:"birthtime"`      // When was upload started
-	Host          string     `gorethink:"host"`           // Host requesting the upload
-	File          FileUpload `gorethink:"file"`           // File being uploaded
-	IsExisting    bool       `gorethink:"is_existing"`    // Is this an upload request that matches an uploaded file
+	ID              string     `gorethink:"id,omitempty"`
+	Owner           string     `gorethink:"owner"`          // Who started the upload
+	DirectoryID     string     `gorethink:"directory_id"`   // Directory to upload to
+	DirectoryName   string     `gorethink:"directory_name"` // Name of directory
+	ProjectID       string     `gorethink:"project_id"`     // Project to upload to
+	ProjectOwner    string     `gorethink:"project_owner"`  // Owner of project
+	ProjectName     string     `gorethink:"project_name"`   // Name of project
+	Birthtime       time.Time  `gorethink:"birthtime"`      // When was upload started
+	Host            string     `gorethink:"host"`           // Host requesting the upload
+	File            FileUpload `gorethink:"file"`           // File being uploaded
+	IsExisting      bool       `gorethink:"is_existing"`    // Is this an upload request that matches an uploaded file
+	ServerRestarted bool       `gorethink:"server_restart"` // Has the server been restarted since upload was created?
 }
 
 // SetFBlocks sets the blocks and BitString. It does nothing if blocks is nil.
