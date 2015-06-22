@@ -22,14 +22,13 @@ func newDirectoryFilterDAI(session *r.Session) *directoryFilterDAI {
 	}
 }
 
-type directoryIDAccess struct {
-	DirectoryID string `json:"directory_id"`
-}
-
 func directoryFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	project := request.Attribute("project").(schema.Project)
 	session := request.Attribute("session").(*r.Session)
-	var d directoryIDAccess
+
+	var d struct {
+		DirectoryID string `json:"directory_id"`
+	}
 
 	if err := request.ReadEntity(&d); err != nil {
 		response.WriteErrorString(http.StatusNotAcceptable, "No directory_id found")

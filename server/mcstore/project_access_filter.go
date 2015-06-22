@@ -27,14 +27,13 @@ func newProjectAccessFilterDAI(session *r.Session) *projectAccessFilterDAI {
 	}
 }
 
-type projectIDAccess struct {
-	ProjectID string `json:"project_id"`
-}
-
 func projectAccessFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	user := request.Attribute("user").(schema.User)
 	session := request.Attribute("session").(*r.Session)
-	var p projectIDAccess
+
+	var p struct {
+		ProjectID string `json:"project_id"`
+	}
 
 	if err := request.ReadEntity(&p); err != nil {
 		response.WriteErrorString(http.StatusNotAcceptable, "No project_id found")
