@@ -30,6 +30,9 @@ type blockTracker struct {
 }
 
 var (
+	// requestBlockTracker is a shared instance of the block tracker. Since
+	// blockTracker instances are synchronized this can be shared across
+	// services and go routines.
 	requestBlockTracker *blockTracker = newBlockTracker()
 )
 
