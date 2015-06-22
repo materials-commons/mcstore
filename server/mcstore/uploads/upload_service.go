@@ -185,7 +185,8 @@ func (s *uploadService) determineChecksum(req *UploadRequest, upload *schema.Upl
 		// Server was restarted, so checksum state in tracker is wrong. Read
 		// disk file to get the checksum.
 		uploadDir := s.requestPath.dir(req.Request)
-		return file.HashStr(md5.New(), filepath.Join(uploadDir, req.UploadID()))
+		hash, _ := file.HashStr(md5.New(), filepath.Join(uploadDir, req.UploadID()))
+		return hash
 	default:
 		// Checksum in tracker is correct since its state has been properly
 		// updated as blocks are uploaded.
