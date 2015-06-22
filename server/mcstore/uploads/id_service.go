@@ -83,7 +83,7 @@ func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
 	}
 
 	// Check that directory exists and user has access
-	if dir, err = s.getDirectoryValidatingAccess(req.DirectoryID, req.ProjectID, req.User); err != nil {
+	if dir, err = s.getDirectoryValidatingInProject(req.DirectoryID, req.ProjectID, req.User); err != nil {
 		return nil, err
 	}
 
@@ -197,17 +197,15 @@ func (s *idService) getProjectValidatingAccess(projectID, user string) (*schema.
 	}
 }
 
-// getDirectoryValidatingAccess retrieves the directory with the given directoryID. It checks access to the
+// getDirectoryValidatingInProject retrieves the directory with the given directoryID. It checks access to the
 // directory and validates that the directory exists in the given project.
-func (s *idService) getDirectoryValidatingAccess(directoryID, projectID, user string) (*schema.Directory, error) {
+func (s *idService) getDirectoryValidatingInProject(directoryID, projectID, user string) (*schema.Directory, error) {
 	dir, err := s.dirs.ByID(directoryID)
 	switch {
 	case err != nil:
 		return nil, err
 	case !s.projects.HasDirectory(projectID, directoryID):
 		return nil, app.ErrInvalid
-	case !s.access.AllowedByOwner(projectID, user):
-		return nil, app.ErrNoAccess
 	default:
 		return dir, nil
 	}
