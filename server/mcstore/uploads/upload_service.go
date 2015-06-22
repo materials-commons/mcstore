@@ -5,6 +5,8 @@ import (
 
 	"fmt"
 
+	"crypto/md5"
+
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -139,7 +141,8 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 
 	// Finish updating the file state.
 	finisher := newFinisher(s.files, s.dirs)
-	if err := finisher.finish(req, file.ID, s.tracker.hash(req.UploadID()), upload); err != nil {
+	checksum := s.determineChecksum(req, upload)
+	if err := finisher.finish(req, file.ID, checksum, upload); err != nil {
 		app.Log.Errorf("Assembly failed for request %s, couldn't finish request: %s", req.FlowIdentifier, err)
 		return file, err
 	}
@@ -171,6 +174,23 @@ func (s *uploadService) createDest(fileID string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *uploadService) determineChecksum(req *UploadRequest, upload *schema.Upload) string {
+	switch {
+	case upload.IsExisting:
+		// Existing file so use its checksum, no need to compute.
+		return upload.File.Checksum
+	case upload.ServerRestarted:
+		// Server was restarted, so checksum state in tracker is wrong. Read
+		// disk file to get the checksum.
+		uploadDir := s.requestPath.dir(req.Request)
+		return file.HashStr(md5.New(), filepath.Join(uploadDir, req.UploadID()))
+	default:
+		// Checksum in tracker is correct since its state has been properly
+		// updated as blocks are uploaded.
+		return s.tracker.hash(req.UploadID())
+	}
 }
 
 // cleanup is called when an error has occurred. It attempts to clean up
