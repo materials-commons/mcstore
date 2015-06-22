@@ -93,6 +93,7 @@ func (f *finisher) finish(req *UploadRequest, fileID, checksum string, upload *s
 		os.Remove(filePath)
 	}
 
+	f.setParentNotCurrent(parentID)
 	return f.files.UpdateFields(fileID, fields)
 }
 
@@ -114,8 +115,8 @@ func (f *finisher) parentID(fileName, dirID string) (parentID string, err error)
 	}
 
 	if err != nil && err == app.ErrNotFound {
-		// log error
-		return parentID, nil
+		// No matching file found so return empty parentID
+		return "", nil
 	}
 
 	return parentID, err
@@ -148,4 +149,16 @@ func (f *finisher) fileInDir(checksum, fileName, dirID string) bool {
 func (f *finisher) deleteUploadedFile(fileID string, upload *schema.Upload) {
 	f.files.Delete(fileID, upload.DirectoryID, upload.ProjectID)
 	os.Remove(app.MCDir.FilePath(fileID))
+}
+
+// setParentNotCurrent when parentID is not blank set file identified by parentID
+// as not current by setting the current field to false. Otherwise do nothing.
+func (f *finisher) setParentNotCurrent(parentID string) error {
+	if parentID != "" {
+		fields := map[string]interface{}{
+			schema.FileFields.Current(): false,
+		}
+		return f.files.UpdateFields(parentID, fields)
+	}
+	return nil
 }

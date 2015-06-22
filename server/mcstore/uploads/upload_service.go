@@ -123,15 +123,19 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 		return nil, err
 	}
 
-	// Create on disk entry to write chunks to
-	if err := s.createDest(file.ID); err != nil {
-		app.Log.Errorf("Assembly failed for request %s, couldn't create file on disk: %s", req.FlowIdentifier, err)
-		return file, err
-	}
+	// Check if this is an upload matching a file that has already been uploaded. If it isn't
+	// then copy over the data. If it is, then there isn't any uploaded data to copy over.
+	if !upload.IsExisting {
+		// Create on disk entry to write chunks to
+		if err := s.createDest(file.ID); err != nil {
+			app.Log.Errorf("Assembly failed for request %s, couldn't create file on disk: %s", req.FlowIdentifier, err)
+			return file, err
+		}
 
-	// Move file
-	uploadDir := s.requestPath.dir(req.Request)
-	s.fops.Rename(filepath.Join(uploadDir, req.UploadID()), app.MCDir.FilePath(file.ID))
+		// Move file
+		uploadDir := s.requestPath.dir(req.Request)
+		s.fops.Rename(filepath.Join(uploadDir, req.UploadID()), app.MCDir.FilePath(file.ID))
+	}
 
 	// Finish updating the file state.
 	finisher := newFinisher(s.files, s.dirs)
@@ -149,6 +153,7 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 // createFile creates the database file entry.
 func (s *uploadService) createFile(req *UploadRequest, upload *schema.Upload) (*schema.File, error) {
 	file := schema.NewFile(upload.File.Name, upload.ProjectOwner)
+	file.Current = false
 
 	f, err := s.files.Insert(&file, upload.DirectoryID, upload.ProjectID)
 	app.Log.Infof("Created file %s, in %s %s", f.ID, upload.DirectoryID, upload.ProjectID)
