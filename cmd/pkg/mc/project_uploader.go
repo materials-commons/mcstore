@@ -22,29 +22,37 @@ import (
 
 var _ = fmt.Println
 
+// projectUploader holds the starting state for a project upload. It controls
+// how many threads process requests.
 type projectUploader struct {
 	db         ProjectDB
 	numThreads int
 }
 
+// upload will upload the project. It starts a parallel walker to process entries.
 func (p *projectUploader) upload() error {
 	db := p.db
 	project := db.Project()
 
+	// create a func to process entries. Since we have some state to close over we create
+	// a closure here to call.
 	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 		u := newUploader(p.db, project)
 		u.uploadEntries(done, entries, result)
 	}
+
 	walker := files.PWalker{
 		NumParallel: p.numThreads,
 		ProcessFn:   fn,
 		ProcessDirs: true,
 	}
+
 	_, errc := walker.PWalk(project.Path)
 	err := <-errc
 	return err
 }
 
+// uploader holds the state for one upload thread.
 type uploader struct {
 	db         ProjectDB
 	serverAPI  *mcstore.ServerAPI
@@ -54,10 +62,22 @@ type uploader struct {
 	retryCount int
 }
 
+// defaultMinWaitBeforeRetry is the default minimum wait time before
+// a request is retried.
 const defaultMinWaitBeforeRetry = 100
+
+// defaultMaxWaitBeforeRetry is the default max wait time before
+// a request is retried.
 const defaultMaxWaitBeforeRetry = 5000
+
+// retryForever means we should retry requests forever. If requests shouldn't
+// be retried forever then the upload.retryCount should be set to a positive
+// number.
 const retryForever = -1
 
+// newUploader creates a new uploader. It creates a clone of the database,
+// sets minWait to defaultMinWaitBeforeRetry, maxWait to defaultMaxWaitBeforeRetry
+// and retryCount to retryForever.
 func newUploader(db ProjectDB, project *Project) *uploader {
 	return &uploader{
 		db:         db.Clone(),
@@ -69,6 +89,9 @@ func newUploader(db ProjectDB, project *Project) *uploader {
 	}
 }
 
+// uploadEntries waits on the entries and done channels. When  entry comes in on
+// the entries channel it will process it. If an something comes in on the done
+// channel then it will stop processing and return from the go routine.
 func (u *uploader) uploadEntries(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 	for entry := range entries {
 		select {
@@ -79,6 +102,8 @@ func (u *uploader) uploadEntries(done <-chan struct{}, entries <-chan files.Tree
 	}
 }
 
+// uploadEntry identifies the type of entry it is processing (file or directory) and
+// processes it appropriately.
 func (u *uploader) uploadEntry(entry files.TreeEntry) string {
 	switch {
 	case entry.Finfo.IsDir():
@@ -89,6 +114,9 @@ func (u *uploader) uploadEntry(entry files.TreeEntry) string {
 	return ""
 }
 
+// handleDirEntry handles processing of directories. It checks if the directory already exists in the
+// local database. If it doesn't it will create the directory on the server and insert the directory
+// into its local database.
 func (u *uploader) handleDirEntry(entry files.TreeEntry) {
 	path := filepath.ToSlash(entry.Finfo.Name())
 	_, err := u.db.FindDirectory(path)
@@ -103,6 +131,7 @@ func (u *uploader) handleDirEntry(entry files.TreeEntry) {
 	}
 }
 
+// createDirectory creates a new directory entry on the server.
 func (u *uploader) createDirectory(entry files.TreeEntry) {
 	dirPath := filepath.ToSlash(entry.Path)
 	req := mcstore.DirectoryRequest{
@@ -120,6 +149,8 @@ func (u *uploader) createDirectory(entry files.TreeEntry) {
 	}
 }
 
+// getDirectoryWithRetry will make the server API GetDirectory call. If it fails
+// it will retry (dependent on retry settings).
 func (u *uploader) getDirectoryWithRetry(req mcstore.DirectoryRequest) string {
 	var dirID string
 	fn := func() bool {
@@ -133,6 +164,8 @@ func (u *uploader) getDirectoryWithRetry(req mcstore.DirectoryRequest) string {
 	return dirID
 }
 
+// handleFileEntry will handle processing file entries. It will check if the file
+// has already been uploaded. If it hasn't it will upload the file to the server.
 func (u *uploader) handleFileEntry(entry files.TreeEntry) {
 	if dir := u.getDirByPath(filepath.Dir(entry.Path)); dir == nil {
 		app.Log.Panicf("Should have found dir")
@@ -149,6 +182,8 @@ func (u *uploader) handleFileEntry(entry files.TreeEntry) {
 	}
 }
 
+// getDirByPath looks up a path in the local database. It normalizes
+// the file separator.
 func (u *uploader) getDirByPath(path string) *Directory {
 	path = filepath.ToSlash(path)
 	dir, err := u.db.FindDirectory(path)
@@ -164,6 +199,7 @@ func (u *uploader) getDirByPath(path string) *Directory {
 	}
 }
 
+// getFileByName looks up a file by name and directory id in the local database.
 func (u *uploader) getFileByName(name string, dirID int64) *File {
 	f, err := u.db.FindFile(name, dirID)
 	switch {
@@ -177,6 +213,9 @@ func (u *uploader) getFileByName(name string, dirID int64) *File {
 	}
 }
 
+// uploadFile will upload the file blocks to the server. It will create an upload request
+// and then start uploading the blocks. When it completes it will update the local database
+// state for the file.
 func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory) {
 	uploadResponse, checksum := u.getUploadResponse(dir.DirectoryID, entry)
 	requestID := uploadResponse.RequestID
@@ -243,6 +282,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 	}
 }
 
+// getUploadResponse sends an upload request to the server and gets the response.
 func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) (*mcstore.CreateUploadResponse, string) {
 	// retry forever
 	checksum, _ := file.HashStr(md5.New(), entry.Path)
@@ -260,6 +300,8 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 	return resp, checksum
 }
 
+// createUplaodRequestWithRetry will make the server API CreateUploadRequest call. If it fails
+// it will retry (dependent on retry settings).
 func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRequest) *mcstore.CreateUploadResponse {
 	var resp *mcstore.CreateUploadResponse
 	fn := func() bool {
@@ -274,12 +316,15 @@ func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRe
 	return resp
 }
 
+// numChunks determines the number of chunks that will be sent to the server.
 func numChunks(size int64) int32 {
 	d := float64(size) / float64(1024*1024)
 	n := int(math.Ceil(d))
 	return int32(n)
 }
 
+// createUplaodRequestWithRetry will make the server API SendFlowData call. If it fails
+// it will retry (dependent on retry settings).
 func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunkResponse {
 	var resp *mcstore.UploadChunkResponse
 	fn := func() bool {
@@ -294,6 +339,11 @@ func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunk
 	return resp
 }
 
+// withRetry will retry the given func. The func should return true
+// when it is successful. It will retry retryCount times (forever
+// if retryCount is set to retryForever). When a call fails it will
+// sleep a random amount of time bounded by minWait and maxWait before
+// it retries the request.
 func (u *uploader) withRetry(fn func() bool) {
 	retryCounter := 0
 	for {
