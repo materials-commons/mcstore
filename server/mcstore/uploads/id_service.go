@@ -97,7 +97,8 @@ func (s *idService) createUploadRequest(req IDRequest, proj *schema.Project, dir
 	upload, err := s.findExisting(req, proj, dir)
 	switch {
 	case err == app.ErrNotFound:
-		return s.createNewUploadRequest(req, proj, dir)
+		upload := s.prepareUploadRequest(req, proj, dir)
+		return s.finishUploadRequest(upload)
 	case err != nil:
 		return nil, err
 	default:
@@ -119,14 +120,12 @@ func (s *idService) findExisting(req IDRequest, proj *schema.Project, dir *schem
 // createFinishedUpload will create an upload entry with all blocks marked as uploaded.
 func (s *idService) createFinishedUpload(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
 	// Create a new upload request and then set all blocks as already uploaded.
-	if upload, err := s.createNewUploadRequest(req, proj, dir); err != nil {
-		return nil, err
-	} else {
-		s.tracker.markAllBlocks(upload.ID)
-		s.tracker.setIsExistingFile(upload.ID, true)
-		upload.SetFBlocks(s.tracker.getBlocks(upload.ID))
-		return upload, nil
-	}
+	upload := s.prepareUploadRequest(req, proj, dir)
+	upload.IsExisting = true
+	s.tracker.markAllBlocks(upload.ID)
+	s.tracker.setIsExistingFile(upload.ID, true)
+	upload.SetFBlocks(s.tracker.getBlocks(upload.ID))
+	return s.finishUploadRequest(upload)
 }
 
 // findMatchingUploadRequest will search the set of upload requests and see if there
@@ -149,8 +148,8 @@ func (s *idService) findMatchingUploadRequest(req IDRequest) (*schema.Upload, er
 	return nil, app.ErrNotFound
 }
 
-// createNewUploadRequest creates a new upload request and inserts it into the database.
-func (s *idService) createNewUploadRequest(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
+// prepareUploadRequest creates a new upload request.
+func (s *idService) prepareUploadRequest(req IDRequest, proj *schema.Project, dir *schema.Directory) *schema.Upload {
 	n := uint(numBlocks(req.FileSize, req.ChunkSize))
 	upload := schema.CUpload().
 		Owner(req.User).
@@ -160,18 +159,24 @@ func (s *idService) createNewUploadRequest(req IDRequest, proj *schema.Project, 
 		Host(req.Host).
 		FName(req.FileName).
 		FSize(req.FileSize).
+		FChunk(req.ChunkSize, n).
 		FChecksum(req.Checksum).
 		FRemoteMTime(req.FileMTime).
 		FBlocks(bitset.New(n)).
 		Create()
-	u, err := s.uploads.Insert(&upload)
+	return &upload
+}
+
+// finishUploadRequest takes a prepared upload request, inserts it into the database and
+// initializes the state associated with the upload. If the upload fails to initialize
+// it will delete the upload request from the database.
+func (s *idService) finishUploadRequest(upload *schema.Upload) (*schema.Upload, error) {
+	u, err := s.uploads.Insert(upload)
 	if err != nil {
-		fmt.Println("insert err", err)
 		return nil, err
 	}
 
-	if err := s.initUpload(u.ID, req.FileSize, req.ChunkSize); err != nil {
-		fmt.Println("initUpload err", err)
+	if err := s.initUpload(u.ID, u.File.Size, u.File.ChunkSize); err != nil {
 		s.uploads.Delete(u.ID)
 		return nil, err
 	}
@@ -208,7 +213,8 @@ func (s *idService) getDirectoryValidatingAccess(directoryID, projectID, user st
 	}
 }
 
-// initUpload
+// initUpload initializes the upload state. It creates the directory to write
+// the upload blocks to and creates a tracker entry for the upload.
 func (s *idService) initUpload(id string, fileSize int64, chunkSize int32) error {
 	if err := s.requestPath.mkdirFromID(id); err != nil {
 		return err
