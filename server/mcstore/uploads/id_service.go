@@ -159,7 +159,7 @@ func (s *idService) prepareUploadRequest(req IDRequest, proj *schema.Project, di
 		Host(req.Host).
 		FName(req.FileName).
 		FSize(req.FileSize).
-		FChunk(req.ChunkSize, n).
+		FChunk(int(req.ChunkSize), int(n)).
 		FChecksum(req.Checksum).
 		FRemoteMTime(req.FileMTime).
 		FBlocks(bitset.New(n)).
@@ -176,7 +176,7 @@ func (s *idService) finishUploadRequest(upload *schema.Upload) (*schema.Upload, 
 		return nil, err
 	}
 
-	if err := s.initUpload(u.ID, u.File.Size, u.File.ChunkSize); err != nil {
+	if err := s.initUpload(u.ID, u.File.Size, int32(u.File.ChunkSize)); err != nil {
 		s.uploads.Delete(u.ID)
 		return nil, err
 	}
