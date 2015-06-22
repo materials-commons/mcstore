@@ -43,7 +43,9 @@ func (f *finisher) finish(req *UploadRequest, fileID, checksum string, upload *s
 
 	size := f.size(fileID)
 
-	if size != req.FlowTotalSize {
+	// There is no uploaded file when an upload request points to a file
+	// that has already been uploaded.
+	if !upload.IsExisting && size != req.FlowTotalSize {
 		app.Log.Errorf("Uploaded file (%s/%s) doesn't match the expected size. Expected:%d, Got: %d", upload.File.Name, req.FlowIdentifier, req.FlowTotalSize, size)
 		return app.ErrInvalid
 	}
