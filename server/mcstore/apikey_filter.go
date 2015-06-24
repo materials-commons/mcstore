@@ -25,6 +25,24 @@ func newAPIKeyFilter() *apikeyFilter {
 	}
 }
 
+// changes will monitor for changes to user apikeys and will
+// update the server with the new key.
+func (f *apikeyFilter) changes() {
+	var session *r.Session
+	go func() {
+		var c struct {
+			NewValue schema.User `gorethink:"new_value"`
+			OldValue schema.User `gorethink:"old_value"`
+		}
+		users, _ := r.Table("users").Changes().Run(session)
+		for users.Next(&c) {
+			if c.OldValue.APIKey != "" && c.OldValue.APIKey != c.NewValue.APIKey {
+				f.updateAPIKeyWithWriteLock(c.OldValue.APIKey, c.NewValue.APIKey, &c.NewValue)
+			}
+		}
+	}()
+}
+
 // Filter implements the Filter interface for apikey lookup. It checks if an apikey is
 // valid. If the apikey is found it sets the "user" attribute to the user structure. If
 // the apikey is invalid then the filter doesn't pass the request on, and instead returns
@@ -80,4 +98,11 @@ func (f *apikeyFilter) setUserWithWriteLock(apikey string, user *schema.User) {
 	f.mutex.Lock()
 
 	f.apikeys[apikey] = user
+}
+
+func (f *apikeyFilter) updateAPIKeyWithWriteLock(oldAPIkey, newAPIkey string, user *schema.User) {
+	defer f.mutex.Unlock()
+	f.mutex.Lock()
+	delete(f.apikeys, oldAPIkey)
+	f.apikeys[newAPIkey] = user
 }
