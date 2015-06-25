@@ -88,7 +88,7 @@ func configSetNotEmpty(key, value string) {
 // server implements the actual serve for mcstored. It sets up the http routes and handlers. This
 // method never returns.
 func server(port uint) {
-	container := mcstore.NewServicesContainer()
+	container := mcstore.NewServicesContainer(db.Sessions)
 	http.Handle("/", container)
 
 	session := db.RSessionMust()
