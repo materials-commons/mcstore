@@ -123,8 +123,8 @@ var _ = Describe("FinishRequest", func() {
 
 		Context("Connect to database", func() {
 			BeforeEach(func() {
-				files = dai.NewRFiles(testdb.RSession())
-				dirs = dai.NewRDirs(testdb.RSession())
+				files = dai.NewRFiles(testdb.RSessionMust())
+				dirs = dai.NewRDirs(testdb.RSessionMust())
 
 				// insert file we are going to test against
 				tfile := schema.NewFile("testfile1.txt", "test@mc.org")

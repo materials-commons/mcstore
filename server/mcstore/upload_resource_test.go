@@ -82,7 +82,7 @@ var _ = Describe("UploadResource", func() {
 				FileMTime:     time.Now().Format(time.RFC1123),
 				Checksum:      "abc123456",
 			}
-			uploads = dai.NewRUploads(testdb.RSession())
+			uploads = dai.NewRUploads(testdb.RSessionMust())
 		})
 
 		var (

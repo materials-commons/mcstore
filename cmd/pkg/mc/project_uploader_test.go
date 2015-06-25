@@ -14,8 +14,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/files"
-	"github.com/materials-commons/mcstore/server/mcstore"
 	"github.com/materials-commons/mcstore/pkg/testdb"
+	"github.com/materials-commons/mcstore/server/mcstore"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -43,7 +43,7 @@ var _ = Describe("ProjectUploader", func() {
 		rr = httptest.NewRecorder()
 		config.Set("mcurl", server.URL)
 		config.Set("apikey", "test")
-		uploads = dai.NewRUploads(testdb.RSession())
+		uploads = dai.NewRUploads(testdb.RSessionMust())
 		api = mcstore.NewServerAPI()
 		uploadRequest = mcstore.CreateUploadRequest{
 			ProjectID:     "test",

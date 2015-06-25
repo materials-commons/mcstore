@@ -17,7 +17,7 @@ var _ = Describe("RDirs", func() {
 	)
 
 	BeforeEach(func() {
-		session = testdb.RSession()
+		session = testdb.RSessionMust()
 		rdirs = NewRDirs(session)
 	})
 

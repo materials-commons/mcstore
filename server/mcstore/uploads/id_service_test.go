@@ -19,11 +19,11 @@ var _ = fmt.Println
 var _ = Describe("IDService", func() {
 
 	var (
-		users    = dai.NewRUsers(testdb.RSession())
-		files    = dai.NewRFiles(testdb.RSession())
-		dirs     = dai.NewRDirs(testdb.RSession())
-		projects = dai.NewRProjects(testdb.RSession())
-		uploads  = dai.NewRUploads(testdb.RSession())
+		users    = dai.NewRUsers(testdb.RSessionMust())
+		files    = dai.NewRFiles(testdb.RSessionMust())
+		dirs     = dai.NewRDirs(testdb.RSessionMust())
+		projects = dai.NewRProjects(testdb.RSessionMust())
+		uploads  = dai.NewRUploads(testdb.RSessionMust())
 		access   = domain.NewAccess(projects, files, users)
 		s        = &idService{
 			files:       files,

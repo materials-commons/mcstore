@@ -11,7 +11,7 @@ var _ = Describe("RUsers", func() {
 	var rusers Users
 
 	BeforeEach(func() {
-		rusers = NewRUsers(testdb.RSession())
+		rusers = NewRUsers(testdb.RSessionMust())
 	})
 
 	Describe("ByID", func() {

@@ -18,7 +18,7 @@ var _ = Describe("RFiles", func() {
 	var rfiles rFiles
 
 	BeforeEach(func() {
-		rfiles = NewRFiles(testdb.RSession())
+		rfiles = NewRFiles(testdb.RSessionMust())
 	})
 
 	Describe("ByID", func() {
@@ -46,7 +46,7 @@ var _ = Describe("RFiles", func() {
 				Expect(newFile.ID).To(Equal("test1.txt"))
 
 				// Check that the join tables were updated.
-				session := testdb.RSession()
+				session := testdb.RSessionMust()
 				var p2df []schema.Project2DataFile
 				rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(file.ID))
 				err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
@@ -82,7 +82,7 @@ var _ = Describe("RFiles", func() {
 				Expect(newFile.ID).NotTo(Equal(""))
 
 				// Check that the join tables were updated.
-				session := testdb.RSession()
+				session := testdb.RSessionMust()
 				var p2df []schema.Project2DataFile
 				rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(newFile.ID))
 				err = model.ProjectFiles.Qs(session).Rows(rql, &p2df)
@@ -187,7 +187,7 @@ var _ = Describe("RFiles", func() {
 })
 
 func deleteFile(fileID string) {
-	session := testdb.RSession()
+	session := testdb.RSessionMust()
 	model.Files.Qs(session).Delete(fileID)
 
 	rql := r.Table("project2datafile").Filter(r.Row.Field("datafile_id").Eq(fileID))

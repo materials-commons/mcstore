@@ -12,7 +12,7 @@ var _ = Describe("RUploads", func() {
 	var ruploads Uploads
 
 	BeforeEach(func() {
-		ruploads = NewRUploads(testdb.RSession())
+		ruploads = NewRUploads(testdb.RSessionMust())
 	})
 
 	Describe("For User", func() {

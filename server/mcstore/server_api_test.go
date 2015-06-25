@@ -35,7 +35,7 @@ var _ = Describe("ServerAPI", func() {
 		rr = httptest.NewRecorder()
 		config.Set("mcurl", server.URL)
 		config.Set("apikey", "test")
-		uploads = dai.NewRUploads(testdb.RSession())
+		uploads = dai.NewRUploads(testdb.RSessionMust())
 		api = NewServerAPI()
 		uploadRequest = CreateUploadRequest{
 			ProjectID:     "test",
@@ -191,7 +191,7 @@ var _ = Describe("ServerAPI", func() {
 
 	Describe("GetDirectory", func() {
 		var (
-			dirs       dai.Dirs = dai.NewRDirs(testdb.RSession())
+			dirs       dai.Dirs = dai.NewRDirs(testdb.RSessionMust())
 			dirID      string
 			dirRequest DirectoryRequest
 		)

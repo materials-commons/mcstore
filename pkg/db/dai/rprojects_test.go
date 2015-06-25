@@ -9,7 +9,7 @@ import (
 
 var _ = Describe("RProjects", func() {
 	var (
-		rprojs Projects = NewRProjects(testdb.RSession())
+		rprojs Projects = NewRProjects(testdb.RSessionMust())
 	)
 	Describe("ForUser", func() {
 		Context("ownedOnly", func() {
