@@ -17,7 +17,7 @@ import (
 
 type blockTrackerEntry struct {
 	bset         *bitset.BitSet
-	h            hash.Hash
+	hasher       hash.Hash
 	existingFile bool
 }
 
@@ -56,8 +56,7 @@ func (t *blockTracker) idExists(id string) bool {
 // so we adjust for the block in here.
 func (t *blockTracker) setBlock(id string, block int) {
 	t.withWriteLock(id, func(b *blockTrackerEntry) {
-		bset := t.reqBlocks[id].bset
-		bset.Set(uint(block - 1))
+		b.bset.Set(uint(block - 1))
 	})
 }
 
@@ -65,19 +64,18 @@ func (t *blockTracker) setBlock(id string, block int) {
 func (t *blockTracker) isBlockSet(id string, block int) bool {
 	var blockIsSet bool
 	t.withReadLock(id, func(b *blockTrackerEntry) {
-		bset := t.reqBlocks[id].bset
-		blockIsSet = bset.Test(uint(block))
+		blockIsSet = b.bset.Test(uint(block))
 	})
 	return blockIsSet
 }
 
 // load will load the blocks bitset for an id.
 func (t *blockTracker) load(id string, numBlocks int) {
-	t.withWriteLockNotExist(id, func(b *blockTrackerEntry) {
+	t.withWriteLockNotExist(id, func() {
 		bset := bitset.New(uint(numBlocks))
 		t.reqBlocks[id] = &blockTrackerEntry{
-			bset: bset,
-			h:    md5.New(),
+			bset:   bset,
+			hasher: md5.New(),
 		}
 	})
 }
@@ -85,17 +83,15 @@ func (t *blockTracker) load(id string, numBlocks int) {
 // clearBlock will unmark an block.
 func (t *blockTracker) clearBlock(id string, block int) {
 	t.withWriteLock(id, func(b *blockTrackerEntry) {
-		bset := t.reqBlocks[id].bset
-		bset.SetTo(uint(block-1), false)
+		b.bset.SetTo(uint(block-1), false)
 	})
 }
 
 // markAllBlocks will mark all the blocks in the bitset
 func (t *blockTracker) markAllBlocks(id string) {
 	t.withWriteLock(id, func(b *blockTrackerEntry) {
-		bset := t.reqBlocks[id].bset
-		bset.ClearAll()
-		bset = bset.Complement()
+		b.bset.ClearAll()
+		b.bset = b.bset.Complement()
 	})
 }
 
@@ -119,8 +115,7 @@ func (t *blockTracker) clear(id string) {
 func (t *blockTracker) hash(id string) string {
 	var hashStr string
 	t.withWriteLock(id, func(b *blockTrackerEntry) {
-		h := t.reqBlocks[id].h
-		hashStr = fmt.Sprintf("%x", h.Sum(nil))
+		hashStr = fmt.Sprintf("%x", b.hasher.Sum(nil))
 	})
 	return hashStr
 }
@@ -128,8 +123,7 @@ func (t *blockTracker) hash(id string) string {
 // addToHash will add to the hash for the blocks.
 func (t *blockTracker) addToHash(id string, what []byte) {
 	t.withWriteLock(id, func(b *blockTrackerEntry) {
-		h := t.reqBlocks[id].h
-		io.Copy(h, bytes.NewBuffer(what))
+		io.Copy(b.hasher, bytes.NewBuffer(what))
 	})
 }
 
@@ -174,11 +168,11 @@ func (t *blockTracker) withWriteLock(id string, fn func(b *blockTrackerEntry)) {
 
 // withWriteLockNotExist will take out a write lock, look up the given id in the hash
 // and call the given function with the lock if it doesn't find an entry.
-func (t *blockTracker) withWriteLockNotExist(id string, fn func(b *blockTrackerEntry)) {
+func (t *blockTracker) withWriteLockNotExist(id string, fn func()) {
 	defer t.mutex.Unlock()
 	t.mutex.Lock()
-	if val, ok := t.reqBlocks[id]; !ok {
-		fn(val)
+	if _, ok := t.reqBlocks[id]; !ok {
+		fn()
 	} else {
 		app.Log.Critf("withWriteLockNotExist critical error, located track id %s", id)
 	}
