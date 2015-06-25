@@ -15,7 +15,7 @@ func NewServicesContainer() *restful.Container {
 	}
 	container.Filter(databaseSessionFilter.Filter)
 
-	apikeyFilter := newAPIKeyFilter()
+	apikeyFilter := newAPIKeyFilter(apiKeyCache)
 	container.Filter(apikeyFilter.Filter)
 
 	uploadResource := newUploadResource()
