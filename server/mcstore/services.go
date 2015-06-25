@@ -7,11 +7,11 @@ import (
 
 // NewServicesContainer creates a new restful.Container made up of all
 // the rest resources handled by the server.
-func NewServicesContainer() *restful.Container {
+func NewServicesContainer(sc db.SessionCreater) *restful.Container {
 	container := restful.NewContainer()
 
 	databaseSessionFilter := &databaseSessionFilter{
-		session: db.RSession,
+		session: sc.RSession,
 	}
 	container.Filter(databaseSessionFilter.Filter)
 
@@ -20,7 +20,7 @@ func NewServicesContainer() *restful.Container {
 
 	// launch routine to track changes to users and
 	// update the keycache appropriately.
-	go updateKeyCacheOnChange(db.RSessionMust(), apiKeyCache)
+	go updateKeyCacheOnChange(sc.RSessionMust(), apiKeyCache)
 
 	uploadResource := newUploadResource()
 	container.Add(uploadResource.WebService())
