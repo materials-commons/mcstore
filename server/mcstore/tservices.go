@@ -10,12 +10,16 @@ import (
 func NewServicesContainerForTest() *restful.Container {
 	container := restful.NewContainer()
 	databaseSessionFilter := &databaseSessionFilter{
-		session: testdb.RSessionErr,
+		session: testdb.RSession,
 	}
 	container.Filter(databaseSessionFilter.Filter)
 
 	apikeyFilter := newAPIKeyFilter(apiKeyCache)
 	container.Filter(apikeyFilter.Filter)
+
+	// launch routine to track changes to users and
+	// update the keycache appropriately.
+	go updateKeyCacheOnChange(testdb.RSessionMust(), apiKeyCache)
 
 	uploadResource := newUploadResource()
 	container.Add(uploadResource.WebService())

@@ -18,6 +18,10 @@ func NewServicesContainer() *restful.Container {
 	apikeyFilter := newAPIKeyFilter(apiKeyCache)
 	container.Filter(apikeyFilter.Filter)
 
+	// launch routine to track changes to users and
+	// update the keycache appropriately.
+	go updateKeyCacheOnChange(db.RSessionMust(), apiKeyCache)
+
 	uploadResource := newUploadResource()
 	container.Add(uploadResource.WebService())
 
