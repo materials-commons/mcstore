@@ -3,8 +3,6 @@ package mcstore
 import (
 	"net/http"
 
-	"sync"
-
 	r "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
@@ -14,34 +12,37 @@ import (
 // apikeyFilter implements a filter for checking the apikey
 // passed in with a request.
 type apikeyFilter struct {
-	apikeys map[string]*schema.User
-	mutex   sync.RWMutex
+	keycache *apikeyCache
 }
 
 // newAPIKeyFilter creates a new apikeyFilter instance.
-func newAPIKeyFilter() *apikeyFilter {
+func newAPIKeyFilter(keycache *apikeyCache) *apikeyFilter {
 	return &apikeyFilter{
-		apikeys: make(map[string]*schema.User),
+		keycache: keycache,
 	}
 }
 
 // changes will monitor for changes to user apikeys and will
 // update the server with the new key.
-func (f *apikeyFilter) changes() {
-	var session *r.Session
-	go func() {
-		var c struct {
-			NewValue schema.User `gorethink:"new_value"`
-			OldValue schema.User `gorethink:"old_value"`
-		}
-		users, _ := r.Table("users").Changes().Run(session)
-		for users.Next(&c) {
-			if c.OldValue.APIKey != "" && c.OldValue.APIKey != c.NewValue.APIKey {
-				f.updateAPIKeyWithWriteLock(c.OldValue.APIKey, c.NewValue.APIKey, &c.NewValue)
-			}
-		}
-	}()
-}
+//func (f *apikeyFilter) changes() {
+//	var session *r.Session
+//	go func() {
+//		var c struct {
+//			NewUserValue schema.User `gorethink:"new_value"`
+//			OldUserValue schema.User `gorethink:"old_value"`
+//		}
+//		users, _ := r.Table("users").Changes().Run(session)
+//		for users.Next(&c) {
+//			switch {
+//			case c.OldUserValue.ID == "":
+//				// no old id, so new user added
+//				f.keycache.addKey(c.NewUserValue.APIKey, &c.NewUserValue)
+//			case c.OldUserValue.APIKey != "" && c.OldUserValue.APIKey != c.NewUserValue.APIKey:
+//				f.keycache.resetKey(c.OldUserValue.APIKey, c.NewUserValue.APIKey, &c.NewUserValue)
+//			}
+//		}
+//	}()
+//}
 
 // Filter implements the Filter interface for apikey lookup. It checks if an apikey is
 // valid. If the apikey is found it sets the "user" attribute to the user structure. If
@@ -68,41 +69,14 @@ func (f *apikeyFilter) getUser(apikey string, users dai.Users) (*schema.User, bo
 		return nil, false
 	}
 
-	user, found := f.getUserWithReadLock(apikey)
-	if !found {
+	if user := f.keycache.getUser(apikey); user == nil {
 		user, err := users.ByAPIKey(apikey)
 		if err != nil {
 			return nil, false
 		}
-		f.setUserWithWriteLock(apikey, user)
+		f.keycache.addKey(apikey, user)
+		return user, true
+	} else {
 		return user, true
 	}
-
-	return user, true
-}
-
-// getUserWithReadLock will acquire a read lock and look the user up in the
-// hash table cache.
-func (f *apikeyFilter) getUserWithReadLock(apikey string) (*schema.User, bool) {
-	defer f.mutex.RUnlock()
-	f.mutex.RLock()
-
-	user, found := f.apikeys[apikey]
-	return user, found
-}
-
-// setUserWithWriteLock will acquire a write lock and add the user to the
-// hash table cache.
-func (f *apikeyFilter) setUserWithWriteLock(apikey string, user *schema.User) {
-	defer f.mutex.Unlock()
-	f.mutex.Lock()
-
-	f.apikeys[apikey] = user
-}
-
-func (f *apikeyFilter) updateAPIKeyWithWriteLock(oldAPIkey, newAPIkey string, user *schema.User) {
-	defer f.mutex.Unlock()
-	f.mutex.Lock()
-	delete(f.apikeys, oldAPIkey)
-	f.apikeys[newAPIkey] = user
 }
