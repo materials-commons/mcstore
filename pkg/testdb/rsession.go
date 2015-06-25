@@ -5,6 +5,18 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db"
 )
 
+type sessionCreater struct{}
+
+var Sessions db.SessionCreater = &sessionCreater{}
+
+func (_ *sessionCreater) RSession() (*r.Session, error) {
+	return RSession()
+}
+
+func (_ *sessionCreater) RSessionMust() *r.Session {
+	return RSessionMust()
+}
+
 func RSessionMust() *r.Session {
 	return db.RSessionUsingMust("localhost:30815", "mctestdb")
 }

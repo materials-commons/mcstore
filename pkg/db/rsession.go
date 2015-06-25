@@ -5,6 +5,23 @@ import (
 	"github.com/materials-commons/config"
 )
 
+type SessionCreater interface {
+	RSession() (*r.Session, error)
+	RSessionMust() *r.Session
+}
+
+type sessionCreater struct{}
+
+var Sessions SessionCreater = &sessionCreater{}
+
+func (_ *sessionCreater) RSession() (*r.Session, error) {
+	return RSession()
+}
+
+func (_ *sessionCreater) RSessionMust() *r.Session {
+	return RSessionMust()
+}
+
 // RSession creates a new RethinkDB session.
 func RSession() (*r.Session, error) {
 	return r.Connect(
