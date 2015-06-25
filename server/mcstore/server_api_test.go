@@ -30,7 +30,7 @@ var _ = Describe("ServerAPI", func() {
 	)
 
 	BeforeEach(func() {
-		container = NewServicesContainerForTest()
+		container = NewServicesContainer(testdb.Sessions)
 		server = httptest.NewServer(container)
 		rr = httptest.NewRecorder()
 		config.Set("mcurl", server.URL)
