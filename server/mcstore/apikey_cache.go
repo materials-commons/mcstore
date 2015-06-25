@@ -27,9 +27,9 @@ func newAPIKeyCache() *apikeyCache {
 
 // getUser returns a user matching the given key. It
 // returns nil if no user matches the key.
-func (c *apikeyCache) getUser(apikey string) *schema.User {
+func (c *apikeyCache) getUser(key string) *schema.User {
 	var user *schema.User
-	c.withReadLock(apikey, func(u *schema.User) {
+	c.withReadLock(key, func(u *schema.User) {
 		user = u
 	})
 	return user
@@ -37,9 +37,9 @@ func (c *apikeyCache) getUser(apikey string) *schema.User {
 
 // addKey will add a new apikey/user mapping. If there is
 // already an entry matching this key then nothing happens.
-func (c *apikeyCache) addKey(apikey string, user *schema.User) {
-	c.withWriteLockNotExisting(apikey, func() {
-		c.apikeys[apikey] = user
+func (c *apikeyCache) addKey(key string, user *schema.User) {
+	c.withWriteLockNoSuchKey(key, func() {
+		c.apikeys[key] = user
 	})
 }
 
@@ -54,30 +54,30 @@ func (c *apikeyCache) resetKey(oldkey, newkey string, user *schema.User) {
 
 // withReadLock should only be called by the apikeyCache. It takes out
 // a read lock and if the given key is found it calls the passed func.
-func (c *apikeyCache) withReadLock(id string, fn func(user *schema.User)) {
+func (c *apikeyCache) withReadLock(key string, fn func(user *schema.User)) {
 	defer c.mutex.RUnlock()
 	c.mutex.RLock()
-	if user, found := c.apikeys[id]; found {
+	if user, found := c.apikeys[key]; found {
 		fn(user)
 	}
 }
 
 // withWriteLock should only be called by the apikeyCache. It takes out
 // a write lock and if the given key is found calls func.
-func (c *apikeyCache) withWriteLock(id string, fn func()) {
+func (c *apikeyCache) withWriteLock(key string, fn func()) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
-	if _, found := c.apikeys[id]; found {
+	if _, found := c.apikeys[key]; found {
 		fn()
 	}
 }
 
-// withWriteLockNotExisting should only be called by the apikeyCache. It
+// withWriteLockNoSuchKey should only be called by the apikeyCache. It
 // takes out a write lock and if the given key is not found calls func.
-func (c *apikeyCache) withWriteLockNotExisting(id string, fn func()) {
+func (c *apikeyCache) withWriteLockNoSuchKey(key string, fn func()) {
 	defer c.mutex.Unlock()
 	c.mutex.Lock()
-	if _, found := c.apikeys[id]; !found {
+	if _, found := c.apikeys[key]; !found {
 		fn()
 	}
 }
