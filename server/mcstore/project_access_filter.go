@@ -9,6 +9,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
+	"github.com/materials-commons/mcstore/pkg/ws"
 )
 
 type projectAccessFilterDAI struct {
@@ -42,7 +43,7 @@ func projectAccessFilter(request *restful.Request, response *restful.Response, c
 
 	f := newProjectAccessFilterDAI(session)
 	if project, err := f.getProjectValidatingAccess(p.ProjectID, user.ID); err != nil {
-		response.WriteErrorString(http.StatusUnauthorized, "No access to project")
+		ws.WriteError(err, response)
 	} else {
 		request.SetAttribute("project", *project)
 		chain.ProcessFilter(request, response)
