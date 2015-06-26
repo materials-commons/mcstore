@@ -112,7 +112,6 @@ func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error 
 			return err
 		}
 
-		fmt.Println("writing chunk", string(req.Chunk))
 		if _, err := f.Write(req.Chunk); err != nil {
 			app.Log.Critf("Failed writing chunk #%d for %s: %s", req.FlowChunkNumber, req.UploadID(), err)
 			return err
