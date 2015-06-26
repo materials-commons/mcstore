@@ -38,14 +38,13 @@ var _ = Describe("ServerAPI", func() {
 		uploads = dai.NewRUploads(testdb.RSessionMust())
 		api = NewServerAPI()
 		uploadRequest = CreateUploadRequest{
-			ProjectID:     "test",
-			DirectoryID:   "test",
-			DirectoryPath: "test/test",
-			FileName:      "testreq.txt",
-			FileSize:      4,
-			ChunkSize:     2,
-			FileMTime:     time.Now().Format(time.RFC1123),
-			Checksum:      "abc12345",
+			ProjectID:   "test",
+			DirectoryID: "test",
+			FileName:    "testreq.txt",
+			FileSize:    4,
+			ChunkSize:   2,
+			FileMTime:   time.Now().Format(time.RFC1123),
+			Checksum:    "abc12345",
 		}
 	})
 
