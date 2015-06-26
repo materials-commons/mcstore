@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"time"
 
+	"net/http"
+
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/gohandy/ezhttp"
@@ -15,7 +17,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/parnurzeal/gorequest"
 	"github.com/willf/bitset"
-	"net/http"
 )
 
 var _ = fmt.Println
@@ -334,7 +335,7 @@ var _ = Describe("UploadResource", func() {
 				r, _, errs := client.Get(Url("/upload/bad-project-id")).End()
 				err := ToError(r, errs)
 				Expect(err).ToNot(BeNil())
-				Expect(r.StatusCode).To(BeNumerically("==", http.StatusBadRequest))
+				Expect(r.StatusCode).To(BeNumerically("==", http.StatusNotFound))
 			})
 
 			It("Should get existing upload requests for a project", func() {
