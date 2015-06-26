@@ -32,22 +32,33 @@ func projectAccessFilter(request *restful.Request, response *restful.Response, c
 	user := request.Attribute("user").(schema.User)
 	session := request.Attribute("session").(*r.Session)
 
+	if projectID := getProjectID(request); projectID == "" {
+		response.WriteErrorString(http.StatusNotAcceptable, "No project id found")
+	} else {
+		f := newProjectAccessFilterDAI(session)
+		if project, err := f.getProjectValidatingAccess(projectID, user.ID); err != nil {
+			ws.WriteError(err, response)
+		} else {
+			request.SetAttribute("project", *project)
+			chain.ProcessFilter(request, response)
+		}
+	}
+}
+
+// getProjectID retrieves the project ID by first checking the path parameter and if
+// that fails then checking the payload.
+func getProjectID(request *restful.Request) string {
 	var p struct {
 		ProjectID string `json:"project_id"`
 	}
 
-	if err := request.ReadEntity(&p); err != nil {
-		response.WriteErrorString(http.StatusNotAcceptable, "No project_id found")
-		return
+	if p.ProjectID = request.PathParameter("project"); p.ProjectID != "" {
+		return p.ProjectID
+	} else if err := request.ReadEntity(&p); err == nil {
+		return p.ProjectID
 	}
 
-	f := newProjectAccessFilterDAI(session)
-	if project, err := f.getProjectValidatingAccess(p.ProjectID, user.ID); err != nil {
-		ws.WriteError(err, response)
-	} else {
-		request.SetAttribute("project", *project)
-		chain.ProcessFilter(request, response)
-	}
+	return ""
 }
 
 // getProjectValidatingAccess retrieves the project with the given projectID. It checks that the
