@@ -75,7 +75,6 @@ var _ = Describe("UploadResource", func() {
 			uploadRequest = CreateUploadRequest{
 				ProjectID:     "test",
 				DirectoryID:   "test",
-				DirectoryPath: "test/test",
 				FileName:      "testreq.txt",
 				FileSize:      4,
 				ChunkSize:     2,
