@@ -60,7 +60,7 @@ func (r *uploadResource) WebService() *restful.WebService {
 		Doc("Deletes an existing upload request").
 		Param(ws.PathParameter("id", "upload request to delete").DataType("string")))
 
-	ws.Route(ws.GET("{project}").To(rest.RouteHandler(r.listProjectUploadRequests)).
+	ws.Route(ws.GET("{project}").Filter(projectAccessFilter).To(rest.RouteHandler(r.listProjectUploadRequests)).
 		Param(ws.PathParameter("project", "project id").DataType("string")).
 		Doc("Lists upload requests for project").
 		Writes([]UploadEntry{}))
@@ -218,8 +218,8 @@ func (r *uploadResource) deleteUploadRequest(request *restful.Request, response 
 func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	session := request.Attribute("session").(*rethinkdb.Session)
 	idService := uploads.NewIDService(session)
-	projectID := request.PathParameter("project")
-	entries, err := idService.UploadsForProject(projectID, user.ID)
+	project := request.Attribute("project").(schema.Project)
+	entries, err := idService.UploadsForProject(project.ID)
 	switch {
 	case err == app.ErrNotFound:
 		var uploads []UploadEntry

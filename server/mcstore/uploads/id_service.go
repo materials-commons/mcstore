@@ -37,7 +37,7 @@ type IDRequest struct {
 type IDService interface {
 	ID(req IDRequest) (*schema.Upload, error)
 	Delete(requestID, user string) error
-	UploadsForProject(projectID, user string) ([]schema.Upload, error)
+	UploadsForProject(projectID string) ([]schema.Upload, error)
 }
 
 // idService implements the IDService interface using
@@ -201,29 +201,6 @@ func (s *idService) Delete(requestID, user string) error {
 }
 
 // ListForProject will return all the uploads associated with a project.
-func (s *idService) UploadsForProject(projectID, user string) ([]schema.Upload, error) {
-	_, err := s.getProjectValidatingAccess(projectID, user)
-	switch {
-	case err == app.ErrNotFound:
-		// Invalid project
-		return nil, app.ErrInvalid
-	case err != nil:
-		return nil, err
-	default:
-		return s.uploads.ForProject(projectID)
-	}
-}
-
-// getProjectValidatingAccess retrieves the project with the given projectID. It checks that the
-// given user has access to that project.
-func (s *idService) getProjectValidatingAccess(projectID, user string) (*schema.Project, error) {
-	project, err := s.projects.ByID(projectID)
-	switch {
-	case err != nil:
-		return nil, err
-	case !s.access.AllowedByOwner(projectID, user):
-		return nil, app.ErrNoAccess
-	default:
-		return project, nil
-	}
+func (s *idService) UploadsForProject(projectID string) ([]schema.Upload, error) {
+	return s.uploads.ForProject(projectID)
 }
