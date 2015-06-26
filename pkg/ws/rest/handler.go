@@ -35,7 +35,7 @@ func RouteHandler(f RouteFunc) restful.RouteFunction {
 		val, err := f(request, response, user)
 		switch {
 		case err != nil:
-			httpErr := ws.ErrorToHTTPError(err)
+			httpErr := ws.ToHTTPError(err)
 			httpErr.Write(response)
 		case val != nil:
 			err = response.WriteEntity(val)
