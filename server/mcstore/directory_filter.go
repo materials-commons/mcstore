@@ -5,22 +5,10 @@ import (
 
 	r "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
-	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
+	"github.com/materials-commons/mcstore/pkg/ws"
 )
-
-type directoryFilterDAI struct {
-	projects dai.Projects
-	dirs     dai.Dirs
-}
-
-func newDirectoryFilterDAI(session *r.Session) *directoryFilterDAI {
-	return &directoryFilterDAI{
-		projects: dai.NewRProjects(session),
-		dirs:     dai.NewRDirs(session),
-	}
-}
 
 func directoryFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	project := request.Attribute("project").(schema.Project)
@@ -30,30 +18,23 @@ func directoryFilter(request *restful.Request, response *restful.Response, chain
 		DirectoryID string `json:"directory_id"`
 	}
 
-	if err := request.ReadEntity(&d); err != nil {
-		response.WriteErrorString(http.StatusNotAcceptable, "No directory_id found")
-		return
-	}
+	err := request.ReadEntity(&d)
 
-	f := newDirectoryFilterDAI(session)
-	if directory, err := f.getDirectory(d.DirectoryID, project.ID); err != nil {
-		response.WriteErrorString(http.StatusNotAcceptable, "Unknown directory_id")
-	} else {
-		request.SetAttribute("directory", *directory)
-		chain.ProcessFilter(request, response)
-	}
-}
-
-// getDirectoryValidatingAccess retrieves the directory with the given directoryID. It checks
-// that the directory exists in the given project.
-func (d *directoryFilterDAI) getDirectory(directoryID, projectID string) (*schema.Directory, error) {
-	dir, err := d.dirs.ByID(directoryID)
 	switch {
 	case err != nil:
-		return nil, err
-	case !d.projects.HasDirectory(projectID, directoryID):
-		return nil, app.ErrInvalid
+		response.WriteErrorString(http.StatusNotAcceptable, "No directory_id found")
+	case d.DirectoryID == "":
+		response.WriteErrorString(http.StatusNotAcceptable, "No directory_id found")
 	default:
-		return dir, nil
+		dirs := dai.NewRDirs(session)
+		projects := dai.NewRProjects(session)
+		if dir, err := dirs.ByID(d.DirectoryID); err != nil {
+			ws.WriteError(err, response)
+		} else if !projects.HasDirectory(project.ID, dir.ID) {
+			response.WriteErrorString(http.StatusNotAcceptable, "Uknown directory for project")
+		} else {
+			request.SetAttribute("directory", *dir)
+			chain.ProcessFilter(request, response)
+		}
 	}
 }
