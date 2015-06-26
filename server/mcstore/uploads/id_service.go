@@ -70,30 +70,7 @@ func NewIDService(session *r.Session) *idService {
 }
 
 // ID will create a new Upload request or return an existing one.
-func (s *idService) ID(req IDRequest) (*schema.Upload, error) {
-	var (
-		err  error
-		proj *schema.Project
-		dir  *schema.Directory
-	)
-
-	// Check that project exists and user has access
-	if proj, err = s.getProjectValidatingAccess(req.ProjectID, req.User); err != nil {
-		return nil, err
-	}
-
-	// Check that directory exists and user has access
-	if dir, err = s.getDirectoryValidatingInProject(req.DirectoryID, req.ProjectID, req.User); err != nil {
-		return nil, err
-	}
-
-	return s.createUploadRequest(req, proj, dir)
-}
-
-// createUploadRequest will create an upload. It checks if there is a matching file or an existing upload.
-// If it finds a matching file it returns a finished upload. If it finds an existing upload it returns it,
-// otherwise it returns a new upload.
-func (s *idService) createUploadRequest(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
+func (s *idService) ID(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
 	upload, err := s.findExisting(req, proj, dir)
 	switch {
 	case err == app.ErrNotFound:
@@ -183,34 +160,6 @@ func (s *idService) finishUploadRequest(upload *schema.Upload) (*schema.Upload, 
 	return u, nil
 }
 
-// getProjectValidatingAccess retrieves the project with the given projectID. It checks that the
-// given user has access to that project.
-func (s *idService) getProjectValidatingAccess(projectID, user string) (*schema.Project, error) {
-	project, err := s.projects.ByID(projectID)
-	switch {
-	case err != nil:
-		return nil, err
-	case !s.access.AllowedByOwner(projectID, user):
-		return nil, app.ErrNoAccess
-	default:
-		return project, nil
-	}
-}
-
-// getDirectoryValidatingInProject retrieves the directory with the given directoryID. It checks access to the
-// directory and validates that the directory exists in the given project.
-func (s *idService) getDirectoryValidatingInProject(directoryID, projectID, user string) (*schema.Directory, error) {
-	dir, err := s.dirs.ByID(directoryID)
-	switch {
-	case err != nil:
-		return nil, err
-	case !s.projects.HasDirectory(projectID, directoryID):
-		return nil, app.ErrInvalid
-	default:
-		return dir, nil
-	}
-}
-
 // initUpload initializes the upload state. It creates the directory to write
 // the upload blocks to and creates a tracker entry for the upload.
 func (s *idService) initUpload(id string, fileSize int64, chunkSize int32) error {
@@ -262,5 +211,19 @@ func (s *idService) UploadsForProject(projectID, user string) ([]schema.Upload, 
 		return nil, err
 	default:
 		return s.uploads.ForProject(projectID)
+	}
+}
+
+// getProjectValidatingAccess retrieves the project with the given projectID. It checks that the
+// given user has access to that project.
+func (s *idService) getProjectValidatingAccess(projectID, user string) (*schema.Project, error) {
+	project, err := s.projects.ByID(projectID)
+	switch {
+	case err != nil:
+		return nil, err
+	case !s.access.AllowedByOwner(projectID, user):
+		return nil, app.ErrNoAccess
+	default:
+		return project, nil
 	}
 }

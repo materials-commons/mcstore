@@ -46,7 +46,7 @@ func (r *uploadResource) WebService() *restful.WebService {
 
 	ws.Path("/upload").Produces(restful.MIME_JSON).Consumes(restful.MIME_JSON)
 
-	ws.Route(ws.POST("").To(rest.RouteHandler(r.createUploadRequest)).
+	ws.Route(ws.POST("").Filter(projectAccessFilter).Filter(directoryFilter).To(rest.RouteHandler(r.createUploadRequest)).
 		Doc("Creates a new upload request").
 		Reads(CreateUploadRequest{}).
 		Writes(CreateUploadResponse{}))
@@ -71,14 +71,13 @@ func (r *uploadResource) WebService() *restful.WebService {
 // CreateRequest describes the JSON request a client will send
 // to create a new upload request.
 type CreateUploadRequest struct {
-	ProjectID     string `json:"project_id"`
-	DirectoryID   string `json:"directory_id"`
-	DirectoryPath string `json:"directory_path"`
-	FileName      string `json:"filename"`
-	FileSize      int64  `json:"filesize"`
-	ChunkSize     int32  `json:"chunk_size"`
-	FileMTime     string `json:"filemtime"`
-	Checksum      string `json: "checksum"`
+	ProjectID   string `json:"project_id"`
+	DirectoryID string `json:"directory_id"`
+	FileName    string `json:"filename"`
+	FileSize    int64  `json:"filesize"`
+	ChunkSize   int32  `json:"chunk_size"`
+	FileMTime   string `json:"filemtime"`
+	Checksum    string `json: "checksum"`
 }
 
 // uploadCreateResponse is the format of JSON sent back containing
@@ -88,50 +87,39 @@ type CreateUploadResponse struct {
 	StartingBlock uint   `json:"starting_block"`
 }
 
-type uploadRequester struct {
-	idService  uploads.IDService
-	dirService DirService
-}
-
-func newUploadRequester(session *rethinkdb.Session) *uploadRequester {
-	return &uploadRequester{
-		idService:  uploads.NewIDService(session),
-		dirService: newDirService(session),
-	}
-}
-
 // createUploadRequest services requests to create a new upload id. It validates
 // the given request, and ensures that the returned upload id is unique. Upload
 // requests are persisted until deleted or a successful upload occurs.
 func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	session := request.Attribute("session").(*rethinkdb.Session)
-	uploadRequester := newUploadRequester(session)
-	cr, err := uploadRequester.request2IDRequest(request, user.ID)
-	if err != nil {
+	if cr, err := request2IDRequest(request, user.ID); err != nil {
 		app.Log.Debugf("request2IDRequst failed", err)
 		return nil, err
+	} else {
+		session := request.Attribute("session").(*rethinkdb.Session)
+		project := request.Attribute("project").(schema.Project)
+		directory := request.Attribute("directory").(schema.Directory)
+		idService := uploads.NewIDService(session)
+
+		if upload, err := idService.ID(cr, &project, &directory); err != nil {
+			app.Log.Debugf("idService.ID failed", err)
+			return nil, err
+		} else {
+			startingBlock := findStartingBlock(upload.File.Blocks)
+			resp := CreateUploadResponse{
+				RequestID:     upload.ID,
+				StartingBlock: startingBlock,
+			}
+			return &resp, nil
+		}
 	}
-
-	upload, err := uploadRequester.idService.ID(cr)
-	if err != nil {
-		app.Log.Debugf("idService.ID failed", err)
-		return nil, err
-	}
-
-	startingBlock := findStartingBlock(upload.File.Blocks)
-
-	resp := CreateUploadResponse{
-		RequestID:     upload.ID,
-		StartingBlock: startingBlock,
-	}
-
-	return &resp, nil
 }
 
 // request2IDRequest fills out an id request to send to the idService. It handles request parameter errors.
-func (u *uploadRequester) request2IDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
-	var req CreateUploadRequest
-	var cr uploads.IDRequest
+func request2IDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
+	var (
+		req CreateUploadRequest
+		cr  uploads.IDRequest
+	)
 
 	if err := request.ReadEntity(&req); err != nil {
 		app.Log.Debugf("request2IDRequest ReadEntity failed: %s", err)
@@ -150,15 +138,9 @@ func (u *uploadRequester) request2IDRequest(request *restful.Request, userID str
 		req.ChunkSize = 1024 * 1024
 	}
 
-	directoryID, err := u.getDirectoryID(req)
-	if err != nil {
-		app.Log.Debugf("makeIDRequest getDirectoryID failed: %s", err)
-		return cr, err
-	}
-
 	cr = uploads.IDRequest{
 		User:        userID,
-		DirectoryID: directoryID,
+		DirectoryID: req.DirectoryID,
 		ProjectID:   req.ProjectID,
 		FileName:    req.FileName,
 		FileSize:    req.FileSize,
@@ -170,27 +152,6 @@ func (u *uploadRequester) request2IDRequest(request *restful.Request, userID str
 	}
 
 	return cr, nil
-}
-
-// getDirectoryID returns the directoryID. A user can pass either a directoryID
-// or a directory path. If a directory path is passed in, then the method will
-// get the directoryID associated with that path in the project. If the path
-// doesn't exist it will create it.
-func (u *uploadRequester) getDirectoryID(req CreateUploadRequest) (directoryID string, err error) {
-	switch {
-	case req.DirectoryID == "" && req.DirectoryPath == "":
-		app.Log.Debugf("No directoryID or directoryPath specified")
-		return "", app.ErrInvalid
-	case req.DirectoryID != "":
-		return req.DirectoryID, nil
-	default:
-		dir, err := u.dirService.createDir(req.ProjectID, req.DirectoryPath)
-		if err != nil {
-			app.Log.Debugf("CreateDir %s %s failed: %s", req.ProjectID, req.DirectoryPath, err)
-			return "", err
-		}
-		return dir.ID, nil
-	}
 }
 
 // findStartingBlock returns the block to start at. Blocks start
