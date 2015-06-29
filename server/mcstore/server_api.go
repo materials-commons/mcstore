@@ -140,3 +140,17 @@ func toProjectPath(projectName, path string) (string, error) {
 	}
 	return filepath.ToSlash(path[i:]), nil
 }
+
+func (s *ServerAPI) CreateProject(req CreateProjectRequest) (*CreateProjectResponse, error) {
+	var response CreateProjectResponse
+	sc, err := s.client.JSON(&req).JSONPost(Url("/projects"), &response)
+	if err != nil {
+		return nil, err
+	}
+
+	err = HTTPStatusToError(sc)
+	if err != nil {
+		return nil, err
+	}
+	return &response, nil
+}
