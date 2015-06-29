@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"github.com/materials-commons/gohandy/file"
 )
 
 // A TreeEntry is passed along the channel to the process function.
@@ -89,9 +90,10 @@ func (p *PWalker) walkFiles(done <-chan struct{}, root string) (<-chan TreeEntry
 				}
 
 				// This is an entry we can process, so send it along the fileChan
+				exfi, _ := file.ExStatFromFileInfo(finfo, path)
 				entry := TreeEntry{
 					Path:  path,
-					Finfo: finfo,
+					Finfo: exfi,
 				}
 				select {
 				case filesChan <- entry:
