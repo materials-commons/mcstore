@@ -21,8 +21,8 @@
 		},
 		{
 			"ImportPath": "github.com/codegangsta/cli",
-			"Comment": "1.2.0-106-ga889873",
-			"Rev": "a889873af50a499d060097216dcdbcc26ed09e7c"
+			"Comment": "1.2.0-107-g942282e",
+			"Rev": "942282e931e8286aa802a30b01fa7e16befb50f3"
 		},
 		{
 			"ImportPath": "github.com/coreos/go-etcd/etcd",
@@ -48,9 +48,17 @@
 			"Rev": "efd7476481382c195beb33acd8ec2f1527167fb4"
 		},
 		{
+			"ImportPath": "github.com/gtarcea/1DevDayTalk2014/app",
+			"Rev": "5c7d83beebb5c9efe70cdb5f82926f02bbf98ecb"
+		},
+		{
+			"ImportPath": "github.com/gtarcea/1DevDayTalk2014/schema",
+			"Rev": "5c7d83beebb5c9efe70cdb5f82926f02bbf98ecb"
+		},
+		{
 			"ImportPath": "github.com/hashicorp/consul/api",
-			"Comment": "v0.4.1-366-gf2e1065",
-			"Rev": "f2e1065246cb49aa7d0bfa07f4e93e6bb569841f"
+			"Comment": "v0.5.0-267-g480c189",
+			"Rev": "480c189d9afa27f41d6b134a46b2afd700df42a7"
 		},
 		{
 			"ImportPath": "github.com/inconshreveable/log15",
@@ -69,17 +77,17 @@
 		},
 		{
 			"ImportPath": "github.com/materials-commons/config",
-			"Rev": "0324c5548ccba1266166e6efcc430af1e64a1272"
+			"Rev": "aa73a1105b10121b75fa60659f63b078e998d7f7"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/gohandy/ezhttp",
-			"Comment": "v0.1-62-g3a94c10",
-			"Rev": "3a94c10afeea7923e48277341953f18a0088fe0a"
+			"Comment": "v0.1-67-g86320b4",
+			"Rev": "86320b48da6f34fa56c192ee304d28e78306f5b6"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/gohandy/file",
-			"Comment": "v0.1-62-g3a94c10",
-			"Rev": "3a94c10afeea7923e48277341953f18a0088fe0a"
+			"Comment": "v0.1-67-g86320b4",
+			"Rev": "86320b48da6f34fa56c192ee304d28e78306f5b6"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/testify/mock",
@@ -94,14 +102,18 @@
 			"Rev": "542ae647f8601bafd96233961b150cae198e0295"
 		},
 		{
+			"ImportPath": "github.com/olekukonko/tablewriter",
+			"Rev": "bc39950e081b457853031334b3c8b95cdfe428ba"
+		},
+		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Comment": "v1.2.0-beta-17-gc5c7614",
-			"Rev": "c5c761488350e56a28c4a91da87e5db7020bedc8"
+			"Comment": "v1.2.0-beta",
+			"Rev": "0efbdc3a60137c0757b84e994a56037378170913"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-48-g766f404",
-			"Rev": "766f4042b942146e90594d145c5071fa92c0aa9a"
+			"Comment": "v1.0-43-gf4f1cae",
+			"Rev": "f4f1caefe95e396ea97b72dd6c52973ae4a6978c"
 		},
 		{
 			"ImportPath": "github.com/parnurzeal/gorequest",
@@ -143,11 +155,13 @@
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/ssh/terminal",
-			"Rev": "24ffb5feb3312a39054178a4b0a4554fc2201248"
+			"Comment": "null-236",
+			"Rev": "69e2a90ed92d03812364aeb947b7068dc42e561e"
 		},
 		{
 			"ImportPath": "golang.org/x/net/publicsuffix",
-			"Rev": "e0403b4e005737430c05a57aac078479844f919c"
+			"Comment": "null-223",
+			"Rev": "5dedbdc181629d2f3557caf2667e60eb82c5e6d7"
 		},
 		{
 			"ImportPath": "gopkg.in/yaml.v1",

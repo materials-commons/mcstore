@@ -129,7 +129,6 @@ func (r *SuiteRunner) RunSuites(runners []*testrunner.TestRunner, numCompilers i
 			suiteRunResult = compilationOutput.runner.Run()
 		}
 		r.notifier.SendSuiteCompletionNotification(compilationOutput.runner.Suite, suiteRunResult.Passed)
-		r.notifier.RunCommand(compilationOutput.runner.Suite, suiteRunResult.Passed)
 		runResult = runResult.Merge(suiteRunResult)
 		if !suiteRunResult.Passed {
 			suitesThatFailed = append(suitesThatFailed, compilationOutput.runner.Suite)

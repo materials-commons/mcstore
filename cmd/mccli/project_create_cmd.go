@@ -264,12 +264,11 @@ func (i *indexer) findFileDirectory(entry files.TreeEntry) *mc.Directory {
 
 func (i *indexer) createUploadRequest(entry files.TreeEntry, dir *mc.Directory) (string, error) {
 	req := mcstore.CreateUploadRequest{
-		ProjectID:     args.projectID,
-		DirectoryID:   dir.DirectoryID,
-		DirectoryPath: dir.Path,
-		FileName:      entry.Finfo.Name(),
-		FileSize:      entry.Finfo.Size(),
-		FileMTime:     entry.Finfo.ModTime().Format(time.RFC1123),
+		ProjectID:   args.projectID,
+		DirectoryID: dir.DirectoryID,
+		FileName:    entry.Finfo.Name(),
+		FileSize:    entry.Finfo.Size(),
+		FileMTime:   entry.Finfo.ModTime().Format(time.RFC1123),
 	}
 	var resp mcstore.CreateUploadResponse
 	if err := sendRequest(i.client, "/upload", req, &resp); err != nil {

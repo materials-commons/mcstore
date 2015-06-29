@@ -112,23 +112,23 @@ func decodeJSONResponse(resp *http.Response, out interface{}) (int, error) {
 }
 
 // PostFile posts a whole file
-func (c *EzClient) PostFile(url, filepath, formName string, params map[string]string) (int, error) {
+func (c *EzClient) PostFile(url, filepath, formName string, params map[string]string) (int, error, string) {
 	// Read file into form
 	file, err := os.Open(filepath)
 	if err != nil {
-		return 0, err
+		return 0, err, ""
 	}
 	defer file.Close()
 
 	fileContents, err := ioutil.ReadAll(file)
 	if err != nil {
-		return 0, err
+		return 0, err, ""
 	}
 	return c.PostFileBytes(url, filepath, formName, fileContents, params)
 }
 
 // PostFileBytes posts a range of bytes
-func (c *EzClient) PostFileBytes(url, filepath, formName string, contents []byte, params map[string]string) (int, error) {
+func (c *EzClient) PostFileBytes(url, filepath, formName string, contents []byte, params map[string]string) (int, error, string) {
 	// Setup body
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
@@ -136,7 +136,7 @@ func (c *EzClient) PostFileBytes(url, filepath, formName string, contents []byte
 	// Create file form
 	part, err := writer.CreateFormFile(formName, filepath)
 	if err != nil {
-		return 0, err
+		return 0, err, ""
 	}
 
 	part.Write(contents)
@@ -161,8 +161,8 @@ func (c *EzClient) PostFileBytes(url, filepath, formName string, contents []byte
 
 	// Return status and any error code
 	if resp.StatusCode > 299 {
-		return resp.StatusCode, errors.New(string(b))
+		return resp.StatusCode, errors.New(string(b)), ""
 	}
 
-	return resp.StatusCode, nil
+	return resp.StatusCode, nil, string(b)
 }

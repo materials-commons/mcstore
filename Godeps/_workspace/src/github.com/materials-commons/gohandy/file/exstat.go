@@ -26,6 +26,11 @@ func ExStat(path string) (fileInfo ExFileInfo, err error) {
 	return exfi, nil
 }
 
+// ExStatFromFileInfo takes a os.FileInfo and a path and returns an ExFileInfo.
+func ExStatFromFileInfo(fi os.FileInfo, path string) (ExFileInfo, error) {
+	return systemExFileInfo(fi, path), nil
+}
+
 // stdExFileInfo is a version of the ExFileInfo where the extended
 // attributes are given by the user.
 type stdExFileInfo struct {

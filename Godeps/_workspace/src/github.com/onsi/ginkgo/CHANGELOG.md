@@ -1,9 +1,3 @@
-## HEAD
-
-Improvements
-
-- `ginkgo -coverpkg` calls down to `go test -coverpkg` (#160)
-
 ## 1.2.0-beta
 
 Ginkgo now requires Go 1.4+

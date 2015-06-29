@@ -45,6 +45,7 @@ func main() {
 		mccli.MonitorCommand,
 		mccli.SetupCommand,
 		mccli.LoginCommand,
+		mccli.ShowCommand,
 	}
 	app.Run(os.Args)
 }
