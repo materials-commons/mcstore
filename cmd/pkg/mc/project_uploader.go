@@ -37,8 +37,8 @@ func (p *projectUploader) upload() error {
 	// create a func to process entries. Since we have some state to close over we create
 	// a closure here to call.
 	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
-		u := newUploader(p.db, project)
-		u.uploadEntries(done, entries, result)
+		uploader := newUploader(p.db, project)
+		uploader.uploadEntries(done, entries, result)
 	}
 
 	walker := files.PWalker{
@@ -174,7 +174,7 @@ func (u *uploader) handleFileEntry(entry files.TreeEntry) {
 		switch {
 		case file == nil:
 			u.uploadFile(entry, file, dir)
-		case entry.Finfo.ModTime().Unix() > file.LastUpload.Unix():
+		case entry.Finfo.ModTime().Unix() > file.MTime.Unix():
 			u.uploadFile(entry, file, dir)
 		default:
 			// nothing to do
