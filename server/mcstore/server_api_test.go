@@ -232,4 +232,49 @@ var _ = Describe("ServerAPI", func() {
 			Expect(dirID).To(ContainSubstring("-"))
 		})
 	})
+
+	Describe("CreateProject", func() {
+		var (
+		//projects dai.Projects = dai.NewRProjects(testdb.RSessionMust())
+		)
+
+		BeforeEach(func() {
+
+		})
+
+		AfterEach(func() {
+
+		})
+
+		It("Should fail if project exists and must not exist flag is true", func() {
+			req := CreateProjectRequest{
+				Name:         "test",
+				MustNotExist: true,
+			}
+			resp, err := api.CreateProject(req)
+			Expect(err).To(Equal(app.ErrExists))
+			Expect(resp).To(BeNil())
+		})
+
+		It("Should succeed if project exists and must not exist flag is false", func() {
+			req := CreateProjectRequest{
+				Name: "test",
+			}
+			resp, err := api.CreateProject(req)
+			Expect(err).To(BeNil())
+			Expect(resp.ProjectID).To(Equal("test"))
+			Expect(resp.Existing).To(BeTrue())
+		})
+
+		It("Should create a project if it doesn't exist", func() {
+			req := CreateProjectRequest{
+				Name:         "new-project",
+				MustNotExist: true,
+			}
+			resp, err := api.CreateProject(req)
+			Expect(err).To(BeNil())
+			Expect(resp.ProjectID).To(ContainSubstring("-"))
+			Expect(resp.Existing).To(BeFalse())
+		})
+	})
 })
