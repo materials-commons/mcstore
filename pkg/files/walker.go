@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+
 	"github.com/materials-commons/gohandy/file"
 )
 
