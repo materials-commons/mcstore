@@ -38,7 +38,7 @@ var _ = Describe("ProjectUploader", func() {
 
 	BeforeEach(func() {
 		config.Set("MCDIR", mcdirPath)
-		container = mcstore.NewServicesContainerForTest()
+		container = mcstore.NewServicesContainer(testdb.Sessions)
 		server = httptest.NewServer(container)
 		rr = httptest.NewRecorder()
 		config.Set("mcurl", server.URL)
@@ -46,14 +46,13 @@ var _ = Describe("ProjectUploader", func() {
 		uploads = dai.NewRUploads(testdb.RSessionMust())
 		api = mcstore.NewServerAPI()
 		uploadRequest = mcstore.CreateUploadRequest{
-			ProjectID:     "test",
-			DirectoryID:   "test",
-			DirectoryPath: "test/test",
-			FileName:      "testreq.txt",
-			FileSize:      4,
-			ChunkSize:     2,
-			FileMTime:     time.Now().Format(time.RFC1123),
-			Checksum:      "abc123",
+			ProjectID:   "test",
+			DirectoryID: "test",
+			FileName:    "testreq.txt",
+			FileSize:    4,
+			ChunkSize:   2,
+			FileMTime:   time.Now().Format(time.RFC1123),
+			Checksum:    "abc123",
 		}
 		projectOpener := sqlProjectDBOpener{
 			configer: configConfiger{},
