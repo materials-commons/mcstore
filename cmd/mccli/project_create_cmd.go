@@ -18,6 +18,15 @@ var (
 				Name:  "directory, dir, d",
 				Usage: "The base directory for the project",
 			},
+			cli.BoolFlag{
+				Name:  "upload, up, u",
+				Usage: "Upload project after creating it",
+			},
+			cli.IntFlag{
+				Name:  "parallel, n",
+				Value: 3,
+				Usage: "Number of simultaneous uploads to perform, defaults to 3",
+			},
 		},
 		Action: projectCreateCLI,
 	}
@@ -42,7 +51,16 @@ func projectCreateCLI(c *cli.Context) {
 		os.Exit(1)
 	}
 
-	fmt.Println("Project successfully created")
+	fmt.Println("Project successfully created.")
+
+	if c.Bool("upload") {
+		numThreads := getNumThreads(c)
+		if err := client.UploadProject(projectName, numThreads); err != nil {
+			fmt.Println("Project upload failed:", err)
+			os.Exit(1)
+		}
+		fmt.Println("Project successfully uploaded.")
+	}
 }
 
 // validateDirectoryPath checks that the given directory path exists.
