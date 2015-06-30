@@ -1,6 +1,9 @@
 package mc
 
-import "github.com/materials-commons/mcstore/server/mcstore"
+import (
+	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/server/mcstore"
+)
 
 type ClientAPI struct {
 	serverAPI *mcstore.ServerAPI
@@ -36,9 +39,25 @@ func (c *ClientAPI) ProjectStatus(projectID string) error {
 	return nil
 }
 
-func (c *ClientAPI) CreateProject(projectSpec ProjectDBSpec) error {
-	_, err := ProjectOpener.CreateProjectDB(projectSpec)
-	return err
+func (c *ClientAPI) CreateProject(name, path string) error {
+	if ProjectOpener.ProjectExists(name) {
+		return app.ErrExists
+	}
+
+	req := mcstore.CreateProjectRequest{
+		Name: name,
+	}
+	if resp, err := c.serverAPI.CreateProject(req); err != nil {
+		return err
+	} else {
+		projectDBSpec := ProjectDBSpec{
+			Name:      name,
+			ProjectID: resp.ProjectID,
+			Path:      path,
+		}
+		_, err := ProjectOpener.CreateProjectDB(projectDBSpec)
+		return err
+	}
 }
 
 func (c *ClientAPI) CreateDirectory(projectName, path string) error {
