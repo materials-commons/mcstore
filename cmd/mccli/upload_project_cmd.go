@@ -8,7 +8,7 @@ import (
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 )
 
-var projectUploadCommand = cli.Command{
+var uploadProjectCommand = cli.Command{
 	Name:    "upload",
 	Aliases: []string{"up", "u"},
 	Usage:   "Upload project to MaterialsCommons",
@@ -19,11 +19,11 @@ var projectUploadCommand = cli.Command{
 			Usage: "Number of simultaneous uploads to perform, defaults to 3",
 		},
 	},
-	Action: projectUploadCLI,
+	Action: uploadProjectCLI,
 }
 
-// projectUploadCLI implements the cli command upload.
-func projectUploadCLI(c *cli.Context) {
+// uploadProjectCLI implements the cli command upload project.
+func uploadProjectCLI(c *cli.Context) {
 	if len(c.Args()) != 1 {
 		fmt.Println("You must specify a project to upload.")
 		os.Exit(1)

@@ -9,9 +9,9 @@ import (
 )
 
 var (
-	projectCreateCommand = cli.Command{
-		Name:    "create",
-		Aliases: []string{"cr", "c"},
+	createProjectCommand = cli.Command{
+		Name:    "project",
+		Aliases: []string{"proj", "p"},
 		Usage:   "Create a new project",
 		Flags: []cli.Flag{
 			cli.StringFlag{
@@ -28,12 +28,12 @@ var (
 				Usage: "Number of simultaneous uploads to perform, defaults to 3",
 			},
 		},
-		Action: projectCreateCLI,
+		Action: createProjectCLI,
 	}
 )
 
-// projectCreateCLI implements the project create command.
-func projectCreateCLI(c *cli.Context) {
+// createProjectCLI implements the create project command.
+func createProjectCLI(c *cli.Context) {
 	if len(c.Args()) != 1 {
 		fmt.Println("You must specify a project name")
 		os.Exit(1)

@@ -36,16 +36,10 @@ func main() {
 		},
 	}
 	app.Commands = []cli.Command{
-		mccli.SendCommand,
-		mccli.ReceiveCommand,
-		mccli.GetCommand,
-		mccli.SetCommand,
-		mccli.ProjectCommand,
-		mccli.DownloadCommand,
-		mccli.MonitorCommand,
+		mccli.CreateCommand,
 		mccli.SetupCommand,
-		mccli.LoginCommand,
 		mccli.ShowCommand,
+		mccli.UploadCommand,
 	}
 	app.Run(os.Args)
 }
