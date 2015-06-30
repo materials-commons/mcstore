@@ -24,15 +24,15 @@ func (c *ClientAPI) UploadDirectory(projectID string, path string) error {
 }
 
 func (c *ClientAPI) UploadProject(projectName string, numThreads int) error {
-	projectDB, err := ProjectOpener.OpenProjectDB(projectName)
-	if err != nil {
+	if projectDB, err := ProjectOpener.OpenProjectDB(projectName); err != nil {
 		return err
+	} else {
+		uploader := &projectUploader{
+			db:         projectDB,
+			numThreads: numThreads,
+		}
+		return uploader.upload()
 	}
-	uploader := &projectUploader{
-		db:         projectDB,
-		numThreads: numThreads,
-	}
-	return uploader.upload()
 }
 
 func (c *ClientAPI) ProjectStatus(projectID string) error {
