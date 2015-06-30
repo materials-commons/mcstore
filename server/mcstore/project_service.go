@@ -38,12 +38,12 @@ func newProjectService(session *r.Session) *projectService {
 func (s *projectService) createProject(projectName, owner string, mustNotExist bool) (*schema.Project, bool, error) {
 	project, err := s.projects.ByName(projectName, owner)
 	switch {
-	case err != nil:
-		return nil, false, err
-
-	case project == nil:
+	case err == app.ErrNotFound:
 		proj, err := s.createNewProject(projectName, owner)
 		return proj, false, err
+
+	case err != nil:
+		return nil, false, err
 
 	default:
 		if mustNotExist {
