@@ -9,12 +9,22 @@ import (
 )
 
 var ShowCommand = cli.Command{
-	Name:   "show",
-	Usage:  "Show the configuration",
-	Action: showCLI,
+	Name:    "show",
+	Aliases: []string{"sh"},
+	Usage:   "Show commands",
+	Subcommands: []cli.Command{
+		showConfigCommand,
+	},
 }
 
-func showCLI(c *cli.Context) {
+var showConfigCommand = cli.Command{
+	Name:    "config",
+	Aliases: []string{"conf", "c"},
+	Usage:   "Show configuration",
+	Action:  showConfigCLI,
+}
+
+func showConfigCLI(c *cli.Context) {
 	apikey := config.GetString("apikey")
 	mcurl := mcstore.MCUrl()
 	mclogging := config.GetString("mclogging")
