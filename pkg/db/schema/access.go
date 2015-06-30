@@ -13,3 +13,14 @@ type Access struct {
 	Status      string    `gorethink:"status"`
 	UserID      string    `gorethink:"user_id"`
 }
+
+func NewAccess(projectID, projectName, userID string) Access {
+	now := time.Now()
+	return Access{
+		Birthtime:   now,
+		MTime:       now,
+		ProjectID:   projectID,
+		ProjectName: projectName,
+		UserID:      userID,
+	}
+}
