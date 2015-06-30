@@ -9,7 +9,6 @@ import (
 )
 
 var (
-	// Command contains the arguments and function for the cli project create command.
 	projectCreateCommand = cli.Command{
 		Name:    "create",
 		Aliases: []string{"cr", "c"},
@@ -24,7 +23,7 @@ var (
 	}
 )
 
-// createCLI implements the project create command.
+// projectCreateCLI implements the project create command.
 func projectCreateCLI(c *cli.Context) {
 	if len(c.Args()) != 1 {
 		fmt.Println("You must specify a project name")
@@ -34,13 +33,12 @@ func projectCreateCLI(c *cli.Context) {
 
 	dirPath := c.String("directory")
 	if !validateDirectoryPath(dirPath) {
-		fmt.Println("Invalid directory path: ", dirPath)
 		os.Exit(1)
 	}
 
 	client := mc.NewClientAPI()
 	if err := client.CreateProject(projectName, dirPath); err != nil {
-		fmt.Println("Unable to create project", err)
+		fmt.Println("Unable to create project:", err)
 		os.Exit(1)
 	}
 
