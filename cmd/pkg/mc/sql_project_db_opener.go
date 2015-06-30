@@ -18,6 +18,12 @@ var ProjectOpener sqlProjectDBOpener = sqlProjectDBOpener{
 	configer: NewOSUserConfiger(),
 }
 
+func (p sqlProjectDBOpener) ProjectExists(name string) bool {
+	dirPath := p.configer.ConfigDir()
+	dbFilePath := filepath.Join(dirPath, name+".db")
+	return file.Exists(dbFilePath)
+}
+
 func (p sqlProjectDBOpener) CreateProjectDB(dbSpec ProjectDBSpec) (ProjectDB, error) {
 	dirPath := p.configer.ConfigDir()
 	dbFilePath := filepath.Join(dirPath, dbSpec.Name+".db")
