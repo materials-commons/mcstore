@@ -28,6 +28,7 @@ func projectUploadCLI(c *cli.Context) {
 		fmt.Println("You must specify a project to upload.")
 		os.Exit(1)
 	}
+
 	projectName := c.Args()[0]
 	numThreads := getNumThreads(c)
 
