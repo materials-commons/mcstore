@@ -100,6 +100,12 @@ func (p rProjects) Insert(project *schema.Project) (*schema.Project, error) {
 		return nil, app.ErrCreate
 	}
 
+	// Add owner to access list
+	accessEntry := schema.NewAccess(newProject.ID, newProject.Name, newProject.Owner)
+	if err := model.Access.Qs(p.session).Insert(&accessEntry, nil); err != nil {
+		return nil, app.ErrCreate
+	}
+
 	dir := schema.NewDirectory(project.Name, project.Owner, newProject.ID, "")
 	rdirs := NewRDirs(p.session)
 
