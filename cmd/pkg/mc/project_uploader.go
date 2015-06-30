@@ -38,6 +38,7 @@ func (p *projectUploader) upload() error {
 	// a closure here to call.
 	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 		uploader := newUploader(p.db, project)
+		uploader.retryCount = 1
 		uploader.uploadEntries(done, entries, result)
 	}
 
@@ -246,7 +247,6 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 				Chunk:            buf[:n],
 			}
 			uploadResp = u.sendFlowDataWithRetry(req)
-			fmt.Printf("uploadResp = %#v\n", uploadResp)
 			if uploadResp.Done {
 				break
 			}
@@ -255,6 +255,11 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 		if err != nil {
 			break
 		}
+	}
+
+	if !uploadResp.Done {
+		app.Log.Errorf("uploadResp not done %#v\n", uploadResp)
+		return
 	}
 
 	if err != nil && err != io.EOF {
@@ -286,7 +291,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) (*mcstore.CreateUploadResponse, string) {
 	// retry forever
 	checksum, _ := file.HashStr(md5.New(), entry.Path)
-	chunkSize := int32(1000 * 1000)
+	chunkSize := int32(1024 * 1024)
 	uploadReq := mcstore.CreateUploadRequest{
 		ProjectID:   u.project.ProjectID,
 		DirectoryID: directoryID,
@@ -307,7 +312,6 @@ func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRe
 	fn := func() bool {
 		var err error
 		if resp, err = u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
-			fmt.Println("CreateUploadRequest returned err", err)
 			return false
 		}
 		return true
@@ -330,7 +334,6 @@ func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunk
 	fn := func() bool {
 		var err error
 		if resp, err = u.serverAPI.SendFlowData(req); err != nil {
-			fmt.Println("SendFlowData returned err", err)
 			return false
 		}
 		return true
