@@ -12,6 +12,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
+	"github.com/materials-commons/mcstore/pkg/db/model"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/testdb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -235,7 +237,8 @@ var _ = Describe("ServerAPI", func() {
 
 	Describe("CreateProject", func() {
 		var (
-		//projects dai.Projects = dai.NewRProjects(testdb.RSessionMust())
+			//projects dai.Projects = dai.NewRProjects(testdb.RSessionMust())
+			dirs dai.Dirs = dai.NewRDirs(testdb.RSessionMust())
 		)
 
 		BeforeEach(func() {
@@ -275,6 +278,15 @@ var _ = Describe("ServerAPI", func() {
 			Expect(err).To(BeNil())
 			Expect(resp.ProjectID).To(ContainSubstring("-"))
 			Expect(resp.Existing).To(BeFalse())
+
+			// Delete created project from system.
+			session := testdb.RSessionMust()
+			var p2d schema.Project2DataDir
+
+			rql := model.ProjectDirs.T().GetAllByIndex("project_id", resp.ProjectID)
+			model.ProjectDirs.Qs(session).Row(rql, &p2d)
+			dirs.Delete(p2d.DataDirID)
+			model.Projects.T().Get(p2d.ProjectID).Delete().RunWrite(session)
 		})
 	})
 })
