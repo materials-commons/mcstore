@@ -1,7 +1,6 @@
 package mc
 
 import (
-	"math/rand"
 	"time"
 
 	"crypto/md5"
@@ -14,6 +13,7 @@ import (
 	"fmt"
 
 	"github.com/materials-commons/gohandy/file"
+	"github.com/materials-commons/gohandy/with"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/files"
@@ -38,7 +38,7 @@ func (p *projectUploader) upload() error {
 	// a closure here to call.
 	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 		uploader := newUploader(p.db, project)
-		uploader.retryCount = 1
+		uploader.retrier.RetryCount = 1
 		uploader.uploadEntries(done, entries, result)
 	}
 
@@ -55,38 +55,18 @@ func (p *projectUploader) upload() error {
 
 // uploader holds the state for one upload thread.
 type uploader struct {
-	db         ProjectDB
-	serverAPI  *mcstore.ServerAPI
-	project    *Project
-	minWait    int
-	maxWait    int
-	retryCount int
+	db        ProjectDB
+	serverAPI *mcstore.ServerAPI
+	project   *Project
+	retrier   with.Retrier
 }
 
-// defaultMinWaitBeforeRetry is the default minimum wait time before
-// a request is retried.
-const defaultMinWaitBeforeRetry = 100
-
-// defaultMaxWaitBeforeRetry is the default max wait time before
-// a request is retried.
-const defaultMaxWaitBeforeRetry = 5000
-
-// retryForever means we should retry requests forever. If requests shouldn't
-// be retried forever then the upload.retryCount should be set to a positive
-// number.
-const retryForever = -1
-
-// newUploader creates a new uploader. It creates a clone of the database,
-// sets minWait to defaultMinWaitBeforeRetry, maxWait to defaultMaxWaitBeforeRetry
-// and retryCount to retryForever.
+// newUploader creates a new uploader. It creates a clone of the database.
 func newUploader(db ProjectDB, project *Project) *uploader {
 	return &uploader{
-		db:         db.Clone(),
-		project:    project,
-		serverAPI:  mcstore.NewServerAPI(),
-		minWait:    defaultMinWaitBeforeRetry,
-		maxWait:    defaultMaxWaitBeforeRetry,
-		retryCount: retryForever,
+		db:        db.Clone(),
+		project:   project,
+		serverAPI: mcstore.NewServerAPI(),
 	}
 }
 
@@ -161,7 +141,7 @@ func (u *uploader) getDirectoryWithRetry(req mcstore.DirectoryRequest) string {
 		}
 		return true
 	}
-	u.withRetry(fn)
+	u.retrier.WithRetry(fn)
 	return dirID
 }
 
@@ -305,7 +285,7 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 	return resp, checksum
 }
 
-// createUplaodRequestWithRetry will make the server API CreateUploadRequest call. If it fails
+// createUploadRequestWithRetry will make the server API CreateUploadRequest call. If it fails
 // it will retry (dependent on retry settings).
 func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRequest) *mcstore.CreateUploadResponse {
 	var resp *mcstore.CreateUploadResponse
@@ -316,7 +296,7 @@ func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRe
 		}
 		return true
 	}
-	u.withRetry(fn)
+	u.retrier.WithRetry(fn)
 	return resp
 }
 
@@ -327,7 +307,7 @@ func numChunks(size int64) int32 {
 	return int32(n)
 }
 
-// createUplaodRequestWithRetry will make the server API SendFlowData call. If it fails
+// sendFlowDataWithRetry will make the server API SendFlowData call. If it fails
 // it will retry (dependent on retry settings).
 func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunkResponse {
 	var resp *mcstore.UploadChunkResponse
@@ -338,35 +318,6 @@ func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunk
 		}
 		return true
 	}
-	u.withRetry(fn)
+	u.retrier.WithRetry(fn)
 	return resp
-}
-
-// withRetry will retry the given func. The func should return true
-// when it is successful. It will retry retryCount times (forever
-// if retryCount is set to retryForever). When a call fails it will
-// sleep a random amount of time bounded by minWait and maxWait before
-// it retries the request.
-func (u *uploader) withRetry(fn func() bool) {
-	retryCounter := 0
-	for {
-		if fn() {
-			break
-		}
-
-		if u.retryCount != retryForever {
-			retryCounter++
-			if retryCounter > u.retryCount {
-				app.Log.Panicf("Retries exceeded aborting")
-			}
-		}
-		u.sleepRandom()
-	}
-}
-
-func (u *uploader) sleepRandom() {
-	// sleep a random amount between minWait and maxWait
-	rand.Seed(time.Now().Unix())
-	randomSleepTime := rand.Intn(u.maxWait) + u.minWait
-	time.Sleep(time.Duration(randomSleepTime))
 }
