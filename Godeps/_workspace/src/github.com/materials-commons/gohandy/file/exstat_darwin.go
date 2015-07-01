@@ -42,8 +42,8 @@ func (fi *darwinExFileInfo) Path() string {
 	return fi.path
 }
 
-// newExFileInfo creates a new winExFileInfo from a os.FileInfo.
-func newExFileInfo(fi os.FileInfo, path string) *darwinExFileInfo {
+// systemExFileInfo creates a new winExFileInfo from a os.FileInfo.
+func systemExFileInfo(fi os.FileInfo, path string) *darwinExFileInfo {
 	fid := FID{
 		IDLow: fi.Sys().(*syscall.Stat_t).Ino,
 	}

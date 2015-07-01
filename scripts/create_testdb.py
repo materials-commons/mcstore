@@ -45,6 +45,7 @@ class DataDir(object):
         self.birthtime = r.now()
         self.mtime = self.birthtime
         self.parent = parent
+        self.project = ""
 
 
 class User(object):
@@ -58,31 +59,24 @@ class User(object):
         self.mtime = self.birthtime
         self.email = self.id
         self.password = ""
+        self.admin = False
         self.preferences = {
             "tags": [],
             "templates": []
         }
 
 
-class Usergroup(object):
-    def __init__(self, name, owner):
-        self._type = "group"
+class Access(object):
+    def __init__(self, project_id, project_name, user):
         now = r.now()
+        self.project_id = project_id
+        self.project_name = project_name
+        self.user_id = user
         self.birthtime = now
         self.mtime = now
-        self.name = name
-        self.owner = owner
-        self.projects = []
-        self.users = []
-
-    def add_user(self, user):
-        self.users.append(user)
-
-    def add_project(self, name, id):
-        self.projects.append({
-            "id": id,
-            "name": name
-        })
+        self.status = ""
+        self.dataset = ""
+        self.permissions = ""
 
 
 def create_table(table, conn, *args):
@@ -122,18 +116,24 @@ def make_tables(conn):
     create_table("project2datafile", conn, "project_id", "datafile_id")
     create_table("datadir2datafile", conn, "datadir_id", "datafile_id")
     create_table("users", conn, "apikey")
-    create_table("usergroups", conn, "owner")
+    create_table("access", conn, "user_id", "project_id")
     create_table("uploads", conn, "owner", "project_id")
     print "Done..."
 
 
 def load_tables(conn):
     print "Loading tables..."
+    user = User("admin@mc.org", "admin")
+    user.admin = True
+    insert(user.__dict__, "users", conn)
+
     user = User("test@mc.org", "test")
     insert(user.__dict__, "users", conn)
     user = User("test1@mc.org", "test1")
     insert(user.__dict__, "users", conn)
     user = User("test2@mc.org", "test2")
+    insert(user.__dict__, "users", conn)
+    user = User("test3@mc.org", "test3")
     insert(user.__dict__, "users", conn)
 
     project = Project("test", "test@mc.org")
@@ -141,14 +141,14 @@ def load_tables(conn):
     created_project = insert(project.__dict__, "projects", conn)
     project_id = created_project['id']
 
-    group = Usergroup("test", "test@mc.org")
-    group.add_project("test", project_id)
-    group.add_user("test1@mc.org")
-    group.id = "test"
-    insert(group.__dict__, "usergroups", conn)
+    uaccess = Access("test", "test", "test@mc.org")
+    insert(uaccess.__dict__, "access", conn)
+    uaccess = Access("test", "test", "test1@mc.org")
+    insert(uaccess.__dict__, "access", conn)
 
     ddir = DataDir("test", "test@mc.org", "")
     ddir.id = "test"
+    ddir.project = project_id
     created_ddir = insert(ddir.__dict__, "datadirs", conn)
     ddir_id = created_ddir['id']
 
@@ -161,6 +161,7 @@ def load_tables(conn):
     # Create a subdirectory
     ddir = DataDir("test/test2", "test@mc.org", "test")
     ddir.id = "test/test2"
+    ddir.project = project_id
     created_ddir = insert(ddir.__dict__, "datadirs", conn)
     ddir_id = created_ddir['id']
     project2datadir = {
@@ -189,6 +190,40 @@ def load_tables(conn):
         "datafile_id": dfile_id
     }
     insert(project2datafile, "project2datafile", conn)
+
+    project = Project("test2", "test2@mc.org")
+    project.id = "test2"
+    insert(project.__dict__, "projects", conn)
+    ddir = DataDir("test2", "test2@mc.org", "")
+    ddir.id = "test2"
+    ddir.project = project.id
+    insert(ddir.__dict__, "datadirs", conn)
+    project2datadir = {
+        "project_id": project.id,
+        "datadir_id": ddir.id
+    }
+    insert(project2datadir, "project2datadir", conn)
+    uaccess = Access("test2", "test2", "test2@mc.org")
+    insert(uaccess.__dict__, "access", conn)
+
+    project = Project("test3", "test3@mc.org")
+    project.id = "test3"
+    insert(project.__dict__, "projects", conn)
+    ddir = DataDir("test3", "test3@mc.org", "")
+    ddir.id = "test3"
+    ddir.project = project.id
+    insert(ddir.__dict__, "datadirs", conn)
+    project2datadir = {
+        "project_id": project.id,
+        "datadir_id": ddir.id
+    }
+    insert(project2datadir, "project2datadir", conn)
+    uaccess = Access("test3", "test3", "test3@mc.org")
+    insert(uaccess.__dict__, "access", conn)
+
+    uaccess = Access("test3", "test3", "test@mc.org")
+    insert(uaccess.__dict__, "access", conn)
+
     print "Done..."
 
 

@@ -2,7 +2,10 @@ package mocks
 
 import "github.com/materials-commons/testify/mock"
 
-import "github.com/materials-commons/mcstore/pkg/db/schema"
+import (
+	"github.com/materials-commons/mcstore/pkg/db/dai"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
+)
 
 type Uploads struct {
 	mock.Mock
@@ -18,6 +21,13 @@ func (m *Uploads) ByID(id string) (*schema.Upload, error) {
 	r0 := ret.Get(0).(*schema.Upload)
 	r1 := ret.Error(1)
 
+	return r0, r1
+}
+
+func (m *Uploads) Search(params dai.UploadSearch) (*schema.Upload, error) {
+	ret := m.Called(params)
+	r0 := ret.Get(0).(*schema.Upload)
+	r1 := ret.Error(1)
 	return r0, r1
 }
 
@@ -44,6 +54,13 @@ func (m *Uploads) ForUser(user string) ([]schema.Upload, error) {
 	r0 := ret.Get(0).([]schema.Upload)
 	r1 := ret.Error(1)
 
+	return r0, r1
+}
+
+func (m *Uploads) ForProject(projectID string) ([]schema.Upload, error) {
+	ret := m.Called(projectID)
+	r0 := ret.Get(0).([]schema.Upload)
+	r1 := ret.Error(1)
 	return r0, r1
 }
 

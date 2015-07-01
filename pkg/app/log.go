@@ -67,6 +67,11 @@ func (l *Logger) Warnf(format string, args ...interface{}) {
 	l.Warn(fmt.Sprintf(format, args...))
 }
 
+func (l *Logger) Panicf(format string, args ...interface{}) {
+	l.Crit(fmt.Sprintf(format, args...))
+	Panicf(format, args...)
+}
+
 // Logf is short hand to create a message string using fmt.Sprintf.
 func Logf(format string, args ...interface{}) string {
 	return fmt.Sprintf(format, args...)

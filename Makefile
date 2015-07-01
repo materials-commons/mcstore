@@ -1,11 +1,14 @@
-.PHONY: bin test all fmt deploy docs server libs
+.PHONY: bin test all fmt deploy docs server libs cli
 
 all: fmt bin
 
-bin: server
+bin: server cli
 
 server:
-	(cd ./server/mcstored; godep go build mcstored.go)
+	(cd ./server/mcstore/main; godep go build mcstored.go)
+
+cli:
+	(cd ./cmd/mccli/main; godep go build mc.go)
 
 docs:
 	./makedocs.sh
@@ -17,4 +20,4 @@ libs:
 	-godep go install ./...
 
 deploy: server
-	-cp server/mcstored/mcstored $$GOPATH/bin
+	-cp server/mcstore/main/mcstored $$GOPATH/bin

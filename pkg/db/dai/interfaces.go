@@ -12,6 +12,7 @@ type Users interface {
 type Files interface {
 	ByID(id string) (*schema.File, error)
 	ByChecksum(checksum string) (*schema.File, error)
+	AllByChecksum(checksum string) ([]schema.File, error)
 	ByPath(name, dirID string) (*schema.File, error)
 	Insert(file *schema.File, dirID string, projectID string) (*schema.File, error)
 	Update(file *schema.File) error
@@ -20,15 +21,17 @@ type Files interface {
 	GetProject(fileID string) (*schema.Project, error)
 }
 
-// Groups allows manipulation and access to groups.
-type Groups interface {
-	ByID(id string) (*schema.Group, error)
-	ForOwner(owner string) ([]schema.Group, error)
+// Uploads allows manipulation and access to upload requests.
+type UploadSearch struct {
+	ProjectID   string
+	DirectoryID string
+	FileName    string
+	Checksum    string
 }
 
-// Uploads allows manipulation and access to upload requests.
 type Uploads interface {
 	ByID(id string) (*schema.Upload, error)
+	Search(params UploadSearch) (*schema.Upload, error)
 	Insert(upload *schema.Upload) (*schema.Upload, error)
 	Update(upload *schema.Upload) error
 	ForUser(user string) ([]schema.Upload, error)
@@ -39,6 +42,9 @@ type Uploads interface {
 // Projects is an interface describing access to projects in the system.
 type Projects interface {
 	ByID(id string) (*schema.Project, error)
+	ByName(name string, owner string) (*schema.Project, error)
+	ForUser(user string, ownedOnly bool) ([]schema.Project, error)
+	Insert(project *schema.Project) (*schema.Project, error)
 	HasDirectory(projectID, directoryID string) bool
 	AccessList(projectID string) ([]schema.Access, error)
 }
@@ -49,4 +55,5 @@ type Dirs interface {
 	ByPath(path, projectID string) (*schema.Directory, error)
 	Files(dirID string) ([]schema.File, error)
 	Insert(dir *schema.Directory) (*schema.Directory, error)
+	Delete(dirID string) error
 }

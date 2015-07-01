@@ -2,6 +2,7 @@ package dai
 
 import (
 	r "github.com/dancannon/gorethink"
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/model"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
@@ -63,4 +64,25 @@ func (d rDirs) Insert(dir *schema.Directory) (*schema.Directory, error) {
 		return nil, err
 	}
 	return &newDir, nil
+}
+
+// Delete will delete the directory from the project and the directory
+// entry. If there are files, you should call the delete for files before
+// deleting the directory.
+func (d rDirs) Delete(dirID string) error {
+	if err := model.Dirs.Qs(d.session).Delete(dirID); err != nil {
+		return err
+	}
+	rql := model.ProjectDirs.T().GetAllByIndex("datadir_id", dirID).Delete()
+	rv, err := rql.RunWrite(d.session)
+	switch {
+	case err != nil:
+		return err
+	case rv.Errors != 0:
+		return app.ErrNotFound
+	case rv.Deleted == 0:
+		return app.ErrNotFound
+	default:
+		return nil
+	}
 }

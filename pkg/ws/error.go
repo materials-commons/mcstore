@@ -28,13 +28,13 @@ func (e *HTTPError) Write(response http.ResponseWriter) {
 // WriteError writes the specified error to the writer. It translates the
 // error to a HTTP status code.
 func WriteError(err error, writer http.ResponseWriter) {
-	httpErr := ErrorToHTTPError(err)
+	httpErr := ToHTTPError(err)
 	httpErr.Write(writer)
 }
 
 // ErrorToHTTPError translates an error to an HTTPError. It translates an
 // error to an HTTP status code.
-func ErrorToHTTPError(err error) *HTTPError {
+func ToHTTPError(err error) *HTTPError {
 	switch e := err.(type) {
 	case *app.Error:
 		return appErrToHTTPError(e)
@@ -55,6 +55,8 @@ func otherErrorToHTTPError(err error) *HTTPError {
 	var httpErr HTTPError
 	switch err {
 	case app.ErrNotFound:
+		httpErr.statusCode = http.StatusNotFound
+	case app.ErrInvalid:
 		httpErr.statusCode = http.StatusBadRequest
 	case app.ErrExists:
 		httpErr.statusCode = http.StatusForbidden

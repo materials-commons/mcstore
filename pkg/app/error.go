@@ -24,8 +24,8 @@ var (
 	// ErrCreate Create of object failed
 	ErrCreate = errors.New("unable to create")
 
-	// ErrInUse object is locked and in use by someone else
-	ErrInUse = errors.New("in use")
+	// ErrUnclassified error is not classified
+	ErrUnclassified = errors.New("unclassified error")
 )
 
 // Error holds the error code and additional messages.
@@ -67,4 +67,10 @@ func Is(err error, what error) bool {
 func Errorf(err error, message string, args ...interface{}) *Error {
 	msg := fmt.Sprintf(message, args...)
 	return newError(err, msg)
+}
+
+// Panicf will format the message and call panic.
+func Panicf(format string, args ...interface{}) {
+	msg := fmt.Sprintf(format, args...)
+	panic(msg)
 }

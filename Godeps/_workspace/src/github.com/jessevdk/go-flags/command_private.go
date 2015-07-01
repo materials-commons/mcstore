@@ -11,7 +11,6 @@ type lookup struct {
 	shortNames map[string]*Option
 	longNames  map[string]*Option
 
-	required map[*Option]bool
 	commands map[string]*Command
 }
 
@@ -30,6 +29,44 @@ func (c *Command) scanSubcommandHandler(parentg *Group) scanHandler {
 			return true, err
 		}
 
+		positional := mtag.Get("positional-args")
+
+		if len(positional) != 0 {
+			stype := realval.Type()
+
+			for i := 0; i < stype.NumField(); i++ {
+				field := stype.Field(i)
+
+				m := newMultiTag((string(field.Tag)))
+
+				if err := m.Parse(); err != nil {
+					return true, err
+				}
+
+				name := m.Get("positional-arg-name")
+
+				if len(name) == 0 {
+					name = field.Name
+				}
+
+				arg := &Arg{
+					Name:        name,
+					Description: m.Get("description"),
+
+					value: realval.Field(i),
+					tag:   m,
+				}
+
+				c.args = append(c.args, arg)
+
+				if len(mtag.Get("required")) != 0 {
+					c.ArgsRequired = true
+				}
+			}
+
+			return true, nil
+		}
+
 		subcommand := mtag.Get("command")
 
 		if len(subcommand) != 0 {
@@ -38,6 +75,7 @@ func (c *Command) scanSubcommandHandler(parentg *Group) scanHandler {
 			shortDescription := mtag.Get("description")
 			longDescription := mtag.Get("long-description")
 			subcommandsOptional := mtag.Get("subcommands-optional")
+			aliases := mtag.GetMany("alias")
 
 			subc, err := c.AddCommand(subcommand, shortDescription, longDescription, ptrval.Interface())
 
@@ -47,6 +85,10 @@ func (c *Command) scanSubcommandHandler(parentg *Group) scanHandler {
 
 			if len(subcommandsOptional) > 0 {
 				subc.SubcommandsOptional = true
+			}
+
+			if len(aliases) > 0 {
+				subc.Aliases = aliases
 			}
 
 			return true, nil
@@ -99,29 +141,27 @@ func (c *Command) makeLookup() lookup {
 	ret := lookup{
 		shortNames: make(map[string]*Option),
 		longNames:  make(map[string]*Option),
-
-		required: make(map[*Option]bool),
-		commands: make(map[string]*Command),
+		commands:   make(map[string]*Command),
 	}
 
 	c.eachGroup(func(g *Group) {
 		for _, option := range g.options {
-			if option.Required && option.canCli() {
-				ret.required[option] = true
-			}
-
 			if option.ShortName != 0 {
 				ret.shortNames[string(option.ShortName)] = option
 			}
 
 			if len(option.LongName) > 0 {
-				ret.longNames[option.LongName] = option
+				ret.longNames[option.LongNameWithNamespace()] = option
 			}
 		}
 	})
 
 	for _, subcommand := range c.commands {
 		ret.commands[subcommand.Name] = subcommand
+
+		for _, a := range subcommand.Aliases {
+			ret.commands[a] = subcommand
+		}
 	}
 
 	return ret
@@ -169,6 +209,20 @@ func (c *Command) sortedCommands() []*Command {
 	return []*Command(ret)
 }
 
+func (c *Command) match(name string) bool {
+	if c.Name == name {
+		return true
+	}
+
+	for _, v := range c.Aliases {
+		if v == name {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *Command) hasCliOptions() bool {
 	ret := false
 
@@ -185,4 +239,12 @@ func (c *Command) hasCliOptions() bool {
 	})
 
 	return ret
+}
+
+func (c *Command) fillParseState(s *parseState) {
+	s.positional = make([]*Arg, len(c.args))
+	copy(s.positional, c.args)
+
+	s.lookup = c.makeLookup()
+	s.command = c
 }

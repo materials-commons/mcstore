@@ -39,6 +39,15 @@ func (f rFiles) ByChecksum(checksum string) (*schema.File, error) {
 	return &file, nil
 }
 
+func (f rFiles) AllByChecksum(checksum string) ([]schema.File, error) {
+	rql := model.Files.T().GetAllByIndex("checksum")
+	var files []schema.File
+	if err := model.Files.Qs(f.session).Rows(rql, &files); err != nil {
+		return nil, err
+	}
+	return files, nil
+}
+
 // ByPath looks up a file by its name in a specific directory. It only returns the
 // current file, not hidden files.
 func (f rFiles) ByPath(name, dirID string) (*schema.File, error) {
@@ -130,21 +139,20 @@ func (f rFiles) Delete(fileID, directoryID, projectID string) (*schema.File, err
 
 	filesUsedBy, err := f.getUsedBy(fileID)
 
+	//
+	// TODO: Support a file existing in multiple projects.
+	//
 	// We have deleted the file from one directory. At this
 	// point if len(dirs) == 1 and len(filesUsedBy) == 0 and
-	// len(projects) == 1 we can delete the entry.
-	//
-	// TODO: This logic is actually a lot more complicated when
-	// files start being shared across projects and if we also
-	// allow a file to be shared across directories in a project.
-	// Right now across directories (in a project) isn't supported
-	// but across projects is something we want to support.
+	// len(projects) == 1 we can delete the entry. Otherwise
+	// the file is in multiple projects and/or directories.
+	// This case isn't really supported yet as we should delete
+	// the file from the project, but not completely delete
+	// the file.
 	switch {
 	case len(dirs) == 1 && len(projects) == 1 && len(filesUsedBy) == 0:
-		model.Files.Qs(f.session).Delete(fileID)
-	case len(projects) == 1 && len(dirs) == 1:
-		// delete from project
 		f.deleteFromProject(fileID, projectID)
+		model.Files.Qs(f.session).Delete(fileID)
 	case file.Current:
 		// File is referenced by somebody, so just mark it as
 		// not current, since we cannot delete it.
@@ -152,6 +160,8 @@ func (f rFiles) Delete(fileID, directoryID, projectID string) (*schema.File, err
 		f.Update(file)
 	}
 
+	// file that was deleted had a parent (another version). Set the previous
+	// version (ie, its parent) as the current file.
 	if file.Parent != "" {
 		fields := map[string]interface{}{
 			schema.FileFields.Current(): true,

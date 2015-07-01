@@ -77,10 +77,10 @@ func (f *File) FileID() string {
 	return f.ID
 }
 
-// private type to hang methods off of
+// private type to hang helper methods off of
 type fs struct{}
 
-// Files gives access to help routines that work on lists of files.
+// Files gives access to helper routines that work on lists of files.
 var Files fs
 
 // Find will return a matching File in a list of files when the match func returns true.
