@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fmt"
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/gohandy/with"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -42,51 +43,49 @@ func (s *ServerAPI) SetRetrier(r with.Retrier) {
 // upload matches the request then server will send the existing upload request.
 func (s *ServerAPI) CreateUploadRequest(req CreateUploadRequest) (*CreateUploadResponse, error) {
 	var (
-		statusCode     int
-		err            error
 		uploadResponse CreateUploadResponse
 	)
-	fn := func() bool {
-		if statusCode, err = s.client.JSON(&req).JSONPost(Url("/upload"), &uploadResponse); err != nil {
-			return false
+
+	fn := func() error {
+		if statusCode, err := s.client.JSON(&req).JSONPost(Url("/upload"), &uploadResponse); err != nil {
+			return with.ErrRetry
 		} else {
-			err = HTTPStatusToError(statusCode)
-			return true
+			return HTTPStatusToError(statusCode)
 		}
 	}
-	s.WithRetry(fn)
+
+	if err := s.WithRetry(fn); err != nil {
+		return nil, err
+	}
 	return &uploadResponse, nil
 }
 
 // SendFlowData will send the data for a flow request.
 func (s *ServerAPI) SendFlowData(req *flow.Request) (*UploadChunkResponse, error) {
 	var (
-		body       string
-		statusCode int
-		err        error
 		uploadResp UploadChunkResponse
 	)
-	fn := func() bool {
+
+	fn := func() error {
 		params := req.ToParamsMap()
-		statusCode, err, body = s.client.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
-			req.Chunk, params)
-		if err != nil {
-			return false
+		url := Url("/upload/chunk")
+		if sc, err, body := s.client.PostFileBytes(url, "/tmp/test.txt", "chunkData", req.Chunk, params); err != nil {
+			fmt.Println(sc, err)
+			return with.ErrRetry
+		} else {
+			switch {
+			case sc != 200:
+				return app.ErrInternal
+			default:
+				return ToJSON(body, &uploadResp)
+			}
 		}
-		switch {
-		case statusCode != 200:
-			err = app.ErrInternal
-		default:
-			var uploadResp UploadChunkResponse
-			err = ToJSON(body, &uploadResp)
-		}
-		return true
 	}
 
-	s.WithRetry(fn)
-	if err != nil {
+	if err := s.WithRetry(fn); err != nil {
 		return nil, err
 	}
+
 	return &uploadResp, nil
 }
 
