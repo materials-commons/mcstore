@@ -81,18 +81,18 @@
 		},
 		{
 			"ImportPath": "github.com/materials-commons/gohandy/ezhttp",
-			"Comment": "v0.1-71-g279aa04",
-			"Rev": "279aa0473bf7d0ab0b5420f4f43048c6c4c64d02"
+			"Comment": "v0.1-73-g358b343",
+			"Rev": "358b343eb2485a09ae9cdb4a77baad8c55a7374e"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/gohandy/file",
-			"Comment": "v0.1-71-g279aa04",
-			"Rev": "279aa0473bf7d0ab0b5420f4f43048c6c4c64d02"
+			"Comment": "v0.1-73-g358b343",
+			"Rev": "358b343eb2485a09ae9cdb4a77baad8c55a7374e"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/gohandy/with",
-			"Comment": "v0.1-71-g279aa04",
-			"Rev": "279aa0473bf7d0ab0b5420f4f43048c6c4c64d02"
+			"Comment": "v0.1-73-g358b343",
+			"Rev": "358b343eb2485a09ae9cdb4a77baad8c55a7374e"
 		},
 		{
 			"ImportPath": "github.com/materials-commons/testify/mock",

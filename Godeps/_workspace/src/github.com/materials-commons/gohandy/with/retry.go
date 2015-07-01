@@ -8,6 +8,7 @@ import (
 
 // ErrRetriesExceeded max number of retries exceeded.
 var ErrRetriesExceeded = errors.New("retries exceeded")
+var ErrRetry = errors.New("retry call")
 
 // defaultMinWaitBeforeRetry is the default minimum wait time before
 // a request is retried.
@@ -39,20 +40,23 @@ func NewRetrier() Retrier {
 	}
 }
 
-func (r Retrier) WithRetry(fn func() bool) error {
+func (r Retrier) WithRetry(fn func() error) error {
 	retryCounter := 0
 	for {
-		if fn() {
+		switch err := fn(); {
+		case err == nil:
 			return nil
-		}
-
-		if r.RetryCount != RetryForever {
-			retryCounter++
-			if retryCounter > r.RetryCount {
-				return ErrRetriesExceeded
+		case err != ErrRetry:
+			return err
+		default:
+			if r.RetryCount != RetryForever {
+				retryCounter++
+				if retryCounter > r.RetryCount {
+					return ErrRetriesExceeded
+				}
 			}
+			r.sleepRandom()
 		}
-		r.sleepRandom()
 	}
 }
 
