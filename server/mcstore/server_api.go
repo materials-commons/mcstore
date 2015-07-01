@@ -8,9 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"fmt"
 	"github.com/materials-commons/gohandy/ezhttp"
-	"github.com/materials-commons/gohandy/with"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -21,40 +19,26 @@ import (
 type ServerAPI struct {
 	agent  *gorequest.SuperAgent
 	client *ezhttp.EzClient
-	with.Retrier
 }
 
 // NewServerAPI creates a new ServerAPI
 func NewServerAPI() *ServerAPI {
-	retrier := with.NewRetrier()
-	retrier.RetryCount = 0
 	return &ServerAPI{
-		agent:   gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
-		client:  MCClient(),
-		Retrier: retrier,
+		agent:  gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true}),
+		client: MCClient(),
 	}
-}
-
-func (s *ServerAPI) SetRetrier(r with.Retrier) {
-	s.Retrier = r
 }
 
 // CreateUploadRequest will request an upload request from the server. If an existing
 // upload matches the request then server will send the existing upload request.
 func (s *ServerAPI) CreateUploadRequest(req CreateUploadRequest) (*CreateUploadResponse, error) {
-	var (
-		uploadResponse CreateUploadResponse
-	)
-
-	fn := func() error {
-		if statusCode, err := s.client.JSON(&req).JSONPost(Url("/upload"), &uploadResponse); err != nil {
-			return with.ErrRetry
-		} else {
-			return HTTPStatusToError(statusCode)
-		}
+	var uploadResponse CreateUploadResponse
+	sc, err := s.client.JSON(&req).JSONPost(Url("/upload"), &uploadResponse)
+	if err != nil {
+		return nil, err
 	}
-
-	if err := s.WithRetry(fn); err != nil {
+	err = HTTPStatusToError(sc)
+	if err != nil {
 		return nil, err
 	}
 	return &uploadResponse, nil
@@ -62,31 +46,21 @@ func (s *ServerAPI) CreateUploadRequest(req CreateUploadRequest) (*CreateUploadR
 
 // SendFlowData will send the data for a flow request.
 func (s *ServerAPI) SendFlowData(req *flow.Request) (*UploadChunkResponse, error) {
-	var (
-		uploadResp UploadChunkResponse
-	)
-
-	fn := func() error {
-		params := req.ToParamsMap()
-		url := Url("/upload/chunk")
-		if sc, err, body := s.client.PostFileBytes(url, "/tmp/test.txt", "chunkData", req.Chunk, params); err != nil {
-			fmt.Println(sc, err)
-			return with.ErrRetry
-		} else {
-			switch {
-			case sc != 200:
-				return app.ErrInternal
-			default:
-				return ToJSON(body, &uploadResp)
-			}
-		}
-	}
-
-	if err := s.WithRetry(fn); err != nil {
+	params := req.ToParamsMap()
+	sc, err, body := s.client.PostFileBytes(Url("/upload/chunk"), "/tmp/test.txt", "chunkData",
+		req.Chunk, params)
+	switch {
+	case err != nil:
 		return nil, err
+	case sc != 200:
+		return nil, app.ErrInternal
+	default:
+		var uploadResp UploadChunkResponse
+		if err := ToJSON(body, &uploadResp); err != nil {
+			return nil, err
+		}
+		return &uploadResp, nil
 	}
-
-	return &uploadResp, nil
 }
 
 // ListUploadRequests will return all the upload requests for a given project ID.
