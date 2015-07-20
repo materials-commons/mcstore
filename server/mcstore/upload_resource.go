@@ -77,7 +77,7 @@ type CreateUploadRequest struct {
 	FileSize    int64  `json:"filesize"`
 	ChunkSize   int32  `json:"chunk_size"`
 	FileMTime   string `json:"filemtime"`
-	Checksum    string `json: "checksum"`
+	Checksum    string `json:"checksum"`
 }
 
 // uploadCreateResponse is the format of JSON sent back containing
