@@ -43,9 +43,9 @@ func newBlockTracker() *blockTracker {
 	}
 }
 
-func (self *blockTracker) idExists(id string) bool {
+func (bt *blockTracker) idExists(id string) bool {
 	var doesExist bool
-	self.withReadLock(id, func(b *blockTrackerEntry) {
+	bt.withReadLock(id, func(b *blockTrackerEntry) {
 		doesExist = true
 	})
 	return doesExist
@@ -54,26 +54,26 @@ func (self *blockTracker) idExists(id string) bool {
 // setBlock marks a block as having the data written for it.
 // The bitset starts counting at 0, but flowjs starts at 1
 // so we adjust for the block in here.
-func (self *blockTracker) setBlock(id string, block int) {
-	self.withWriteLock(id, func(b *blockTrackerEntry) {
+func (bt *blockTracker) setBlock(id string, block int) {
+	bt.withWriteLock(id, func(b *blockTrackerEntry) {
 		b.bset.Set(uint(block - 1))
 	})
 }
 
 // isBlockSet returns true if the block is already set.
-func (self *blockTracker) isBlockSet(id string, block int) bool {
+func (bt *blockTracker) isBlockSet(id string, block int) bool {
 	var blockIsSet bool
-	self.withReadLock(id, func(b *blockTrackerEntry) {
+	bt.withReadLock(id, func(b *blockTrackerEntry) {
 		blockIsSet = b.bset.Test(uint(block))
 	})
 	return blockIsSet
 }
 
 // load will load the blocks bitset for an id.
-func (self *blockTracker) load(id string, numBlocks int) {
-	self.withWriteLockNotExist(id, func() {
+func (bt *blockTracker) load(id string, numBlocks int) {
+	bt.withWriteLockNotExist(id, func() {
 		bset := bitset.New(uint(numBlocks))
-		self.reqBlocks[id] = &blockTrackerEntry{
+		bt.reqBlocks[id] = &blockTrackerEntry{
 			bset:   bset,
 			hasher: md5.New(),
 		}
@@ -81,56 +81,56 @@ func (self *blockTracker) load(id string, numBlocks int) {
 }
 
 // clearBlock will unmark an block.
-func (self *blockTracker) clearBlock(id string, block int) {
-	self.withWriteLock(id, func(b *blockTrackerEntry) {
+func (bt *blockTracker) clearBlock(id string, block int) {
+	bt.withWriteLock(id, func(b *blockTrackerEntry) {
 		b.bset.SetTo(uint(block-1), false)
 	})
 }
 
 // markAllBlocks will mark all the blocks in the bitset
-func (self *blockTracker) markAllBlocks(id string) {
-	self.withWriteLock(id, func(b *blockTrackerEntry) {
+func (bt *blockTracker) markAllBlocks(id string) {
+	bt.withWriteLock(id, func(b *blockTrackerEntry) {
 		b.bset.ClearAll()
 		b.bset = b.bset.Complement()
 	})
 }
 
 // done returns true if all blocks have been marked for an id.
-func (self *blockTracker) done(id string) bool {
+func (bt *blockTracker) done(id string) bool {
 	var allBlocksDone bool
-	self.withReadLock(id, func(b *blockTrackerEntry) {
+	bt.withReadLock(id, func(b *blockTrackerEntry) {
 		allBlocksDone = b.bset.All()
 	})
 	return allBlocksDone
 }
 
 // clear removes an id from the block tracker.
-func (self *blockTracker) clear(id string) {
-	self.withWriteLock(id, func(b *blockTrackerEntry) {
-		delete(self.reqBlocks, id)
+func (bt *blockTracker) clear(id string) {
+	bt.withWriteLock(id, func(b *blockTrackerEntry) {
+		delete(bt.reqBlocks, id)
 	})
 }
 
 // hash will return the accumulated hash.
-func (self *blockTracker) hash(id string) string {
+func (bt *blockTracker) hash(id string) string {
 	var hashStr string
-	self.withWriteLock(id, func(b *blockTrackerEntry) {
+	bt.withWriteLock(id, func(b *blockTrackerEntry) {
 		hashStr = fmt.Sprintf("%x", b.hasher.Sum(nil))
 	})
 	return hashStr
 }
 
 // addToHash will add to the hash for the blocks.
-func (self *blockTracker) addToHash(id string, what []byte) {
-	self.withWriteLock(id, func(b *blockTrackerEntry) {
+func (bt *blockTracker) addToHash(id string, what []byte) {
+	bt.withWriteLock(id, func(b *blockTrackerEntry) {
 		io.Copy(b.hasher, bytes.NewBuffer(what))
 	})
 }
 
 // getBlocks returns a clone of the current bitset.
-func (self *blockTracker) getBlocks(id string) *bitset.BitSet {
+func (bt *blockTracker) getBlocks(id string) *bitset.BitSet {
 	var bset *bitset.BitSet
-	self.withReadLock(id, func(b *blockTrackerEntry) {
+	bt.withReadLock(id, func(b *blockTrackerEntry) {
 		bset = b.bset.Clone()
 	})
 	return bset
@@ -138,9 +138,9 @@ func (self *blockTracker) getBlocks(id string) *bitset.BitSet {
 
 // isExistingFile returns true if this entry represents a file
 // that was previously loaded.
-func (self *blockTracker) isExistingFile(id string) bool {
+func (bt *blockTracker) isExistingFile(id string) bool {
 	var isExisting bool
-	self.withReadLock(id, func(b *blockTrackerEntry) {
+	bt.withReadLock(id, func(b *blockTrackerEntry) {
 		isExisting = b.existingFile
 	})
 	return isExisting
@@ -148,18 +148,18 @@ func (self *blockTracker) isExistingFile(id string) bool {
 
 // setIsExistingFile sets the entry as representing a file that
 // was already uploaded.
-func (self *blockTracker) setIsExistingFile(id string, existing bool) {
-	self.withWriteLock(id, func(b *blockTrackerEntry) {
+func (bt *blockTracker) setIsExistingFile(id string, existing bool) {
+	bt.withWriteLock(id, func(b *blockTrackerEntry) {
 		b.existingFile = existing
 	})
 }
 
 // withWriteLock will take out a write lock, look up the given id in the
 // hash and call the given function with the lock if it finds an entry.
-func (self *blockTracker) withWriteLock(id string, fn func(b *blockTrackerEntry)) {
-	defer self.mutex.Unlock()
-	self.mutex.Lock()
-	if val, ok := self.reqBlocks[id]; ok {
+func (bt *blockTracker) withWriteLock(id string, fn func(b *blockTrackerEntry)) {
+	defer bt.mutex.Unlock()
+	bt.mutex.Lock()
+	if val, ok := bt.reqBlocks[id]; ok {
 		fn(val)
 	} else {
 		app.Log.Critf("withWriteLock critical error, unable to locate track id %s", id)
@@ -168,10 +168,10 @@ func (self *blockTracker) withWriteLock(id string, fn func(b *blockTrackerEntry)
 
 // withWriteLockNotExist will take out a write lock, look up the given id in the hash
 // and call the given function with the lock if it doesn't find an entry.
-func (self *blockTracker) withWriteLockNotExist(id string, fn func()) {
-	defer self.mutex.Unlock()
-	self.mutex.Lock()
-	if _, ok := self.reqBlocks[id]; !ok {
+func (bt *blockTracker) withWriteLockNotExist(id string, fn func()) {
+	defer bt.mutex.Unlock()
+	bt.mutex.Lock()
+	if _, ok := bt.reqBlocks[id]; !ok {
 		fn()
 	} else {
 		app.Log.Critf("withWriteLockNotExist critical error, located track id %s", id)
@@ -180,10 +180,10 @@ func (self *blockTracker) withWriteLockNotExist(id string, fn func()) {
 
 // withReadLock will take out a read lock, look up the given id in the
 // hash and call the given function with the lock if it finds an entry.
-func (self *blockTracker) withReadLock(id string, fn func(b *blockTrackerEntry)) {
-	defer self.mutex.RUnlock()
-	self.mutex.RLock()
-	if val, ok := self.reqBlocks[id]; ok {
+func (bt *blockTracker) withReadLock(id string, fn func(b *blockTrackerEntry)) {
+	defer bt.mutex.RUnlock()
+	bt.mutex.RLock()
+	if val, ok := bt.reqBlocks[id]; ok {
 		fn(val)
 	} else {
 		app.Log.Critf("withReadLock critical error, unable to locate track id %s", id)

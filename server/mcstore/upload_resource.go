@@ -41,26 +41,26 @@ func newUploadResource() rest.Service {
 }
 
 // WebService creates an instance of the upload web service.
-func (self *uploadResource) WebService() *restful.WebService {
+func (r *uploadResource) WebService() *restful.WebService {
 	ws := new(restful.WebService)
 
 	ws.Path("/upload").Produces(restful.MIME_JSON).Consumes(restful.MIME_JSON)
 
-	ws.Route(ws.POST("").Filter(projectAccessFilter).Filter(directoryFilter).To(rest.RouteHandler(self.createUploadRequest)).
+	ws.Route(ws.POST("").Filter(projectAccessFilter).Filter(directoryFilter).To(rest.RouteHandler(r.createUploadRequest)).
 		Doc("Creates a new upload request").
 		Reads(CreateUploadRequest{}).
 		Writes(CreateUploadResponse{}))
 
-	ws.Route(ws.POST("/chunk").To(rest.RouteHandler(self.uploadFileChunk)).
+	ws.Route(ws.POST("/chunk").To(rest.RouteHandler(r.uploadFileChunk)).
 		Consumes("multipart/form-data").
 		Writes(UploadChunkResponse{}).
 		Doc("Upload a file chunk"))
 
-	ws.Route(ws.DELETE("{id}").To(rest.RouteHandler1(self.deleteUploadRequest)).
+	ws.Route(ws.DELETE("{id}").To(rest.RouteHandler1(r.deleteUploadRequest)).
 		Doc("Deletes an existing upload request").
 		Param(ws.PathParameter("id", "upload request to delete").DataType("string")))
 
-	ws.Route(ws.GET("{project}").Filter(projectAccessFilter).To(rest.RouteHandler(self.listProjectUploadRequests)).
+	ws.Route(ws.GET("{project}").Filter(projectAccessFilter).To(rest.RouteHandler(r.listProjectUploadRequests)).
 		Param(ws.PathParameter("project", "project id").DataType("string")).
 		Doc("Lists upload requests for project").
 		Writes([]UploadEntry{}))
@@ -90,7 +90,7 @@ type CreateUploadResponse struct {
 // createUploadRequest services requests to create a new upload id. It validates
 // the given request, and ensures that the returned upload id is unique. Upload
 // requests are persisted until deleted or a successful upload occurs.
-func (self *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+func (r *uploadResource) createUploadRequest(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	if cr, err := request2IDRequest(request, user.ID); err != nil {
 		app.Log.Debugf("request2IDRequst failed", err)
 		return nil, err
@@ -180,11 +180,11 @@ type UploadChunkResponse struct {
 }
 
 // uploadFileChunk uploads a new file chunk.
-func (self *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	session := request.Attribute("session").(*rethinkdb.Session)
 	flowRequest, err := form2FlowRequest(request)
 	if err != nil {
-		self.log.Errorf("Error converting form to flow.Request: %s", err)
+		r.log.Errorf("Error converting form to flow.Request: %s", err)
 		return nil, err
 	}
 
@@ -206,7 +206,7 @@ func (self *uploadResource) uploadFileChunk(request *restful.Request, response *
 
 // deleteUploadRequest will delete an existing upload request. It validates that
 // the requesting user has access to delete the request.
-func (self *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
+func (r *uploadResource) deleteUploadRequest(request *restful.Request, response *restful.Response, user schema.User) error {
 	session := request.Attribute("session").(*rethinkdb.Session)
 	idService := uploads.NewIDService(session)
 	uploadID := request.PathParameter("id")
@@ -215,7 +215,7 @@ func (self *uploadResource) deleteUploadRequest(request *restful.Request, respon
 
 // listProjectUploadRequests returns the upload requests for the project if the requester
 // has access to the project.
-func (self *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+func (r *uploadResource) listProjectUploadRequests(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	session := request.Attribute("session").(*rethinkdb.Session)
 	idService := uploads.NewIDService(session)
 	project := request.Attribute("project").(schema.Project)
