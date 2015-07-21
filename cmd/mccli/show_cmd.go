@@ -25,10 +25,7 @@ var showConfigCommand = cli.Command{
 }
 
 func showConfigCLI(c *cli.Context) {
-	apikey := config.GetString("apikey")
-	mcurl := mcstore.MCUrl()
-	mclogging := config.GetString("mclogging")
-	fmt.Println("apikey:", apikey)
-	fmt.Println("mcurl:", mcurl)
-	fmt.Println("mclogging:", mclogging)
+	fmt.Println("apikey:", config.GetString("apikey"))
+	fmt.Println("mcurl:", mcstore.MCUrl())
+	fmt.Println("mclogging:", config.GetString("mclogging"))
 }
