@@ -46,24 +46,27 @@ func main() {
 
 // setupConfigHandler creates the handler for the mc package. It sets up a
 // multi handler. If the user has setup a config.json in their .materialscommons
-// directory then it will add that to the handler list.
+// directory then it will add that to the handler list. Handlers will searched
+// in the following order: env - (optional) config file - defaults.
+//
+// This means that configuration set in the environment will override all other
+// settings, then it will check the config file (if one is setup), and finally
+// it will use the defaults.
 func setupConfigHandler() cfg.Handler {
-	handlers := []cfg.Handler{
-		handler.Env(),
-	}
-
 	u, err := user.Current()
 	if err != nil {
 		panic(fmt.Sprintf("Couldn't determine current user: %s", err))
 	}
 
+	// Set up the handlers. The order matters as it will search for
+	// configuration entries first to last, stopping when it finds
+	// one. This means that each entry overrides settings below it.
 	handlers := []cfg.Handler{
 		handler.Env(),
 	}
 
 	configFile := filepath.Join(u.HomeDir, ".materialscommons/config.json")
-	loader := getUserConfigLoader(configFile)
-	if loader != nil {
+	if loader := getUserConfigLoader(configFile); loader != nil {
 		handlers = append(handlers, handler.Loader(loader))
 	}
 
