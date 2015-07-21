@@ -134,12 +134,12 @@ func (u *uploader) createDirectory(entry files.TreeEntry) {
 // it will retry (dependent on retry settings).
 func (u *uploader) getDirectoryWithRetry(req mcstore.DirectoryRequest) string {
 	var dirID string
-	fn := func() bool {
+	fn := func() error {
 		var err error
 		if dirID, err = u.serverAPI.GetDirectory(req); err != nil {
-			return false
+			return with.ErrRetry
 		}
-		return true
+		return nil
 	}
 	u.retrier.WithRetry(fn)
 	return dirID
@@ -289,12 +289,12 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 // it will retry (dependent on retry settings).
 func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRequest) *mcstore.CreateUploadResponse {
 	var resp *mcstore.CreateUploadResponse
-	fn := func() bool {
+	fn := func() error {
 		var err error
 		if resp, err = u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
-			return false
+			return with.ErrRetry
 		}
-		return true
+		return nil
 	}
 	u.retrier.WithRetry(fn)
 	return resp
@@ -311,12 +311,12 @@ func numChunks(size int64) int32 {
 // it will retry (dependent on retry settings).
 func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunkResponse {
 	var resp *mcstore.UploadChunkResponse
-	fn := func() bool {
+	fn := func() error {
 		var err error
 		if resp, err = u.serverAPI.SendFlowData(req); err != nil {
-			return false
+			return with.ErrRetry
 		}
-		return true
+		return nil
 	}
 	u.retrier.WithRetry(fn)
 	return resp
