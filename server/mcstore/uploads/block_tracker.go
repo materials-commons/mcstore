@@ -15,6 +15,7 @@ import (
 	"github.com/willf/bitset"
 )
 
+// A blockTrackerEntry is an individual set of blocks being tracked for a request.
 type blockTrackerEntry struct {
 	bset         *bitset.BitSet
 	hasher       hash.Hash
