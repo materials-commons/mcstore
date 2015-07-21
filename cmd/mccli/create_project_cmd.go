@@ -6,6 +6,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
+	"path/filepath"
 )
 
 var (
@@ -17,15 +18,6 @@ var (
 			cli.StringFlag{
 				Name:  "directory, dir, d",
 				Usage: "The base directory for the project",
-			},
-			cli.BoolFlag{
-				Name:  "upload, up, u",
-				Usage: "Upload project after creating it",
-			},
-			cli.IntFlag{
-				Name:  "parallel, n",
-				Value: 3,
-				Usage: "Number of simultaneous uploads to perform, defaults to 3",
 			},
 		},
 		Action: createProjectCLI,
@@ -41,6 +33,14 @@ func createProjectCLI(c *cli.Context) {
 	projectName := c.Args()[0]
 
 	dirPath := c.String("directory")
+	dirPath, err := filepath.Abs(dirPath)
+	if err != nil {
+		fmt.Println("Unable to create absolute directory path: ", err)
+		os.Exit(1)
+	}
+
+	dirPath = filepath.Clean(dirPath)
+
 	if !validateDirectoryPath(dirPath) {
 		os.Exit(1)
 	}
