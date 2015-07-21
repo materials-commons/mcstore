@@ -12,10 +12,12 @@ import (
 	"gnd.la/net/urlutil"
 )
 
+// MCUrl returns the current mcurl config entry.
 func MCUrl() string {
 	return config.GetString("mcurl")
 }
 
+// MCClient creates a new EzClient.
 func MCClient() *ezhttp.EzClient {
 	mcurl := MCUrl()
 	if strings.HasPrefix(mcurl, "https") {
@@ -24,6 +26,8 @@ func MCClient() *ezhttp.EzClient {
 	return ezhttp.NewClient()
 }
 
+// Url create the url for accessing a service. It adds the mcurl to
+// the path, and also adds the apikey argument.
 func Url(path string) string {
 	values := url.Values{}
 	values.Add("apikey", config.GetString("apikey"))
@@ -32,6 +36,9 @@ func Url(path string) string {
 	return mcurl
 }
 
+// ToError tests the list of errors and the response to determine
+// the type of error to return. It calls HTTPStatusToError to
+// translate response status codes to an error.
 func ToError(resp *http.Response, errs []error) error {
 	if len(errs) != 0 {
 		return app.ErrInvalid
@@ -39,6 +46,8 @@ func ToError(resp *http.Response, errs []error) error {
 	return HTTPStatusToError(resp.StatusCode)
 }
 
+// HTTPStatusToError translates an http state to an
+// application error.
 func HTTPStatusToError(status int) error {
 	switch {
 	case status == http.StatusInternalServerError:
@@ -59,6 +68,7 @@ func HTTPStatusToError(status int) error {
 	}
 }
 
+// ToJSON unmarshalls a string that contains JSON.
 func ToJSON(from string, to interface{}) error {
 	err := json.Unmarshal([]byte(from), to)
 	return err
