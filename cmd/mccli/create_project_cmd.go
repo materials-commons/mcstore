@@ -19,6 +19,15 @@ var (
 				Name:  "directory, dir, d",
 				Usage: "The base directory for the project",
 			},
+			cli.BoolFlag{
+				Name:  "upload, up, u",
+				Usage: "Upload project after creating it",
+			},
+			cli.IntFlag{
+				Name:  "parallel, n",
+				Value: 3,
+				Usage: "Number of simultaneous uploads to perform, defaults to 3",
+			},
 		},
 		Action: createProjectCLI,
 	}
