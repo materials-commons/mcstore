@@ -245,8 +245,8 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 	if err != nil && err != io.EOF {
 		app.Log.Errorf("Unable to complete read on file for upload: %s", entry.Path)
 	} else {
-		// done, so update the database with the entry.
-		if file == nil || file.Checksum != checksum {
+		// done, add or update the entry in the database.
+		if file == nil {
 			// create new entry
 			newFile := File{
 				FileID:     uploadResp.FileID,
@@ -262,6 +262,13 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 			// update existing entry
 			file.MTime = entry.Finfo.ModTime()
 			file.LastUpload = time.Now()
+			if file.Checksum != checksum {
+				// Existing file uploaded but we created a new version on the server.
+				// We could get here if a previous upload did not complete.
+				file.Checksum = checksum
+				file.FileID = uploadResp.FileID
+				file.Size = entry.Finfo.Size()
+			}
 			u.db.UpdateFile(file)
 		}
 	}
