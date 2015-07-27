@@ -28,5 +28,8 @@ func NewServicesContainer(sc db.SessionCreater) *restful.Container {
 	projectsResource := newProjectsResource()
 	container.Add(projectsResource.WebService())
 
+	searchResource := newSearchResource()
+	container.Add(searchResource.WebService())
+
 	return container
 }

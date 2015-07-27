@@ -10,6 +10,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
+	"github.com/materials-commons/mcstore/server/mcstore/pkg/filters"
 	"github.com/materials-commons/mcstore/server/mcstore/uploads"
 	"github.com/willf/bitset"
 )
@@ -46,7 +47,7 @@ func (r *uploadResource) WebService() *restful.WebService {
 
 	ws.Path("/upload").Produces(restful.MIME_JSON).Consumes(restful.MIME_JSON)
 
-	ws.Route(ws.POST("").Filter(projectAccessFilter).Filter(directoryFilter).To(rest.RouteHandler(r.createUploadRequest)).
+	ws.Route(ws.POST("").Filter(filters.ProjectAccess).Filter(directoryFilter).To(rest.RouteHandler(r.createUploadRequest)).
 		Doc("Creates a new upload request").
 		Reads(CreateUploadRequest{}).
 		Writes(CreateUploadResponse{}))
@@ -60,7 +61,7 @@ func (r *uploadResource) WebService() *restful.WebService {
 		Doc("Deletes an existing upload request").
 		Param(ws.PathParameter("id", "upload request to delete").DataType("string")))
 
-	ws.Route(ws.GET("{project}").Filter(projectAccessFilter).To(rest.RouteHandler(r.listProjectUploadRequests)).
+	ws.Route(ws.GET("{project}").Filter(filters.ProjectAccess).To(rest.RouteHandler(r.listProjectUploadRequests)).
 		Param(ws.PathParameter("project", "project id").DataType("string")).
 		Doc("Lists upload requests for project").
 		Writes([]UploadEntry{}))

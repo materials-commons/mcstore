@@ -1,4 +1,4 @@
-package mcstore
+package filters
 
 import (
 	"net/http"
@@ -28,7 +28,7 @@ func newProjectAccessFilterDAI(session *r.Session) *projectAccessFilterDAI {
 	}
 }
 
-func projectAccessFilter(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
+func ProjectAccess(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	user := request.Attribute("user").(schema.User)
 	session := request.Attribute("session").(*r.Session)
 
