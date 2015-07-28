@@ -59,7 +59,7 @@ func (r *searchResource) searchProject(request *restful.Request, response *restf
 	project := request.Attribute("project").(schema.Project)
 	client := request.Attribute("searchclient").(*elastic.Client)
 	q := createQuery(query, project.ID)
-	results, err := client.Search().Index("mc").Query(q).Size(20).Do()
+	results, err := client.Search().Index("mc").Query(q).Size(100).Do()
 	if err != nil {
 		r.log.Infof("Query failed: %s", err)
 		return nil, err
@@ -82,7 +82,7 @@ func (r *searchResource) searchProjectFiles(request *restful.Request, response *
 	project := request.Attribute("project").(schema.Project)
 	client := request.Attribute("searchclient").(*elastic.Client)
 	q := createQuery(query, project.ID)
-	results, err := client.Search().Index("mc").Type("files").Query(q).Size(20).Do()
+	results, err := client.Search().Index("mc").Type("files").Query(q).Size(100).Do()
 	if err != nil {
 		r.log.Infof("Query failed: %s", err)
 		return nil, err
