@@ -66,7 +66,7 @@ var mappings string = `
 	     	     "id": {
 	            	"type": "string",
 	             	"index": "not_analyzed"
-	             },
+	             }
 	        }
 	     },
 	     "processes": {
@@ -74,7 +74,7 @@ var mappings string = `
 	     		"id": {
 	            	"type": "string",
 	             	"index": "not_analyzed"
-	             },
+	             }
 	        }
 	     },
 		"users": {
@@ -82,7 +82,7 @@ var mappings string = `
 	     		"id": {
 	            	"type": "string",
 	             	"index": "not_analyzed"
-	             },
+	             }
 	        }
 	    }
 	}
@@ -116,7 +116,8 @@ func createIndex(client *elastic.Client) {
 
 	createStatus, err := client.CreateIndex("mc").Body(mappings).Do()
 	if err != nil {
-		panic("Failed creating index")
+		fmt.Println("Failed creating index: ", err)
+		os.Exit(1)
 	}
 	if !createStatus.Acknowledged {
 		fmt.Println("Index create not acknowledged")
