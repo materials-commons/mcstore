@@ -6,19 +6,19 @@ import (
 
 // User models a user in the system.
 type User struct {
-	ID          string    `gorethink:"id,omitempty"`
-	Email       string    `gorethink:"email"`
-	Admin       bool      `gorethink:"admin"`
-	Fullname    string    `gorethink:"fullname"`
-	Password    string    `gorethink:"password"`
-	APIKey      string    `gorethink:"apikey"`
-	Birthtime   time.Time `gorethink:"birthtime"`
-	MTime       time.Time `gorethink:"mtime"`
-	Avatar      string    `gorethink:"avatar"`
-	Description string    `gorethink:"description"`
-	Affiliation string    `gorethink:"affiliation"`
-	HomePage    string    `gorethink:"homepage"`
-	Type        string    `gorethink:"_type"`
+	ID          string    `gorethink:"id,omitempty" json:"id"`
+	Email       string    `gorethink:"email" json:"email"`
+	Admin       bool      `gorethink:"admin" json:"admin"`
+	Fullname    string    `gorethink:"fullname" json:"fullname"`
+	Password    string    `gorethink:"password" json:"-"`
+	APIKey      string    `gorethink:"apikey" json:"-"`
+	Birthtime   time.Time `gorethink:"birthtime" json:"birthtime"`
+	MTime       time.Time `gorethink:"mtime" json:"mtime"`
+	Avatar      string    `gorethink:"avatar" json:"avatar"`
+	Description string    `gorethink:"description" json:"description"`
+	Affiliation string    `gorethink:"affiliation" json:"affiliation"`
+	HomePage    string    `gorethink:"homepage" json:"homepage"`
+	Type        string    `gorethink:"_type" json:"_type"`
 }
 
 // NewUser creates a new User instance.
