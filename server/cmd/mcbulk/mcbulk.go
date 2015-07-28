@@ -11,6 +11,8 @@ import (
 
 	"strings"
 
+	"os/exec"
+
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
@@ -89,6 +91,26 @@ var mappings string = `
 }
 `
 
+var tikableMediaTypes map[string]bool = map[string]bool{
+	"application/msword":                                                        true,
+	"application/pdf":                                                           true,
+	"application/rtf":                                                           true,
+	"application/vnd.ms-excel":                                                  true,
+	"application/vnd.ms-office":                                                 true,
+	"application/vnd.ms-powerpoint":                                             true,
+	"application/vnd.ms-powerpoint.presentation.macroEnabled.12":                true,
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": true,
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         true,
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":   true,
+	"application/vnd.sealedmedia.softseal.pdf":                                  true,
+	"text/plain; charset=utf-8":                                                 true,
+}
+
+//var onlyHeader map[string]bool = map[string]bool{
+//	"application/vnd.ms-excel":                                          true,
+//	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
+//}
+
 func main() {
 	client, err := elastic.NewClient()
 	if err != nil {
@@ -125,9 +147,22 @@ func createIndex(client *elastic.Client) {
 }
 
 func loadFiles(client *elastic.Client, session *r.Session) {
+	renameDirPath := func(row r.Term) interface{} {
+		return row.Merge(map[string]interface{}{
+			"right": map[string]interface{}{
+				"path": row.Field("right").Field("name"),
+			},
+		})
+	}
+
+	var _ = renameDirPath
+
 	res, err := r.Table("projects").Pluck("id").
 		EqJoin("id", r.Table("project2datafile"), r.EqJoinOpts{Index: "project_id"}).Zip().
 		EqJoin("datafile_id", r.Table("datadir2datafile"), r.EqJoinOpts{Index: "datafile_id"}).Zip().
+		EqJoin("datadir_id", r.Table("datadirs")).
+		Map(renameDirPath).
+		Zip().
 		EqJoin("datafile_id", r.Table("datafiles")).Zip().
 		Run(session)
 	if err != nil {
@@ -242,6 +277,12 @@ func readContents(file *schema.File) {
 		if contents, err := ioutil.ReadFile(app.MCDir.FilePath(file.ID)); err == nil {
 			file.Contents = string(contents)
 		}
+	default:
+		if _, ok := tikableMediaTypes[file.MediaType.Mime]; ok {
+			if contents := extractUsingTika(file); contents != "" {
+				file.Contents = contents
+			}
+		}
 	}
 }
 
@@ -260,4 +301,19 @@ func readCSVLines(fileID string) (string, error) {
 	} else {
 		return "", err
 	}
+}
+
+func extractUsingTika(file *schema.File) string {
+	if file.Size > twoMeg {
+		return ""
+	}
+
+	out, err := exec.Command("tika.sh", "--text", app.MCDir.FilePath(file.ID)).Output()
+	if err != nil {
+		fmt.Println("Tika failed for:", file.Name, file.ID, file.MediaType.Mime)
+		fmt.Println("exec failed:", err)
+		return ""
+	}
+
+	return string(out)
 }
