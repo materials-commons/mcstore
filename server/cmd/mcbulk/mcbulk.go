@@ -44,10 +44,6 @@ var mappings string = `
 	              "usesid": {
 	                  "type": "string",
 	                  "index": "not_analyzed"
-	              },
-	              "name": {
-	               	  "type": "string",
-	                  "index": "not_analyzed"
 	              }
 	         }
 	     },
