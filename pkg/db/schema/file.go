@@ -26,11 +26,11 @@ func (f fileFields) UsesID() string      { return "usesid" }
 
 // MediaType describes the mime media type and its description.
 type MediaType struct {
-	Mime        string `gorethink:"mime"`        // The MIME type
-	Description string `gorethink:"description"` // Description of MIME type
+	Mime        string `gorethink:"mime" json:"mime"`               // The MIME type
+	Description string `gorethink:"description" json:"description"` // Description of MIME type
 
 	// MIME Description translated to human readable format
-	MimeDescription string `gorethink:"mime_description"`
+	MimeDescription string `gorethink:"mime_description" json:"mime_description"`
 }
 
 // File models a user file. A datafile is an abstract representation of a real file
@@ -40,6 +40,7 @@ type File struct {
 	Type        string    `gorethink:"_type" json:"_type"`                               // Type
 	Current     bool      `gorethink:"current" json:"current"`                           // Is this the most current version.
 	Name        string    `gorethink:"name" json:"name"`                                 // Name of file.
+	Path        string    `gorethink:"path,omitempty" json:"path"`                       // Directory path where file resides.
 	Birthtime   time.Time `gorethink:"birthtime" json:"birthtime"`                       // Creation time.
 	MTime       time.Time `gorethink:"mtime" json:"mtime"`                               // Modification time.
 	ATime       time.Time `gorethink:"atime" json:"atime"`                               // Last access time.
