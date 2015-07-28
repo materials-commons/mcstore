@@ -7,7 +7,6 @@ import (
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/filters"
 	"gopkg.in/olivere/elastic.v2"
-	"encoding/json"
 )
 
 type searchResource struct {
@@ -29,16 +28,43 @@ func (r *searchResource) WebService() *restful.WebService {
 
 	ws.Path("/search").Produces(restful.MIME_JSON).Consumes(restful.MIME_JSON)
 
-	ws.Route(ws.GET("/project/{project}/files").
+	ws.Route(ws.POST("/project/{project}").
+		Filter(filters.ProjectAccess).
+		Filter(filters.SearchClient).
+		To(rest.RouteHandler(r.searchProject)).
+		Param(ws.PathParameter("project", "project id").DataType("string")).
+		Doc("Searches all project items - files, processes, samples, notes, users").
+		Reads(Query{}).
+		Writes(elastic.SearchHits{}))
+
+	ws.Route(ws.POST("/project/{project}/files").
 		Filter(filters.ProjectAccess).
 		Filter(filters.SearchClient).
 		To(rest.RouteHandler(r.searchProjectFiles)).
 		Param(ws.PathParameter("project", "project id").DataType("string")).
 		Doc("Searches files in project").
 		Reads(Query{}).
-		Writes([]schema.File{}))
+		Writes(elastic.SearchHits{}))
 
 	return ws
+}
+
+func (r *searchResource) searchProject(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	var query Query
+	if err := request.ReadEntity(&query); err != nil {
+		r.log.Debugf("Failed reading query: %s", err)
+		return nil, err
+	}
+
+	project := request.Attribute("project").(schema.Project)
+	client := request.Attribute("searchclient").(*elastic.Client)
+	q := createQuery(query, project.ID)
+	results, err := client.Search().Index("mc").Query(q).Size(20).Do()
+	if err != nil {
+		r.log.Infof("Query failed: %s", err)
+		return nil, err
+	}
+	return results.Hits, nil
 }
 
 //func (r *searchResource) searchUserProjects(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
@@ -46,36 +72,29 @@ func (r *searchResource) WebService() *restful.WebService {
 //}
 
 func (r *searchResource) searchProjectFiles(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	var (
-		query Query
-		matches []schema.File
-	)
+	var query Query
 
 	if err := request.ReadEntity(&query); err != nil {
 		r.log.Debugf("Failed reading query: %s", err)
-		return matches, err
+		return nil, err
 	}
 
 	project := request.Attribute("project").(schema.Project)
 	client := request.Attribute("searchclient").(*elastic.Client)
-	termQueryProj := elastic.NewTermQuery("project_id", project.ID)
+	q := createQuery(query, project.ID)
+	results, err := client.Search().Index("mc").Type("files").Query(q).Size(20).Do()
+	if err != nil {
+		r.log.Infof("Query failed: %s", err)
+		return nil, err
+	}
+
+	return results.Hits, nil
+}
+
+func createQuery(query Query, projectID string) elastic.Query {
+	termQueryProj := elastic.NewTermQuery("project_id", projectID)
 	userQuery := elastic.NewQueryStringQuery(query.QString)
 	boolQuery := elastic.NewBoolQuery()
 	boolQuery = boolQuery.Must(termQueryProj, userQuery)
-	results, err := client.Search().Index("mc").Type("files").Query(&boolQuery).Do()
-	if err != nil {
-		r.log.Infof("Query failed: %s", err)
-		return matches, err
-	}
-
-	if results.Hits != nil {
-		for _, hit := range results.Hits.Hits {
-			var f schema.File
-			if err := json.Unmarshal(*hit.Source, &f); err == nil {
-				matches = append(matches, f)
-			}
-		}
-	}
-
-	return matches, nil
+	return &boolQuery
 }
