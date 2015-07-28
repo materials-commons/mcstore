@@ -30,10 +30,16 @@ type databaseOptions struct {
 	Name       string `long:"db" description:"Database to use" default:"materialscommons"`
 }
 
+// Options for elastic search
+type searchServerOptions struct {
+	ESUrl string `long:"es-url" description:"The elastic search server url" default:"http://localhost:9200"`
+}
+
 // Break the options into option groups.
 type options struct {
-	Server   serverOptions   `group:"Server Options"`
-	Database databaseOptions `group:"Database Options"`
+	Server       serverOptions       `group:"Server Options"`
+	Database     databaseOptions     `group:"Database Options"`
+	SearchServer searchServerOptions `group:"Search Server Options"`
 }
 
 // configErrorHandler gives us a chance to handle configuration look up errors.
@@ -68,6 +74,7 @@ func setupConfig(opts options) {
 	configSetNotEmpty("MCDB_CONNECTION", opts.Database.Connection)
 	configSetNotEmpty("MCDB_NAME", opts.Database.Name)
 	configSetNotEmpty("MCDIR", opts.Server.MCDir)
+	configSetNotEmpty("MC_ES_URL", opts.SearchServer.ESUrl)
 
 	if lvl, err := log15.LvlFromString(opts.Server.LogLevel); err != nil {
 		fmt.Printf("Invalid Log Level: %s, setting to info\n", opts.Server.LogLevel)
