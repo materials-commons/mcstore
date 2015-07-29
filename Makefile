@@ -9,6 +9,7 @@ server:
 
 cli:
 	(cd ./cmd/mccli/main; godep go build mc.go)
+	(cd ./server/cmd/mcbulk; godep go build mcbulk.go)
 
 docs:
 	./makedocs.sh
