@@ -180,8 +180,13 @@ func loadFiles(client *elastic.Client, session *r.Session) {
 	count := 0
 	maxCount := 10
 	bulkReq := client.Bulk()
+	lastProject := ""
 	for res.Next(&df) {
 		readContents(&df)
+		if df.ProjectID != lastProject {
+			fmt.Println("Indexing files for project:", df.ProjectID)
+			lastProject = df.ProjectID
+		}
 		if count < maxCount {
 			indexReq := elastic.NewBulkIndexRequest().Index("mc").Type("files").Id(df.ID).Doc(df)
 			bulkReq = bulkReq.Add(indexReq)
