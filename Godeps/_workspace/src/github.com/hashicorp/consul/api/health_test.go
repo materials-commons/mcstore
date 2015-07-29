@@ -8,9 +8,8 @@ import (
 )
 
 func TestHealth_Node(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	agent := c.Agent()
 	health := c.Health()
@@ -21,27 +20,22 @@ func TestHealth_Node(t *testing.T) {
 	}
 	name := info["Config"]["NodeName"].(string)
 
-	testutil.WaitForResult(func() (bool, error) {
-		checks, meta, err := health.Node(name, nil)
-		if err != nil {
-			return false, err
-		}
-		if meta.LastIndex == 0 {
-			return false, fmt.Errorf("bad: %v", meta)
-		}
-		if len(checks) == 0 {
-			return false, fmt.Errorf("bad: %v", checks)
-		}
-		return true, nil
-	}, func(err error) {
-		t.Fatalf("err: %s", err)
-	})
+	checks, meta, err := health.Node(name, nil)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+
+	if meta.LastIndex == 0 {
+		t.Fatalf("bad: %v", meta)
+	}
+	if len(checks) == 0 {
+		t.Fatalf("Bad: %v", checks)
+	}
 }
 
 func TestHealth_Checks(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	agent := c.Agent()
 	health := c.Health()
@@ -76,9 +70,8 @@ func TestHealth_Checks(t *testing.T) {
 }
 
 func TestHealth_Service(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	health := c.Health()
 
@@ -101,9 +94,8 @@ func TestHealth_Service(t *testing.T) {
 }
 
 func TestHealth_State(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
-	defer s.Stop()
+	defer s.stop()
 
 	health := c.Health()
 

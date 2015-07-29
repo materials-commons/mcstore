@@ -193,44 +193,27 @@ func (k *KV) put(key string, params map[string]string, body []byte, q *WriteOpti
 
 // Delete is used to delete a single key
 func (k *KV) Delete(key string, w *WriteOptions) (*WriteMeta, error) {
-	_, qm, err := k.deleteInternal(key, nil, w)
-	return qm, err
-}
-
-// DeleteCAS is used for a Delete Check-And-Set operation. The Key
-// and ModifyIndex are respected. Returns true on success or false on failures.
-func (k *KV) DeleteCAS(p *KVPair, q *WriteOptions) (bool, *WriteMeta, error) {
-	params := map[string]string{
-		"cas": strconv.FormatUint(p.ModifyIndex, 10),
-	}
-	return k.deleteInternal(p.Key, params, q)
+	return k.deleteInternal(key, nil, w)
 }
 
 // DeleteTree is used to delete all keys under a prefix
 func (k *KV) DeleteTree(prefix string, w *WriteOptions) (*WriteMeta, error) {
-	_, qm, err := k.deleteInternal(prefix, map[string]string{"recurse": ""}, w)
-	return qm, err
+	return k.deleteInternal(prefix, []string{"recurse"}, w)
 }
 
-func (k *KV) deleteInternal(key string, params map[string]string, q *WriteOptions) (bool, *WriteMeta, error) {
+func (k *KV) deleteInternal(key string, params []string, q *WriteOptions) (*WriteMeta, error) {
 	r := k.c.newRequest("DELETE", "/v1/kv/"+key)
 	r.setWriteOptions(q)
-	for param, val := range params {
-		r.params.Set(param, val)
+	for _, param := range params {
+		r.params.Set(param, "")
 	}
 	rtt, resp, err := requireOK(k.c.doRequest(r))
 	if err != nil {
-		return false, nil, err
+		return nil, err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	qm := &WriteMeta{}
 	qm.RequestTime = rtt
-
-	var buf bytes.Buffer
-	if _, err := io.Copy(&buf, resp.Body); err != nil {
-		return false, nil, fmt.Errorf("Failed to read response: %v", err)
-	}
-	res := strings.Contains(string(buf.Bytes()), "true")
-	return res, qm, nil
+	return qm, nil
 }
