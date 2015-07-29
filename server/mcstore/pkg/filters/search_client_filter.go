@@ -5,7 +5,6 @@ import (
 
 	"sync"
 
-	"fmt"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -29,7 +28,7 @@ func SearchClient(request *restful.Request, response *restful.Response, chain *r
 func getSearchClient() *elastic.Client {
 	clientInit.Do(func() {
 		url := esURL()
-		fmt.Println("Connecting to:", url)
+		app.Log.Infof("Connecting to search url:", url)
 		c, err := elastic.NewClient(elastic.SetURL(url))
 		if err != nil {
 			app.Log.Errorf("Couldn't connect to ElasticSearch")
