@@ -109,7 +109,9 @@ var tikableMediaTypes map[string]bool = map[string]bool{
 //}
 
 func main() {
-	client, err := elastic.NewClient(elastic.SetURL(esURL()))
+	esurl := esURL()
+	fmt.Println("Connecting to url:", esurl)
+	client, err := elastic.NewClient(elastic.SetURL(esurl))
 	if err != nil {
 		panic("Unable to connect to elasticsearch")
 	}
