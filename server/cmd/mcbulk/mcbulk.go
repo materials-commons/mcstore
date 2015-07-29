@@ -14,6 +14,7 @@ import (
 	"os/exec"
 
 	r "github.com/dancannon/gorethink"
+	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
@@ -108,7 +109,7 @@ var tikableMediaTypes map[string]bool = map[string]bool{
 //}
 
 func main() {
-	client, err := elastic.NewClient()
+	client, err := elastic.NewClient(elastic.SetURL(esURL))
 	if err != nil {
 		panic("Unable to connect to elasticsearch")
 	}
@@ -120,6 +121,13 @@ func main() {
 	loadUsers(client, session)
 	loadProjects(client, session)
 
+}
+
+func esURL() string {
+	if esURL := config.GetString("MC_ES_URL"); esURL != "" {
+		return esURL
+	}
+	return "http://localhost:9200"
 }
 
 func createIndex(client *elastic.Client) {
