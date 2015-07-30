@@ -82,8 +82,12 @@ var mappings string = `
 	     },
 	     "processes": {
 	     	"properties":{
-	     		"id": {
+	     		"process_id": {
 	            	"type": "string",
+	             	"index": "not_analyzed"
+	             },
+	             "project_id": {
+	             	"type": "string",
 	             	"index": "not_analyzed"
 	             }
 	        }
@@ -130,6 +134,7 @@ func main() {
 	loadUsers(client, session)
 	loadProjects(client, session)
 	loadSamples(client, session)
+	loadProcesses(client, session)
 }
 
 func esURL() string {
@@ -311,6 +316,65 @@ func loadSamples(client *elastic.Client, session *r.Session) {
 
 	fmt.Println("Indexing samples...")
 	sampleIndexer.Do("samples", sample)
+	fmt.Println("Done.")
+}
+
+type SetupProperties struct {
+	ID          string      `gorethink:"-" json:"-"`
+	Attribute   string      `gorethink:"attribute" json:"attribute"`
+	Description string      `gorethink:"description" json:"description"`
+	Name        string      `gorethink:"name" json:"name"`
+	ProcessID   string      `gorethink:"-" json:"-"`
+	SetupID     string      `gorethink:"-" json:"-"`
+	Units       string      `gorethink:"units" json:"units"`
+	Value       interface{} `gorethink:"value" json:"value"`
+}
+
+type Process struct {
+	ID            string            `gorethink:"id" json:"-"`
+	Birthtime     time.Time         `gorethink:"birthtime" json:"birthtime"`
+	MTime         time.Time         `gorethink:"mtime" json:"mtime"`
+	Name          string            `gorethink:"name" json:"name"`
+	DoesTransform bool              `gorethink:"does_transform" json:"does_transform"`
+	Owner         string            `gorethink:"owner" json:"owner"`
+	ProcessID     string            `gorethink:"process_id" json:"process_id"`
+	ProcessType   string            `gorethink:"procss_type" json:"process_type"`
+	ProjectID     string            `gorethink:"project_id" json:"project_id"`
+	What          string            `gorethink:"what" json:"what"`
+	Why           string            `gorethink:"why" json:"why"`
+	Setup         []SetupProperties `gorethink:"setup" json:"setup"`
+}
+
+func loadProcesses(client *elastic.Client, session *r.Session) {
+	var process Process
+
+	getSetup := func(row r.Term) interface{} {
+		return map[string]interface{}{
+			"setup": r.Table("process2setup").GetAllByIndex("process_id", row.Field("process_id")).
+				EqJoin("setup_id", r.Table("setupproperties"), r.EqJoinOpts{Index: "setup_id"}).
+				Zip().CoerceTo("ARRAY"),
+		}
+	}
+
+	rql := r.Table("projects").Pluck("id").
+		EqJoin("id", r.Table("project2process"), r.EqJoinOpts{Index: "project_id"}).
+		Zip().
+		EqJoin("process_id", r.Table("processes")).Zip().
+		Merge(getSetup)
+
+	processesIndexer := &indexer{
+		rql: rql,
+		getID: func(item interface{}) string {
+			s := item.(*Process)
+			return s.ProcessID
+		},
+		client:   client,
+		session:  session,
+		maxCount: 1000,
+	}
+
+	fmt.Println("Indexing processes...")
+	processesIndexer.Do("processes", process)
 	fmt.Println("Done.")
 }
 
