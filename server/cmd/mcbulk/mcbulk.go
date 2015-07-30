@@ -115,11 +115,6 @@ var tikableMediaTypes map[string]bool = map[string]bool{
 	"text/plain; charset=utf-8":                                                 true,
 }
 
-//var onlyHeader map[string]bool = map[string]bool{
-//	"application/vnd.ms-excel":                                          true,
-//	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
-//}
-
 func main() {
 	esurl := esURL()
 	fmt.Println("Elasticsearch URL:", esurl)
@@ -168,12 +163,18 @@ type TagID struct {
 	TagID string `gorethink:"tag_id" json:"tag"`
 }
 
+type Note struct {
+	Note  string `gorethink:"note" json:"note"`
+	Title string `gorethink:"title" json:"title"`
+}
+
 type File struct {
 	schema.File
 	Tags      []TagID `gorethink:"tags" json:"tags"`
 	DataDirID string  `gorethink:"datadir_id" json:"datadir_id"` // Directory file is located in
 	ProjectID string  `gorethink:"project_id" json:"project_id"` // Project file is in
 	Contents  string  `gorethink:"-" json:"contents"`            // Contents of the file (text only)
+	Notes     []Note  `gorethink:"notes" json:"notes"`
 }
 
 func loadFiles(client *elastic.Client, session *r.Session) {
@@ -186,10 +187,12 @@ func loadFiles(client *elastic.Client, session *r.Session) {
 		})
 	}
 
-	fileTags := func(row r.Term) interface{} {
+	tagsAndNotes := func(row r.Term) interface{} {
 		return map[string]interface{}{
 			"tags": r.Table("tag2item").GetAllByIndex("item_id", row.Field("id")).
 				Pluck("tag_id").CoerceTo("ARRAY"),
+			"notes": r.Table("note2item").GetAllByIndex("item_id", row.Field("id")).
+				EqJoin("note_id", r.Table("notes")).Zip().CoerceTo("ARRAY"),
 		}
 	}
 
@@ -200,7 +203,8 @@ func loadFiles(client *elastic.Client, session *r.Session) {
 		Map(renameDirPath).
 		Zip().
 		EqJoin("datafile_id", r.Table("datafiles")).Zip().
-		Merge(fileTags)
+		//Filter(r.Row.Field("id").Eq("184e5b21-b86a-4fd0-97ea-98c726a9787b")).
+		Merge(tagsAndNotes)
 
 	fileIndexer := &indexer{
 		rql: rql,
