@@ -13,6 +13,10 @@ import (
 
 	"os/exec"
 
+	"time"
+
+	"reflect"
+
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -62,10 +66,18 @@ var mappings string = `
 	     },
 	     "samples": {
 	     	"properties":{
-	     	     "id": {
+	     	    "id": {
 	            	"type": "string",
 	             	"index": "not_analyzed"
-	             }
+	            },
+	        	"project_id": {
+	                "type": "string",
+	                "index": "not_analyzed"
+	        	},
+	        	"sample_id": {
+	        		"type": "string",
+	        		"index": "not_analyzed"
+	        	}
 	        }
 	     },
 	     "processes": {
@@ -110,7 +122,7 @@ var tikableMediaTypes map[string]bool = map[string]bool{
 
 func main() {
 	esurl := esURL()
-	fmt.Println("Connecting to url:", esurl)
+	fmt.Println("Elasticsearch URL:", esurl)
 	client, err := elastic.NewClient(elastic.SetURL(esurl))
 	if err != nil {
 		panic("Unable to connect to elasticsearch")
@@ -122,7 +134,7 @@ func main() {
 	loadFiles(client, session)
 	loadUsers(client, session)
 	loadProjects(client, session)
-
+	loadSamples(client, session)
 }
 
 func esURL() string {
@@ -152,7 +164,20 @@ func createIndex(client *elastic.Client) {
 	}
 }
 
+type TagID struct {
+	TagID string `gorethink:"tag_id" json:"tag"`
+}
+
+type File struct {
+	schema.File
+	Tags      []TagID `gorethink:"tags" json:"tags"`
+	DataDirID string  `gorethink:"datadir_id" json:"datadir_id"` // Directory file is located in
+	ProjectID string  `gorethink:"project_id" json:"project_id"` // Project file is in
+	Contents  string  `gorethink:"-" json:"contents"`            // Contents of the file (text only)
+}
+
 func loadFiles(client *elastic.Client, session *r.Session) {
+	var df File
 	renameDirPath := func(row r.Term) interface{} {
 		return row.Merge(map[string]interface{}{
 			"right": map[string]interface{}{
@@ -161,101 +186,165 @@ func loadFiles(client *elastic.Client, session *r.Session) {
 		})
 	}
 
-	var _ = renameDirPath
+	fileTags := func(row r.Term) interface{} {
+		return map[string]interface{}{
+			"tags": r.Table("tag2item").GetAllByIndex("item_id", row.Field("id")).
+				Pluck("tag_id").CoerceTo("ARRAY"),
+		}
+	}
 
-	res, err := r.Table("projects").Pluck("id").
+	rql := r.Table("projects").Pluck("id").
 		EqJoin("id", r.Table("project2datafile"), r.EqJoinOpts{Index: "project_id"}).Zip().
 		EqJoin("datafile_id", r.Table("datadir2datafile"), r.EqJoinOpts{Index: "datafile_id"}).Zip().
 		EqJoin("datadir_id", r.Table("datadirs")).
 		Map(renameDirPath).
 		Zip().
 		EqJoin("datafile_id", r.Table("datafiles")).Zip().
-		Run(session)
-	if err != nil {
-		panic(fmt.Sprintf("Unable to query database for files: %s", err))
-	}
-	defer res.Close()
+		Merge(fileTags)
 
-	var df schema.File
-	count := 0
-	maxCount := 10
-	bulkReq := client.Bulk()
-	lastProject := ""
-	for res.Next(&df) {
-		readContents(&df)
-		if df.ProjectID != lastProject {
-			fmt.Println("Indexing files for project:", df.ProjectID)
-			lastProject = df.ProjectID
-		}
-		if count < maxCount {
-			indexReq := elastic.NewBulkIndexRequest().Index("mc").Type("files").Id(df.ID).Doc(df)
-			bulkReq = bulkReq.Add(indexReq)
-			count++
-		} else {
-			count = 0
-			resp, err := bulkReq.Do()
-			if err != nil {
-				fmt.Printf("bulkreq failed: %s\n", err)
-				fmt.Printf("%#v\n", resp)
-				return
-			}
-		}
+	fileIndexer := &indexer{
+		rql: rql,
+		getID: func(item interface{}) string {
+			dfile := item.(*File)
+			return dfile.ID
+		},
+		apply: func(item interface{}) {
+			dfile := item.(*File)
+			readContents(dfile)
+		},
+		client:   client,
+		session:  session,
+		maxCount: 10,
 	}
-
-	if count != 0 {
-		bulkReq.Do()
-	}
+	fmt.Println("Indexing files...")
+	fileIndexer.Do("files", df)
+	fmt.Println("Done.")
 }
 
 func loadUsers(client *elastic.Client, session *r.Session) {
-	res, err := r.Table("users").Run(session)
-	if err != nil {
-		panic(fmt.Sprintf("Unable to query database for users: %s", err))
-	}
-	defer res.Close()
-
 	var u schema.User
-	count := 0
-	maxCount := 1000
-	bulkReq := client.Bulk()
-	for res.Next(&u) {
-		if count < maxCount {
-			indexReq := elastic.NewBulkIndexRequest().Index("mc").Type("users").Id(u.ID).Doc(u)
-			bulkReq = bulkReq.Add(indexReq)
-			count++
-		} else {
-			count = 0
-			resp, err := bulkReq.Do()
-			if err != nil {
-				fmt.Printf("bulkreq failed: %s\n", err)
-				fmt.Printf("%#v\n", resp)
-				return
-			}
-		}
+	rql := r.Table("users")
+
+	userIndexer := &indexer{
+		rql: rql,
+		getID: func(item interface{}) string {
+			user := item.(*schema.User)
+			return user.ID
+		},
+		client:   client,
+		session:  session,
+		maxCount: 1000,
 	}
 
-	if count != 0 {
-		bulkReq.Do()
-	}
+	fmt.Println("Indexing users...")
+	userIndexer.Do("users", u)
+	fmt.Println("Done.")
 }
 
 func loadProjects(client *elastic.Client, session *r.Session) {
-	res, err := r.Table("projects").Run(session)
+	var p schema.Project
+	rql := r.Table("projects")
+	projectIndexer := &indexer{
+		rql: rql,
+		getID: func(item interface{}) string {
+			project := item.(*schema.Project)
+			return project.ID
+		},
+		client:   client,
+		session:  session,
+		maxCount: 1000,
+	}
+
+	fmt.Println("Indexing projects...")
+	projectIndexer.Do("projects", p)
+	fmt.Println("Done.")
+}
+
+type Property struct {
+	Attribute string `gorethink:"attribute" json:"attribute"`
+	Name      string `gorethink:"name" json:"name"`
+}
+
+type Sample struct {
+	ID          string     `gorethink:"id" json:"id"`
+	Description string     `gorethink:"description" json:"description"`
+	Birthtime   time.Time  `gorethink:"birthtime" json:"birthtime"`
+	MTime       time.Time  `gorethink:"mtime" json:"mtime"`
+	Owner       string     `gorethink:"owner" json:"owner"`
+	Name        string     `gorethink:"name" json:"name"`
+	ProjectID   string     `gorethink:"project_id" json:"project_id"`
+	SampleID    string     `gorethink:"sample_id" json:"sample_id"`
+	Properties  []Property `gorethink:"properties" json:"properties"`
+}
+
+func loadSamples(client *elastic.Client, session *r.Session) {
+	var sample Sample
+	getProperties := func(row r.Term) interface{} {
+		return map[string]interface{}{
+			"properties": r.Table("sample2propertyset").
+				GetAllByIndex("sample_id", row.Field("sample_id")).
+				EqJoin("property_set_id", r.Table("propertyset2property"), r.EqJoinOpts{Index: "property_set_id"}).
+				Zip().
+				EqJoin("property_id", r.Table("properties")).Zip().Pluck("attribute", "name").
+				CoerceTo("ARRAY"),
+		}
+	}
+	rql := r.Table("projects").Pluck("id").
+		EqJoin("id", r.Table("project2sample"), r.EqJoinOpts{Index: "project_id"}).Zip().
+		EqJoin("sample_id", r.Table("samples")).Zip().
+		Merge(getProperties)
+
+	sampleIndexer := &indexer{
+		rql: rql,
+		getID: func(item interface{}) string {
+			s := item.(*Sample)
+			return s.SampleID
+		},
+		client:   client,
+		session:  session,
+		maxCount: 1000,
+	}
+
+	fmt.Println("Indexing samples...")
+	sampleIndexer.Do("samples", sample)
+	fmt.Println("Done.")
+}
+
+type indexer struct {
+	rql      r.Term
+	getID    func(item interface{}) string
+	apply    func(item interface{})
+	client   *elastic.Client
+	session  *r.Session
+	maxCount int
+}
+
+func (i *indexer) Do(itype string, what interface{}) {
+	res, err := i.rql.Run(i.session)
 	if err != nil {
-		panic(fmt.Sprintf("Unable to query database for projects: %s", err))
+		fmt.Println("Failed to run query:", err)
+		os.Exit(1)
 	}
 	defer res.Close()
 
-	var p schema.Project
+	total := 0
 	count := 0
-	maxCount := 100
-	bulkReq := client.Bulk()
-	for res.Next(&p) {
-		if count < maxCount {
-			indexReq := elastic.NewBulkIndexRequest().Index("mc").Type("projects").Id(p.ID).Doc(p)
+	bulkReq := i.client.Bulk()
+	elementType := reflect.TypeOf(what)
+	result := reflect.New(elementType)
+	for res.Next(result.Interface()) {
+		if i.apply != nil {
+			i.apply(result.Interface())
+		}
+
+		if count < i.maxCount {
+			id := i.getID(result.Interface())
+			indexReq := elastic.NewBulkIndexRequest().Index("mc").Type(itype).Id(id).Doc(result.Interface())
 			bulkReq = bulkReq.Add(indexReq)
 			count++
+			total++
 		} else {
+			fmt.Printf("  Indexed %d...\n", total)
 			count = 0
 			resp, err := bulkReq.Do()
 			if err != nil {
@@ -264,16 +353,22 @@ func loadProjects(client *elastic.Client, session *r.Session) {
 				return
 			}
 		}
+		result = reflect.New(elementType)
+	}
+
+	if res.Err() != nil {
+		fmt.Println("res err", err)
 	}
 
 	if count != 0 {
+		fmt.Printf("  Indexed %d %s...\n", total, itype)
 		bulkReq.Do()
 	}
 }
 
 const twoMeg = 2 * 1024 * 1024
 
-func readContents(file *schema.File) {
+func readContents(file *File) {
 	switch file.MediaType.Mime {
 	case "text/csv":
 		//fmt.Println("Reading csv file: ", file.ID, file.Name, file.Size)
@@ -314,7 +409,7 @@ func readCSVLines(fileID string) (string, error) {
 	}
 }
 
-func extractUsingTika(file *schema.File) string {
+func extractUsingTika(file *File) string {
 	if file.Size > twoMeg {
 		return ""
 	}
