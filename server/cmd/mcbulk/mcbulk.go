@@ -276,6 +276,7 @@ type Property struct {
 
 type Sample struct {
 	ID          string     `gorethink:"id" json:"id"`
+	Type        string     `gorethink:"_type" json:"_type"`
 	Description string     `gorethink:"description" json:"description"`
 	Birthtime   time.Time  `gorethink:"birthtime" json:"birthtime"`
 	MTime       time.Time  `gorethink:"mtime" json:"mtime"`
@@ -332,6 +333,7 @@ type SetupProperties struct {
 
 type Process struct {
 	ID            string            `gorethink:"id" json:"-"`
+	Type          string            `gorethink:"_type" json:"_type"`
 	Birthtime     time.Time         `gorethink:"birthtime" json:"birthtime"`
 	MTime         time.Time         `gorethink:"mtime" json:"mtime"`
 	Name          string            `gorethink:"name" json:"name"`
