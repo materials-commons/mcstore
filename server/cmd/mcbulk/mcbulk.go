@@ -227,6 +227,7 @@ func esURL() string {
 
 func createIndex(client *elastic.Client) {
 	fmt.Println("Creating index mc...")
+
 	exists, err := client.IndexExists("mc").Do()
 	if err != nil {
 		panic("  Failed checking index existence")
@@ -253,6 +254,7 @@ func createIndex(client *elastic.Client) {
 func loadFiles(client *elastic.Client, session *r.Session) {
 	var df doc.File
 	filesIndexer := search.NewFilesIndexer(client, session)
+
 	fmt.Println("Indexing files...")
 	if err := filesIndexer.Do("files", df); err != nil {
 		fmt.Println("  Indexing files failed:", err)
