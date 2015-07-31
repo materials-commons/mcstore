@@ -13,6 +13,7 @@ import (
 
 	"os/exec"
 
+	"github.com/codegangsta/cli"
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -118,6 +119,95 @@ var tikableMediaTypes map[string]bool = map[string]bool{
 }
 
 func main() {
+	app := cli.NewApp()
+	app.Version = "1.0.0"
+	app.Authors = []cli.Author{
+		{
+			Name:  "V. Glenn Tarcea",
+			Email: "gtarcea@umich.edu",
+		},
+	}
+	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:   "es-url",
+			Value:  "http://localhost:9500",
+			Usage:  "Elasticsearch server URL",
+			EnvVar: "MC_ES_URL",
+		},
+
+		cli.StringFlag{
+			Name:   "db-connection",
+			Value:  "localhost:30815",
+			Usage:  "RethinkDB connection string",
+			EnvVar: "MCDB_CONNECTION",
+		},
+
+		cli.StringFlag{
+			Name:   "db-name",
+			Value:  "materialscommons",
+			Usage:  "Database to index",
+			EnvVar: "MCDB_NAME",
+		},
+
+		cli.StringFlag{
+			Name:   "mc-dir",
+			Value:  "/mcfs/data/test",
+			Usage:  "Path to data directory",
+			EnvVar: "MCDIR",
+		},
+
+		cli.BoolFlag{
+			Name:  "create-index",
+			Usage: "Whether the index should be recreated",
+		},
+
+		cli.BoolTFlag{
+			Name:  "processes",
+			Usage: "Index processes",
+		},
+
+		cli.BoolTFlag{
+			Name:  "files",
+			Usage: "Index files",
+		},
+
+		cli.BoolTFlag{
+			Name:  "samples",
+			Usage: "Index samples",
+		},
+
+		cli.BoolTFlag{
+			Name:  "projects",
+			Usage: "Index projects",
+		},
+
+		cli.BoolTFlag{
+			Name:  "users",
+			Usage: "Index users",
+		},
+	}
+
+	app.Action = mcbulkCLI
+	app.Run(os.Args)
+}
+
+func mcbulkCLI(c *cli.Context) {
+	setupConfig(c)
+	runCommands(c)
+}
+
+func setupConfig(c *cli.Context) {
+	esurl := c.String("es-url")
+	config.Set("MC_ES_URL", esurl)
+
+	dbname := c.String("db-name")
+	config.Set("MCDB_NAME", dbname)
+
+	dbcon := c.String("db-connection")
+	config.Set("MCDB_CONNECTION", dbcon)
+}
+
+func runCommands(c *cli.Context) {
 	esurl := esURL()
 	fmt.Println("Elasticsearch URL:", esurl)
 	client, err := elastic.NewClient(elastic.SetURL(esurl))
@@ -127,12 +217,29 @@ func main() {
 
 	session := db.RSessionMust()
 
-	createIndex(client)
-	loadFiles(client, session)
-	loadUsers(client, session)
-	loadProjects(client, session)
-	loadSamples(client, session)
-	loadProcesses(client, session)
+	if c.Bool("create-index") {
+		createIndex(client)
+	}
+
+	if c.BoolT("files") {
+		loadFiles(client, session)
+	}
+
+	if c.BoolT("users") {
+		loadUsers(client, session)
+	}
+
+	if c.BoolT("projects") {
+		loadProjects(client, session)
+	}
+
+	if c.BoolT("samples") {
+		loadSamples(client, session)
+	}
+
+	if c.BoolT("processes") {
+		loadProcesses(client, session)
+	}
 }
 
 func esURL() string {
@@ -143,23 +250,28 @@ func esURL() string {
 }
 
 func createIndex(client *elastic.Client) {
+	fmt.Println("Creating index mc...")
 	exists, err := client.IndexExists("mc").Do()
 	if err != nil {
-		panic("Failed checking index existence")
+		panic("  Failed checking index existence")
 	}
 
 	if exists {
+		fmt.Println("  Index exists deleting old one")
 		client.DeleteIndex("mc").Do()
 	}
 
 	createStatus, err := client.CreateIndex("mc").Body(mappings).Do()
 	if err != nil {
-		fmt.Println("Failed creating index: ", err)
+		fmt.Println("  Failed creating index: ", err)
 		os.Exit(1)
 	}
+
 	if !createStatus.Acknowledged {
-		fmt.Println("Index create not acknowledged")
+		fmt.Println("  Index create not acknowledged")
 	}
+
+	fmt.Println("Done.")
 }
 
 func loadFiles(client *elastic.Client, session *r.Session) {
