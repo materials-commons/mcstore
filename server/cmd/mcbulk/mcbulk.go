@@ -13,15 +13,13 @@ import (
 
 	"os/exec"
 
-	"time"
-
-	"reflect"
-
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
+	"github.com/materials-commons/mcstore/server/mcstore/pkg/search"
+	"github.com/materials-commons/mcstore/server/mcstore/pkg/search/doc"
 	"gopkg.in/olivere/elastic.v2"
 )
 
@@ -164,27 +162,8 @@ func createIndex(client *elastic.Client) {
 	}
 }
 
-type TagID struct {
-	TagID string `gorethink:"tag_id" json:"tag"`
-}
-
-type Note struct {
-	ID    string `gorethink:"id" json:"id"`
-	Note  string `gorethink:"note" json:"note"`
-	Title string `gorethink:"title" json:"title"`
-}
-
-type File struct {
-	schema.File
-	Tags      []TagID `gorethink:"tags" json:"tags"`
-	DataDirID string  `gorethink:"datadir_id" json:"datadir_id"`
-	ProjectID string  `gorethink:"project_id" json:"project_id"`
-	Contents  string  `gorethink:"-" json:"contents"` // Contents of the file (text only)
-	Notes     []Note  `gorethink:"notes" json:"notes"`
-}
-
 func loadFiles(client *elastic.Client, session *r.Session) {
-	var df File
+	var df doc.File
 	renameDirPath := func(row r.Term) interface{} {
 		return row.Merge(map[string]interface{}{
 			"right": map[string]interface{}{
@@ -210,24 +189,28 @@ func loadFiles(client *elastic.Client, session *r.Session) {
 		Zip().
 		EqJoin("datafile_id", r.Table("datafiles")).Zip().
 		//Filter(r.Row.Field("id").Eq("184e5b21-b86a-4fd0-97ea-98c726a9787b")).
+		//Filter(r.Row.Field("id").Eq("b20cde2d-350b-4bc4-8700-e42352bb70df")).
 		Merge(tagsAndNotes)
 
-	fileIndexer := &indexer{
-		rql: rql,
-		getID: func(item interface{}) string {
-			dfile := item.(*File)
+	filesIndexer := &search.Indexer{
+		RQL: rql,
+		GetID: func(item interface{}) string {
+			dfile := item.(*doc.File)
 			return dfile.ID
 		},
-		apply: func(item interface{}) {
-			dfile := item.(*File)
-			readContents(dfile)
+		Apply: func(item interface{}) {
+			dfile := item.(*doc.File)
+			dfile.Contents = readContents(dfile.ID, dfile.MediaType.Mime, dfile.Name, dfile.Size)
 		},
-		client:   client,
-		session:  session,
-		maxCount: 10,
+		Client:   client,
+		Session:  session,
+		MaxCount: 10,
 	}
 	fmt.Println("Indexing files...")
-	fileIndexer.Do("files", df)
+	if err := filesIndexer.Do("files", df); err != nil {
+		fmt.Println("  Indexing files failed:", err)
+		fmt.Println("  Some files may not have been indexed.")
+	}
 	fmt.Println("Done.")
 }
 
@@ -235,68 +218,49 @@ func loadUsers(client *elastic.Client, session *r.Session) {
 	var u schema.User
 	rql := r.Table("users")
 
-	userIndexer := &indexer{
-		rql: rql,
-		getID: func(item interface{}) string {
+	usersIndexer := &search.Indexer{
+		RQL: rql,
+		GetID: func(item interface{}) string {
 			user := item.(*schema.User)
 			return user.ID
 		},
-		client:   client,
-		session:  session,
-		maxCount: 1000,
+		Client:   client,
+		Session:  session,
+		MaxCount: 1000,
 	}
 
 	fmt.Println("Indexing users...")
-	userIndexer.Do("users", u)
+	if err := usersIndexer.Do("users", u); err != nil {
+		fmt.Println("  Indexing users failed:", err)
+		fmt.Println("  Some users may not have been indexed.")
+	}
 	fmt.Println("Done.")
 }
 
 func loadProjects(client *elastic.Client, session *r.Session) {
 	var p schema.Project
 	rql := r.Table("projects")
-	projectIndexer := &indexer{
-		rql: rql,
-		getID: func(item interface{}) string {
+	projectsIndexer := &search.Indexer{
+		RQL: rql,
+		GetID: func(item interface{}) string {
 			project := item.(*schema.Project)
 			return project.ID
 		},
-		client:   client,
-		session:  session,
-		maxCount: 1000,
+		Client:   client,
+		Session:  session,
+		MaxCount: 1000,
 	}
 
 	fmt.Println("Indexing projects...")
-	projectIndexer.Do("projects", p)
+	if err := projectsIndexer.Do("projects", p); err != nil {
+		fmt.Println("  Indexing projects failed:", err)
+		fmt.Println("  Some projects may not have been indexed.")
+	}
 	fmt.Println("Done.")
 }
 
-type Property struct {
-	Attribute string `gorethink:"attribute" json:"attribute"`
-	Name      string `gorethink:"name" json:"name"`
-}
-
-type SampleFile struct {
-	DataFileID string           `gorethink:"datafile_id" json:"datafile_id"`
-	Name       string           `gorethink:"name" json:"name"`
-	MediaType  schema.MediaType `gorethink:"mediatype" json:"mediatype"`
-}
-
-type Sample struct {
-	ID          string       `gorethink:"id" json:"id"`
-	Type        string       `gorethink:"_type" json:"_type"`
-	Description string       `gorethink:"description" json:"description"`
-	Birthtime   time.Time    `gorethink:"birthtime" json:"birthtime"`
-	MTime       time.Time    `gorethink:"mtime" json:"mtime"`
-	Owner       string       `gorethink:"owner" json:"owner"`
-	Name        string       `gorethink:"name" json:"name"`
-	ProjectID   string       `gorethink:"project_id" json:"project_id"`
-	SampleID    string       `gorethink:"sample_id" json:"sample_id"`
-	Properties  []Property   `gorethink:"properties" json:"properties"`
-	Files       []SampleFile `gorethink:"files" json:"files"`
-}
-
 func loadSamples(client *elastic.Client, session *r.Session) {
-	var sample Sample
+	var sample doc.Sample
 	propertiesAndFiles := func(row r.Term) interface{} {
 		return map[string]interface{}{
 			"properties": r.Table("sample2propertyset").
@@ -314,51 +278,34 @@ func loadSamples(client *elastic.Client, session *r.Session) {
 		EqJoin("sample_id", r.Table("samples")).Zip().
 		Merge(propertiesAndFiles)
 
-	sampleIndexer := &indexer{
-		rql: rql,
-		getID: func(item interface{}) string {
-			s := item.(*Sample)
+	samplesIndexer := &search.Indexer{
+		RQL: rql,
+		GetID: func(item interface{}) string {
+			s := item.(*doc.Sample)
 			return s.SampleID
 		},
-		client:   client,
-		session:  session,
-		maxCount: 1000,
+		Apply: func(item interface{}) {
+			s := item.(*doc.Sample)
+			for i, _ := range s.Files {
+				f := s.Files[i]
+				s.Files[i].Contents = readContents(f.DataFileID, f.MediaType.Mime, f.Name, f.Size)
+			}
+		},
+		Client:   client,
+		Session:  session,
+		MaxCount: 1000,
 	}
 
 	fmt.Println("Indexing samples...")
-	sampleIndexer.Do("samples", sample)
+	if err := samplesIndexer.Do("samples", sample); err != nil {
+		fmt.Println("  Indexing samples failed:", err)
+		fmt.Println("  Some samples may not have been indexed.")
+	}
 	fmt.Println("Done.")
 }
 
-type SetupProperties struct {
-	ID          string      `gorethink:"-" json:"-"`
-	Attribute   string      `gorethink:"attribute" json:"attribute"`
-	Description string      `gorethink:"description" json:"description"`
-	Name        string      `gorethink:"name" json:"name"`
-	ProcessID   string      `gorethink:"-" json:"-"`
-	SetupID     string      `gorethink:"-" json:"-"`
-	Units       string      `gorethink:"units" json:"units"`
-	Value       interface{} `gorethink:"value" json:"value"`
-}
-
-type Process struct {
-	ID            string            `gorethink:"id" json:"-"`
-	Type          string            `gorethink:"_type" json:"_type"`
-	Birthtime     time.Time         `gorethink:"birthtime" json:"birthtime"`
-	MTime         time.Time         `gorethink:"mtime" json:"mtime"`
-	Name          string            `gorethink:"name" json:"name"`
-	DoesTransform bool              `gorethink:"does_transform" json:"does_transform"`
-	Owner         string            `gorethink:"owner" json:"owner"`
-	ProcessID     string            `gorethink:"process_id" json:"process_id"`
-	ProcessType   string            `gorethink:"procss_type" json:"process_type"`
-	ProjectID     string            `gorethink:"project_id" json:"project_id"`
-	What          string            `gorethink:"what" json:"what"`
-	Why           string            `gorethink:"why" json:"why"`
-	Setup         []SetupProperties `gorethink:"setup" json:"setup"`
-}
-
 func loadProcesses(client *elastic.Client, session *r.Session) {
-	var process Process
+	var process doc.Process
 
 	getSetup := func(row r.Term) interface{} {
 		return map[string]interface{}{
@@ -374,102 +321,50 @@ func loadProcesses(client *elastic.Client, session *r.Session) {
 		EqJoin("process_id", r.Table("processes")).Zip().
 		Merge(getSetup)
 
-	processesIndexer := &indexer{
-		rql: rql,
-		getID: func(item interface{}) string {
-			s := item.(*Process)
+	processesIndexer := &search.Indexer{
+		RQL: rql,
+		GetID: func(item interface{}) string {
+			s := item.(*doc.Process)
 			return s.ProcessID
 		},
-		client:   client,
-		session:  session,
-		maxCount: 1000,
+		Client:   client,
+		Session:  session,
+		MaxCount: 1000,
 	}
 
 	fmt.Println("Indexing processes...")
-	processesIndexer.Do("processes", process)
+	if err := processesIndexer.Do("processes", process); err != nil {
+		fmt.Println("  Indexing processes failed:", err)
+		fmt.Println("  Some processes may not have been indexed.")
+	}
 	fmt.Println("Done.")
-}
-
-type indexer struct {
-	rql      r.Term
-	getID    func(item interface{}) string
-	apply    func(item interface{})
-	client   *elastic.Client
-	session  *r.Session
-	maxCount int
-}
-
-func (i *indexer) Do(itype string, what interface{}) {
-	res, err := i.rql.Run(i.session)
-	if err != nil {
-		fmt.Println("Failed to run query:", err)
-		os.Exit(1)
-	}
-	defer res.Close()
-
-	total := 0
-	count := 0
-	bulkReq := i.client.Bulk()
-	elementType := reflect.TypeOf(what)
-	result := reflect.New(elementType)
-	for res.Next(result.Interface()) {
-		if i.apply != nil {
-			i.apply(result.Interface())
-		}
-
-		if count < i.maxCount {
-			id := i.getID(result.Interface())
-			indexReq := elastic.NewBulkIndexRequest().Index("mc").Type(itype).Id(id).Doc(result.Interface())
-			bulkReq = bulkReq.Add(indexReq)
-			count++
-			total++
-		} else {
-			fmt.Printf("  Indexed %d...\n", total)
-			count = 0
-			resp, err := bulkReq.Do()
-			if err != nil {
-				fmt.Printf("bulkreq failed: %s\n", err)
-				fmt.Printf("%#v\n", resp)
-				return
-			}
-		}
-		result = reflect.New(elementType)
-	}
-
-	if res.Err() != nil {
-		fmt.Println("res err", err)
-	}
-
-	if count != 0 {
-		fmt.Printf("  Indexed %d %s...\n", total, itype)
-		bulkReq.Do()
-	}
 }
 
 const twoMeg = 2 * 1024 * 1024
 
-func readContents(file *File) {
-	switch file.MediaType.Mime {
+func readContents(fileID, mimeType, name string, size int64) string {
+	switch mimeType {
 	case "text/csv":
-		//fmt.Println("Reading csv file: ", file.ID, file.Name, file.Size)
-		if contents, err := readCSVLines(file.ID); err == nil {
-			file.Contents = string(contents)
+		//fmt.Println("Reading csv file: ", fileID, name, size)
+		if contents, err := readCSVLines(fileID); err == nil {
+			return contents
 		}
 	case "text/plain":
-		if file.Size > twoMeg {
-			return
+		if size > twoMeg {
+			return ""
 		}
-		//fmt.Println("Reading text file: ", file.ID, file.Name, file.Size)
-		if contents, err := ioutil.ReadFile(app.MCDir.FilePath(file.ID)); err == nil {
-			file.Contents = string(contents)
+		//fmt.Println("Reading text file: ", fileID, name, size)
+		if contents, err := ioutil.ReadFile(app.MCDir.FilePath(fileID)); err == nil {
+			return string(contents)
 		}
 	default:
-		if _, ok := tikableMediaTypes[file.MediaType.Mime]; ok {
-			if contents := extractUsingTika(file); contents != "" {
-				file.Contents = contents
+		if _, ok := tikableMediaTypes[mimeType]; ok {
+			if contents := extractUsingTika(fileID, mimeType, name, size); contents != "" {
+				return contents
 			}
 		}
 	}
+	return ""
 }
 
 func readCSVLines(fileID string) (string, error) {
@@ -483,20 +378,22 @@ func readCSVLines(fileID string) (string, error) {
 				return text, nil
 			}
 		}
+		//fmt.Println("readCSVLines no data")
 		return "", errors.New("No data")
 	} else {
+		//fmt.Println("readCSVLines failed to open", err)
 		return "", err
 	}
 }
 
-func extractUsingTika(file *File) string {
-	if file.Size > twoMeg {
+func extractUsingTika(fileID, mimeType, name string, size int64) string {
+	if size > twoMeg {
 		return ""
 	}
 
-	out, err := exec.Command("tika.sh", "--text", app.MCDir.FilePath(file.ID)).Output()
+	out, err := exec.Command("tika.sh", "--text", app.MCDir.FilePath(fileID)).Output()
 	if err != nil {
-		fmt.Println("Tika failed for:", file.Name, file.ID, file.MediaType.Mime)
+		fmt.Println("Tika failed for:", fileID, name, mimeType)
 		fmt.Println("exec failed:", err)
 		return ""
 	}
