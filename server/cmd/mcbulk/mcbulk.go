@@ -1,22 +1,13 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 
-	"io/ioutil"
-
-	"bufio"
 	"os"
-
-	"strings"
-
-	"os/exec"
 
 	"github.com/codegangsta/cli"
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/config"
-	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search"
@@ -102,21 +93,6 @@ var mappings string = `
 	}
 }
 `
-
-var tikableMediaTypes map[string]bool = map[string]bool{
-	"application/msword":                                                        true,
-	"application/pdf":                                                           true,
-	"application/rtf":                                                           true,
-	"application/vnd.ms-excel":                                                  true,
-	"application/vnd.ms-office":                                                 true,
-	"application/vnd.ms-powerpoint":                                             true,
-	"application/vnd.ms-powerpoint.presentation.macroEnabled.12":                true,
-	"application/vnd.openxmlformats-officedocument.presentationml.presentation": true,
-	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         true,
-	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":   true,
-	"application/vnd.sealedmedia.softseal.pdf":                                  true,
-	"text/plain; charset=utf-8":                                                 true,
-}
 
 func main() {
 	app := cli.NewApp()
@@ -276,48 +252,7 @@ func createIndex(client *elastic.Client) {
 
 func loadFiles(client *elastic.Client, session *r.Session) {
 	var df doc.File
-	renameDirPath := func(row r.Term) interface{} {
-		return row.Merge(map[string]interface{}{
-			"right": map[string]interface{}{
-				"path": row.Field("right").Field("name"),
-			},
-		})
-	}
-
-	tagsAndNotes := func(row r.Term) interface{} {
-		return map[string]interface{}{
-			"tags": r.Table("tag2item").GetAllByIndex("item_id", row.Field("id")).
-				Pluck("tag_id").CoerceTo("ARRAY"),
-			"notes": r.Table("note2item").GetAllByIndex("item_id", row.Field("id")).
-				EqJoin("note_id", r.Table("notes")).Zip().CoerceTo("ARRAY"),
-		}
-	}
-
-	rql := r.Table("projects").Pluck("id").
-		EqJoin("id", r.Table("project2datafile"), r.EqJoinOpts{Index: "project_id"}).Zip().
-		EqJoin("datafile_id", r.Table("datadir2datafile"), r.EqJoinOpts{Index: "datafile_id"}).Zip().
-		EqJoin("datadir_id", r.Table("datadirs")).
-		Map(renameDirPath).
-		Zip().
-		EqJoin("datafile_id", r.Table("datafiles")).Zip().
-		//Filter(r.Row.Field("id").Eq("184e5b21-b86a-4fd0-97ea-98c726a9787b")).
-		//Filter(r.Row.Field("id").Eq("b20cde2d-350b-4bc4-8700-e42352bb70df")).
-		Merge(tagsAndNotes)
-
-	filesIndexer := &search.Indexer{
-		RQL: rql,
-		GetID: func(item interface{}) string {
-			dfile := item.(*doc.File)
-			return dfile.ID
-		},
-		Apply: func(item interface{}) {
-			dfile := item.(*doc.File)
-			dfile.Contents = readContents(dfile.ID, dfile.MediaType.Mime, dfile.Name, dfile.Size)
-		},
-		Client:   client,
-		Session:  session,
-		MaxCount: 10,
-	}
+	filesIndexer := search.NewFilesIndexer(client, session)
 	fmt.Println("Indexing files...")
 	if err := filesIndexer.Do("files", df); err != nil {
 		fmt.Println("  Indexing files failed:", err)
@@ -328,18 +263,7 @@ func loadFiles(client *elastic.Client, session *r.Session) {
 
 func loadUsers(client *elastic.Client, session *r.Session) {
 	var u schema.User
-	rql := r.Table("users")
-
-	usersIndexer := &search.Indexer{
-		RQL: rql,
-		GetID: func(item interface{}) string {
-			user := item.(*schema.User)
-			return user.ID
-		},
-		Client:   client,
-		Session:  session,
-		MaxCount: 1000,
-	}
+	usersIndexer := search.NewUsersIndexer(client, session)
 
 	fmt.Println("Indexing users...")
 	if err := usersIndexer.Do("users", u); err != nil {
@@ -351,17 +275,7 @@ func loadUsers(client *elastic.Client, session *r.Session) {
 
 func loadProjects(client *elastic.Client, session *r.Session) {
 	var p schema.Project
-	rql := r.Table("projects")
-	projectsIndexer := &search.Indexer{
-		RQL: rql,
-		GetID: func(item interface{}) string {
-			project := item.(*schema.Project)
-			return project.ID
-		},
-		Client:   client,
-		Session:  session,
-		MaxCount: 1000,
-	}
+	projectsIndexer := search.NewProjectsIndexer(client, session)
 
 	fmt.Println("Indexing projects...")
 	if err := projectsIndexer.Do("projects", p); err != nil {
@@ -373,40 +287,7 @@ func loadProjects(client *elastic.Client, session *r.Session) {
 
 func loadSamples(client *elastic.Client, session *r.Session) {
 	var sample doc.Sample
-	propertiesAndFiles := func(row r.Term) interface{} {
-		return map[string]interface{}{
-			"properties": r.Table("sample2propertyset").
-				GetAllByIndex("sample_id", row.Field("sample_id")).
-				EqJoin("property_set_id", r.Table("propertyset2property"), r.EqJoinOpts{Index: "property_set_id"}).
-				Zip().
-				EqJoin("property_id", r.Table("properties")).Zip().Pluck("attribute", "name").
-				CoerceTo("ARRAY"),
-			"files": r.Table("sample2datafile").GetAllByIndex("sample_id", row.Field("sample_id")).
-				EqJoin("datafile_id", r.Table("datafiles")).Zip().CoerceTo("ARRAY"),
-		}
-	}
-	rql := r.Table("projects").Pluck("id").
-		EqJoin("id", r.Table("project2sample"), r.EqJoinOpts{Index: "project_id"}).Zip().
-		EqJoin("sample_id", r.Table("samples")).Zip().
-		Merge(propertiesAndFiles)
-
-	samplesIndexer := &search.Indexer{
-		RQL: rql,
-		GetID: func(item interface{}) string {
-			s := item.(*doc.Sample)
-			return s.SampleID
-		},
-		Apply: func(item interface{}) {
-			s := item.(*doc.Sample)
-			for i, _ := range s.Files {
-				f := s.Files[i]
-				s.Files[i].Contents = readContents(f.DataFileID, f.MediaType.Mime, f.Name, f.Size)
-			}
-		},
-		Client:   client,
-		Session:  session,
-		MaxCount: 1000,
-	}
+	samplesIndexer := search.NewSamplesIndexer(client, session)
 
 	fmt.Println("Indexing samples...")
 	if err := samplesIndexer.Do("samples", sample); err != nil {
@@ -418,31 +299,7 @@ func loadSamples(client *elastic.Client, session *r.Session) {
 
 func loadProcesses(client *elastic.Client, session *r.Session) {
 	var process doc.Process
-
-	getSetup := func(row r.Term) interface{} {
-		return map[string]interface{}{
-			"setup": r.Table("process2setup").GetAllByIndex("process_id", row.Field("process_id")).
-				EqJoin("setup_id", r.Table("setupproperties"), r.EqJoinOpts{Index: "setup_id"}).
-				Zip().CoerceTo("ARRAY"),
-		}
-	}
-
-	rql := r.Table("projects").Pluck("id").
-		EqJoin("id", r.Table("project2process"), r.EqJoinOpts{Index: "project_id"}).
-		Zip().
-		EqJoin("process_id", r.Table("processes")).Zip().
-		Merge(getSetup)
-
-	processesIndexer := &search.Indexer{
-		RQL: rql,
-		GetID: func(item interface{}) string {
-			s := item.(*doc.Process)
-			return s.ProcessID
-		},
-		Client:   client,
-		Session:  session,
-		MaxCount: 1000,
-	}
+	processesIndexer := search.NewProcessesIndexer(client, session)
 
 	fmt.Println("Indexing processes...")
 	if err := processesIndexer.Do("processes", process); err != nil {
@@ -450,65 +307,4 @@ func loadProcesses(client *elastic.Client, session *r.Session) {
 		fmt.Println("  Some processes may not have been indexed.")
 	}
 	fmt.Println("Done.")
-}
-
-const twoMeg = 2 * 1024 * 1024
-
-func readContents(fileID, mimeType, name string, size int64) string {
-	switch mimeType {
-	case "text/csv":
-		//fmt.Println("Reading csv file: ", fileID, name, size)
-		if contents, err := readCSVLines(fileID); err == nil {
-			return contents
-		}
-	case "text/plain":
-		if size > twoMeg {
-			return ""
-		}
-		//fmt.Println("Reading text file: ", fileID, name, size)
-		if contents, err := ioutil.ReadFile(app.MCDir.FilePath(fileID)); err == nil {
-			return string(contents)
-		}
-	default:
-		if _, ok := tikableMediaTypes[mimeType]; ok {
-			if contents := extractUsingTika(fileID, mimeType, name, size); contents != "" {
-				return contents
-			}
-		}
-	}
-	return ""
-}
-
-func readCSVLines(fileID string) (string, error) {
-	if file, err := os.Open(app.MCDir.FilePath(fileID)); err == nil {
-		defer file.Close()
-
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			text := scanner.Text()
-			if text != "" && !strings.HasPrefix(text, "#") {
-				return text, nil
-			}
-		}
-		//fmt.Println("readCSVLines no data")
-		return "", errors.New("No data")
-	} else {
-		//fmt.Println("readCSVLines failed to open", err)
-		return "", err
-	}
-}
-
-func extractUsingTika(fileID, mimeType, name string, size int64) string {
-	if size > twoMeg {
-		return ""
-	}
-
-	out, err := exec.Command("tika.sh", "--text", app.MCDir.FilePath(fileID)).Output()
-	if err != nil {
-		fmt.Println("Tika failed for:", fileID, name, mimeType)
-		fmt.Println("exec failed:", err)
-		return ""
-	}
-
-	return string(out)
 }
