@@ -169,6 +169,7 @@ type TagID struct {
 }
 
 type Note struct {
+	ID    string `gorethink:"id" json:"id"`
 	Note  string `gorethink:"note" json:"note"`
 	Title string `gorethink:"title" json:"title"`
 }
@@ -176,9 +177,9 @@ type Note struct {
 type File struct {
 	schema.File
 	Tags      []TagID `gorethink:"tags" json:"tags"`
-	DataDirID string  `gorethink:"datadir_id" json:"datadir_id"` // Directory file is located in
-	ProjectID string  `gorethink:"project_id" json:"project_id"` // Project file is in
-	Contents  string  `gorethink:"-" json:"contents"`            // Contents of the file (text only)
+	DataDirID string  `gorethink:"datadir_id" json:"datadir_id"`
+	ProjectID string  `gorethink:"project_id" json:"project_id"`
+	Contents  string  `gorethink:"-" json:"contents"` // Contents of the file (text only)
 	Notes     []Note  `gorethink:"notes" json:"notes"`
 }
 
@@ -274,22 +275,29 @@ type Property struct {
 	Name      string `gorethink:"name" json:"name"`
 }
 
+type SampleFile struct {
+	DataFileID string           `gorethink:"datafile_id" json:"datafile_id"`
+	Name       string           `gorethink:"name" json:"name"`
+	MediaType  schema.MediaType `gorethink:"mediatype" json:"mediatype"`
+}
+
 type Sample struct {
-	ID          string     `gorethink:"id" json:"id"`
-	Type        string     `gorethink:"_type" json:"_type"`
-	Description string     `gorethink:"description" json:"description"`
-	Birthtime   time.Time  `gorethink:"birthtime" json:"birthtime"`
-	MTime       time.Time  `gorethink:"mtime" json:"mtime"`
-	Owner       string     `gorethink:"owner" json:"owner"`
-	Name        string     `gorethink:"name" json:"name"`
-	ProjectID   string     `gorethink:"project_id" json:"project_id"`
-	SampleID    string     `gorethink:"sample_id" json:"sample_id"`
-	Properties  []Property `gorethink:"properties" json:"properties"`
+	ID          string       `gorethink:"id" json:"id"`
+	Type        string       `gorethink:"_type" json:"_type"`
+	Description string       `gorethink:"description" json:"description"`
+	Birthtime   time.Time    `gorethink:"birthtime" json:"birthtime"`
+	MTime       time.Time    `gorethink:"mtime" json:"mtime"`
+	Owner       string       `gorethink:"owner" json:"owner"`
+	Name        string       `gorethink:"name" json:"name"`
+	ProjectID   string       `gorethink:"project_id" json:"project_id"`
+	SampleID    string       `gorethink:"sample_id" json:"sample_id"`
+	Properties  []Property   `gorethink:"properties" json:"properties"`
+	Files       []SampleFile `gorethink:"files" json:"files"`
 }
 
 func loadSamples(client *elastic.Client, session *r.Session) {
 	var sample Sample
-	getProperties := func(row r.Term) interface{} {
+	propertiesAndFiles := func(row r.Term) interface{} {
 		return map[string]interface{}{
 			"properties": r.Table("sample2propertyset").
 				GetAllByIndex("sample_id", row.Field("sample_id")).
@@ -297,12 +305,14 @@ func loadSamples(client *elastic.Client, session *r.Session) {
 				Zip().
 				EqJoin("property_id", r.Table("properties")).Zip().Pluck("attribute", "name").
 				CoerceTo("ARRAY"),
+			"files": r.Table("sample2datafile").GetAllByIndex("sample_id", row.Field("sample_id")).
+				EqJoin("datafile_id", r.Table("datafiles")).Zip().CoerceTo("ARRAY"),
 		}
 	}
 	rql := r.Table("projects").Pluck("id").
 		EqJoin("id", r.Table("project2sample"), r.EqJoinOpts{Index: "project_id"}).Zip().
 		EqJoin("sample_id", r.Table("samples")).Zip().
-		Merge(getProperties)
+		Merge(propertiesAndFiles)
 
 	sampleIndexer := &indexer{
 		rql: rql,
