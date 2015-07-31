@@ -45,7 +45,7 @@ func (i *Indexer) Do(itype string, what interface{}) error {
 			count = 0
 			resp, err := bulkReq.Do()
 			if err != nil {
-				app.Log.Errorf("bulkreq failed: %s %#v\n", err, resp)
+				app.Log.Errorf("bulkreq failed: %s %#v", err, resp)
 				return err
 			}
 		}
@@ -57,7 +57,7 @@ func (i *Indexer) Do(itype string, what interface{}) error {
 	}
 
 	if count != 0 {
-		app.Log.Infof("  Indexed %d %s...\n", total, itype)
+		app.Log.Infof("Indexed %d %s...", total, itype)
 		bulkReq.Do()
 	}
 
