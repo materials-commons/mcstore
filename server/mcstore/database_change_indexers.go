@@ -171,6 +171,39 @@ func getSampleID(oldItem, newItem sampleIDItem) string {
 	return newItem.SampleID
 }
 
+type tag2Item struct {
+	ItemType string `gorethink:"item_type"`
+	ItemID   string `gorethink:"item_id"`
+}
+
+type tag2ItemChange struct {
+	OldValue tag2Item `gorethink:"old_val"`
+	NewValue tag2Item `gorethink:"new_val"`
+}
+
+func tagChangeIndexer(client *elastic.Client, session *r.Session) {
+	var (
+		change tag2ItemChange
+	)
+
+	tagUpdates, _ := r.Table("tag2item").Changes().Run(session)
+	for tagUpdates.Next(&change) {
+		itemID, itemType := getTagItemIDAndType(change.OldValue, change.NewValue)
+		if itemType == "datafile" {
+			app.Log.Infof("Index file because of tag change: %s", itemID)
+			indexFiles(client, session, itemID)
+			indexSamplesUsingFile(client, session, itemID)
+		}
+	}
+}
+
+func getTagItemIDAndType(oldTagItem, newTagItem tag2Item) (itemID, itemType string) {
+	if oldTagItem.ItemID != "" {
+		return oldTagItem.ItemID, oldTagItem.ItemType
+	}
+	return newTagItem.ItemID, newTagItem.ItemType
+}
+
 func getItemID(oldItem, newItem idField) string {
 	if oldItem.ID != "" {
 		return oldItem.ID
