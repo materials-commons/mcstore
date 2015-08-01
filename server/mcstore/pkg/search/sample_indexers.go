@@ -24,33 +24,22 @@ func NewSamplesIndexer(client *elastic.Client, session *r.Session) *Indexer {
 		EqJoin("id", r.Table("project2sample"), r.EqJoinOpts{Index: "project_id"}).Zip().
 		EqJoin("sample_id", r.Table("samples")).Zip().
 		Merge(samplePropertiesAndFiles)
-
-	return &Indexer{
-		RQL: rql,
-		GetID: func(item interface{}) string {
-			s := item.(*doc.Sample)
-			return s.SampleID
-		},
-		Apply: func(item interface{}) {
-			s := item.(*doc.Sample)
-			for i, _ := range s.Files {
-				f := s.Files[i]
-				s.Files[i].Contents = ReadFileContents(f.DataFileID, f.MediaType.Mime, f.Name, f.Size)
-			}
-		},
-		Client:   client,
-		Session:  session,
-		MaxCount: 1000,
-	}
+	indexer := defaultSampleIndexer(client, session)
+	indexer.RQL = rql
+	return indexer
 }
 
 func NewSingleSampleIndexer(client *elastic.Client, session *r.Session, sampleID string) *Indexer {
 	rql := r.Table("project2sample").GetAllByIndex("sample_id", sampleID).
 		EqJoin("sample_id", r.Table("samples")).Zip().
 		Merge(samplePropertiesAndFiles)
+	indexer := defaultSampleIndexer(client, session)
+	indexer.RQL = rql
+	return indexer
+}
 
+func defaultSampleIndexer(client *elastic.Client, session *r.Session) *Indexer {
 	return &Indexer{
-		RQL: rql,
 		GetID: func(item interface{}) string {
 			s := item.(*doc.Sample)
 			return s.SampleID

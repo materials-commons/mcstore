@@ -34,21 +34,9 @@ func NewFilesIndexer(client *elastic.Client, session *r.Session) *Indexer {
 		//Filter(r.Row.Field("id").Eq("184e5b21-b86a-4fd0-97ea-98c726a9787b")).
 		//Filter(r.Row.Field("id").Eq("b20cde2d-350b-4bc4-8700-e42352bb70df")).
 		Merge(fileTagsAndNotes)
-
-	return &Indexer{
-		RQL: rql,
-		GetID: func(item interface{}) string {
-			dfile := item.(*doc.File)
-			return dfile.ID
-		},
-		Apply: func(item interface{}) {
-			dfile := item.(*doc.File)
-			dfile.Contents = ReadFileContents(dfile.ID, dfile.MediaType.Mime, dfile.Name, dfile.Size)
-		},
-		Client:   client,
-		Session:  session,
-		MaxCount: 10,
-	}
+	indexer := defaultFileIndexer(client, session)
+	indexer.RQL = rql
+	return indexer
 }
 
 func NewSingleFileIndexer(client *elastic.Client, session *r.Session, fileID string) *Indexer {
@@ -58,12 +46,14 @@ func NewSingleFileIndexer(client *elastic.Client, session *r.Session, fileID str
 		Map(fileRenameDirPath).
 		Zip().
 		EqJoin("datafile_id", r.Table("datafiles")).Zip().
-		//Filter(r.Row.Field("id").Eq("184e5b21-b86a-4fd0-97ea-98c726a9787b")).
-		//Filter(r.Row.Field("id").Eq("b20cde2d-350b-4bc4-8700-e42352bb70df")).
 		Merge(fileTagsAndNotes)
+	indexer := defaultFileIndexer(client, session)
+	indexer.RQL = rql
+	return indexer
+}
 
+func defaultFileIndexer(client *elastic.Client, session *r.Session) *Indexer {
 	return &Indexer{
-		RQL: rql,
 		GetID: func(item interface{}) string {
 			dfile := item.(*doc.File)
 			return dfile.ID

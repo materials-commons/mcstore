@@ -20,17 +20,9 @@ func NewProcessesIndexer(client *elastic.Client, session *r.Session) *Indexer {
 		Zip().
 		EqJoin("process_id", r.Table("processes")).Zip().
 		Merge(getProcessesSetup)
-
-	return &Indexer{
-		RQL: rql,
-		GetID: func(item interface{}) string {
-			s := item.(*doc.Process)
-			return s.ProcessID
-		},
-		Client:   client,
-		Session:  session,
-		MaxCount: 1000,
-	}
+	indexer := defaultProcessIndexer(client, session)
+	indexer.RQL = rql
+	return indexer
 }
 
 func NewSingleProcessIndexer(client *elastic.Client, session *r.Session, processID string) *Indexer {
@@ -38,9 +30,13 @@ func NewSingleProcessIndexer(client *elastic.Client, session *r.Session, process
 		Zip().
 		EqJoin("process_id", r.Table("processes")).Zip().
 		Merge(getProcessesSetup)
+	indexer := defaultProcessIndexer(client, session)
+	indexer.RQL = rql
+	return indexer
+}
 
+func defaultProcessIndexer(client *elastic.Client, session *r.Session) *Indexer {
 	return &Indexer{
-		RQL: rql,
 		GetID: func(item interface{}) string {
 			s := item.(*doc.Process)
 			return s.ProcessID
