@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"io/ioutil"
 	"os"
@@ -74,6 +75,10 @@ func readCSVLines(fileID string) (string, error) {
 
 func extractUsingTika(fileID, mimeType, name string, size int64) string {
 	if size > twoMeg {
+		return ""
+	}
+
+	if !file.Exists(app.MCDir.FilePath(fileID)) {
 		return ""
 	}
 
