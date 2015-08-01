@@ -3,7 +3,7 @@ package doc
 import "github.com/materials-commons/mcstore/pkg/db/schema"
 
 type TagID struct {
-	TagID string `gorethink:"tag_id" json:"tag"`
+	TagID string `gorethink:"tag_id" json:"tag_id"`
 }
 
 type Note struct {
