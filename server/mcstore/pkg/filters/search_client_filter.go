@@ -28,7 +28,7 @@ func SearchClient(request *restful.Request, response *restful.Response, chain *r
 func getSearchClient() *elastic.Client {
 	clientInit.Do(func() {
 		url := esURL()
-		app.Log.Infof("Connecting to search url:", url)
+		app.Log.Infof("Connecting to search url: %s", url)
 		c, err := elastic.NewClient(elastic.SetURL(url))
 		if err != nil {
 			app.Log.Errorf("Couldn't connect to ElasticSearch")
