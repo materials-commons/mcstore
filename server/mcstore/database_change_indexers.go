@@ -4,6 +4,7 @@ import (
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/model"
+	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search/doc"
 	"gopkg.in/olivere/elastic.v2"
@@ -27,7 +28,7 @@ func processChangeIndexer(client *elastic.Client, session *r.Session) {
 	for processes.Next(&change) {
 		id := getItemID(change.OldValue, change.NewValue)
 		app.Log.Infof("Indexing process id: %s", id)
-		indexProcess(client, session, id)
+		indexProcesses(client, session, id)
 	}
 }
 
@@ -40,7 +41,8 @@ func fileChangeIndexer(client *elastic.Client, session *r.Session) {
 	for files.Next(&change) {
 		id := getItemID(change.OldValue, change.NewValue)
 		app.Log.Infof("Indexing file id: %s", id)
-		indexFile(client, session, id)
+		indexFiles(client, session, id)
+		indexSamplesUsingFile(client, session, id)
 	}
 }
 
@@ -53,7 +55,7 @@ func sampleChangeIndexer(client *elastic.Client, session *r.Session) {
 	for samples.Next(&change) {
 		id := getItemID(change.OldValue, change.NewValue)
 		app.Log.Infof("Indexing sample id: %s", id)
-		indexSample(client, session, id)
+		indexSamples(client, session, id)
 	}
 }
 
@@ -79,7 +81,27 @@ func noteChangeIndexer(client *elastic.Client, session *r.Session) {
 		}
 		if n2i.ItemType == "datafile" {
 			app.Log.Infof("Index datafile because of note: %s", n2i.ItemID)
-			indexFile(client, session, n2i.ItemID)
+			indexFiles(client, session, n2i.ItemID)
+			indexSamplesUsingFile(client, session, n2i.ItemID)
+		}
+	}
+}
+
+type sample2datafile struct {
+	SampleID   string `gorethink:"sample_id"`
+	DataFileID string `gorethink:"datafile_id"`
+}
+
+func indexSamplesUsingFile(client *elastic.Client, session *r.Session, fileID string) {
+	var (
+		s2df schema.Sample2DataFile
+	)
+
+	if samples, err := r.Table("sample2datafile").GetAllByIndex("datafile_id", fileID).Run(session); err != nil {
+		return
+	} else {
+		for samples.Next(&s2df) {
+			indexSamples(client, session, s2df.SampleID)
 		}
 	}
 }
@@ -113,7 +135,7 @@ func propertysetChangeIndexer(client *elastic.Client, session *r.Session) {
 			continue
 		}
 		app.Log.Infof("Index sample because of property change: %s", sample.SampleID)
-		indexSample(client, session, sample.SampleID)
+		indexSamples(client, session, sample.SampleID)
 	}
 }
 
@@ -124,6 +146,31 @@ func getPropertySetID(oldPS, newPS propertyset2property) string {
 	return newPS.PropertySetID
 }
 
+type s2dfChange struct {
+	OldValue sampleIDItem `gorethink:"old_val"`
+	NewValue sampleIDItem `gorethink:"new_val"`
+}
+
+func sampleDatafileChangeIndexer(client *elastic.Client, session *r.Session) {
+	var (
+		change s2dfChange
+	)
+
+	sampleFiles, _ := r.Table("sample2datafile").Changes().Run(session)
+	for sampleFiles.Next(&change) {
+		id := getSampleID(change.OldValue, change.NewValue)
+		app.Log.Infof("Index sample because of file change: %s", id)
+		indexSamples(client, session, id)
+	}
+}
+
+func getSampleID(oldItem, newItem sampleIDItem) string {
+	if oldItem.SampleID != "" {
+		return oldItem.SampleID
+	}
+	return newItem.SampleID
+}
+
 func getItemID(oldItem, newItem idField) string {
 	if oldItem.ID != "" {
 		return oldItem.ID
@@ -131,20 +178,20 @@ func getItemID(oldItem, newItem idField) string {
 	return newItem.ID
 }
 
-func indexFile(client *elastic.Client, session *r.Session, fileID string) {
+func indexFiles(client *elastic.Client, session *r.Session, fileIDs ...interface{}) {
 	var fileDoc doc.File
-	indexer := search.NewSingleFileIndexer(client, session, fileID)
+	indexer := search.NewMultiFileIndexer(client, session, fileIDs...)
 	indexer.Do("files", fileDoc)
 }
 
-func indexSample(client *elastic.Client, session *r.Session, sampleID string) {
+func indexSamples(client *elastic.Client, session *r.Session, sampleIDs ...interface{}) {
 	var sampleDoc doc.Sample
-	indexer := search.NewSingleSampleIndexer(client, session, sampleID)
+	indexer := search.NewMultiSampleIndexer(client, session, sampleIDs...)
 	indexer.Do("samples", sampleDoc)
 }
 
-func indexProcess(client *elastic.Client, session *r.Session, processID string) {
+func indexProcesses(client *elastic.Client, session *r.Session, processIDs ...interface{}) {
 	var processDoc doc.Process
-	indexer := search.NewSingleProcessIndexer(client, session, processID)
+	indexer := search.NewMultiProcessIndexer(client, session, processIDs...)
 	indexer.Do("processes", processDoc)
 }
