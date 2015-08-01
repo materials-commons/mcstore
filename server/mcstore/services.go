@@ -49,6 +49,7 @@ func launchSearchIndexChangeMonitors(sc db.SessionCreater) {
 	go sampleChangeIndexer(esclient, session)
 	go noteChangeIndexer(esclient, session)
 	go propertysetChangeIndexer(esclient, session)
+	go sampleDatafileChangeIndexer(esclient, session)
 }
 
 func esClientMust() *elastic.Client {
