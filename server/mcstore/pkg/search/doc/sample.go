@@ -17,6 +17,8 @@ type SampleFile struct {
 	MediaType  schema.MediaType `gorethink:"mediatype" json:"mediatype"`
 	Size       int64            `gorethink:"size" json:"size"`
 	Contents   string           `gorethink:"-" json:"contents"` // Contents of the file (text only)
+	Tags       []TagID          `gorethink:"tags" json:"tags"`
+	Notes      []Note           `gorethink:"notes" json:"notes"`
 }
 
 type Sample struct {

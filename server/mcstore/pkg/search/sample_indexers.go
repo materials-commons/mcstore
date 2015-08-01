@@ -15,7 +15,7 @@ func samplePropertiesAndFiles(row r.Term) interface{} {
 			EqJoin("property_id", r.Table("properties")).Zip().Pluck("attribute", "name").
 			CoerceTo("ARRAY"),
 		"files": r.Table("sample2datafile").GetAllByIndex("sample_id", row.Field("sample_id")).
-			EqJoin("datafile_id", r.Table("datafiles")).Zip().CoerceTo("ARRAY"),
+			EqJoin("datafile_id", r.Table("datafiles")).Zip().Merge(fileTagsAndNotes).CoerceTo("ARRAY"),
 	}
 }
 
@@ -29,8 +29,8 @@ func NewSamplesIndexer(client *elastic.Client, session *r.Session) *Indexer {
 	return indexer
 }
 
-func NewSingleSampleIndexer(client *elastic.Client, session *r.Session, sampleID string) *Indexer {
-	rql := r.Table("project2sample").GetAllByIndex("sample_id", sampleID).
+func NewMultiSampleIndexer(client *elastic.Client, session *r.Session, sampleIDs ...interface{}) *Indexer {
+	rql := r.Table("project2sample").GetAllByIndex("sample_id", sampleIDs...).
 		EqJoin("sample_id", r.Table("samples")).Zip().
 		Merge(samplePropertiesAndFiles)
 	indexer := defaultSampleIndexer(client, session)
