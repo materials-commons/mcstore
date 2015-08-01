@@ -8,9 +8,9 @@ import (
 
 func fileTagsAndNotes(row r.Term) interface{} {
 	return map[string]interface{}{
-		"tags": r.Table("tag2item").GetAllByIndex("item_id", row.Field("id")).
+		"tags": r.Table("tag2item").GetAllByIndex("item_id", row.Field("datafile_id")).
 			Pluck("tag_id").CoerceTo("ARRAY"),
-		"notes": r.Table("note2item").GetAllByIndex("item_id", row.Field("id")).
+		"notes": r.Table("note2item").GetAllByIndex("item_id", row.Field("datafile_id")).
 			EqJoin("note_id", r.Table("notes")).Zip().CoerceTo("ARRAY"),
 	}
 }
@@ -39,8 +39,8 @@ func NewFilesIndexer(client *elastic.Client, session *r.Session) *Indexer {
 	return indexer
 }
 
-func NewSingleFileIndexer(client *elastic.Client, session *r.Session, fileID string) *Indexer {
-	rql := r.Table("project2datafile").GetAllByIndex("datafile_id", fileID).
+func NewMultiFileIndexer(client *elastic.Client, session *r.Session, fileIDs ...interface{}) *Indexer {
+	rql := r.Table("project2datafile").GetAllByIndex("datafile_id", fileIDs...).
 		EqJoin("datafile_id", r.Table("datadir2datafile"), r.EqJoinOpts{Index: "datafile_id"}).Zip().
 		EqJoin("datadir_id", r.Table("datadirs")).
 		Map(fileRenameDirPath).

@@ -13,8 +13,8 @@ func NewUsersIndexer(client *elastic.Client, session *r.Session) *Indexer {
 	return indexer
 }
 
-func NewSingleUserIndexer(client *elastic.Client, session *r.Session, userID string) *Indexer {
-	rql := r.Table("users").GetAll(userID)
+func NewMultiUserIndexer(client *elastic.Client, session *r.Session, userIDs ...interface{}) *Indexer {
+	rql := r.Table("users").GetAll(userIDs...)
 	indexer := defaultUsersIndexer(client, session)
 	indexer.RQL = rql
 	return indexer

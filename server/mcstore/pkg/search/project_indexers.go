@@ -13,8 +13,8 @@ func NewProjectsIndexer(client *elastic.Client, session *r.Session) *Indexer {
 	return indexer
 }
 
-func NewSingleProjectIndexer(client *elastic.Client, session *r.Session, projectID string) *Indexer {
-	rql := r.Table("projects").GetAll(projectID)
+func NewMultiProjectIndexer(client *elastic.Client, session *r.Session, projectIDs ...interface{}) *Indexer {
+	rql := r.Table("projects").GetAll(projectIDs...)
 	indexer := defaultProjectIndexer(client, session)
 	indexer.RQL = rql
 	return indexer

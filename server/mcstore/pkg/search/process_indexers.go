@@ -25,8 +25,8 @@ func NewProcessesIndexer(client *elastic.Client, session *r.Session) *Indexer {
 	return indexer
 }
 
-func NewSingleProcessIndexer(client *elastic.Client, session *r.Session, processID string) *Indexer {
-	rql := r.Table("project2process").GetAllByIndex("process_id", processID).
+func NewMultiProcessIndexer(client *elastic.Client, session *r.Session, processIDs ...interface{}) *Indexer {
+	rql := r.Table("project2process").GetAllByIndex("process_id", processIDs...).
 		Zip().
 		EqJoin("process_id", r.Table("processes")).Zip().
 		Merge(getProcessesSetup)
