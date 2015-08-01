@@ -43,14 +43,17 @@ func NewServicesContainer(sc db.SessionCreater) *restful.Container {
 func launchSearchIndexChangeMonitors(sc db.SessionCreater) {
 	esclient := esClientMust()
 	session := sc.RSessionMust()
+
 	go processChangeIndexer(esclient, session)
 	go fileChangeIndexer(esclient, session)
 	go sampleChangeIndexer(esclient, session)
+	go noteChangeIndexer(esclient, session)
+	go propertysetChangeIndexer(esclient, session)
 }
 
 func esClientMust() *elastic.Client {
 	url := esURL()
-	app.Log.Infof("Connecting to search url:", url)
+	app.Log.Infof("Connecting to search url: %s", url)
 	c, err := elastic.NewClient(elastic.SetURL(url))
 	if err != nil {
 		app.Log.Panicf("Couldn't connect to ElasticSearch")
