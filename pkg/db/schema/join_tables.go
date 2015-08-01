@@ -20,3 +20,10 @@ type DataDir2DataFile struct {
 	DataDirID  string `gorethink:"datadir_id"`
 	DataFileID string `gorethink:"datafile_id"`
 }
+
+// Sample2DataFile is a join table that maps samples to their files.
+type Sample2DataFile struct {
+	ID         string `gorethink:"id"`
+	SampleID   string `gorethink:"sample_id"`
+	DataFileID string `gorethink:"datafile_id"`
+}

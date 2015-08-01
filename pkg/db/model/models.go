@@ -63,3 +63,9 @@ var Access = &rModel{
 	schema: schema.Access{},
 	table:  "access",
 }
+
+// SampleFiles
+var SampleFiles = &rModel{
+	schema: schema.Sample2DataFile{},
+	table:  "sample2datafile",
+}
