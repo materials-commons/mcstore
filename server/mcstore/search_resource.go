@@ -92,9 +92,9 @@ func (r *searchResource) searchProjectFiles(request *restful.Request, response *
 }
 
 func createQuery(query Query, projectID string) elastic.Query {
-	termQueryProj := elastic.NewTermQuery("project_id", projectID)
+	termFilterProj := elastic.NewTermFilter("project_id", projectID)
 	userQuery := elastic.NewQueryStringQuery(query.QString)
-	boolQuery := elastic.NewBoolQuery()
-	boolQuery = boolQuery.Must(termQueryProj, userQuery)
-	return &boolQuery
+	boolTerm := elastic.NewBoolFilter()
+	boolTerm = boolTerm.Must(termFilterProj, userQuery)
+	return &boolTerm
 }
