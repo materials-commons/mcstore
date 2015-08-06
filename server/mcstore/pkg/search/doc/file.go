@@ -14,9 +14,10 @@ type Note struct {
 
 type File struct {
 	schema.File
-	Tags      []TagID `gorethink:"tags" json:"tags"`
-	DataDirID string  `gorethink:"datadir_id" json:"datadir_id"`
-	ProjectID string  `gorethink:"project_id" json:"project_id"`
-	Contents  string  `gorethink:"-" json:"contents"` // Contents of the file (text only)
-	Notes     []Note  `gorethink:"notes" json:"notes"`
+	DataFileID string  `gorethink:"datafile_id" json:"datafile_id"`
+	Tags       []TagID `gorethink:"tags" json:"tags"`
+	DataDirID  string  `gorethink:"datadir_id" json:"datadir_id"`
+	ProjectID  string  `gorethink:"project_id" json:"project_id"`
+	Contents   string  `gorethink:"-" json:"contents"` // Contents of the file (text only)
+	Notes      []Note  `gorethink:"notes" json:"notes"`
 }
