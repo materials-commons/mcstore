@@ -75,11 +75,22 @@ func init() {
 // try and determine the file type by its extension.
 func MediaType(name, path string) schema.MediaType {
 	mtype := determineMediaType(name, path)
+	mtype = cleanMediaType(mtype)
 	m := schema.MediaType{
 		Mime:        mtype,
 		Description: getDescription(mtype),
 	}
 	return m
+}
+
+// cleanMediaType cleans up the media type definition by removing
+// extra information appended after a semi-colon.
+func cleanMediaType(mtype string) string {
+	semicolon := strings.Index(mtype, ";")
+	if semicolon != -1 {
+		return mtype[:semicolon]
+	}
+	return mtype
 }
 
 // determineMediaType determines the file mediatype first by checking

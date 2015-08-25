@@ -61,7 +61,7 @@ func defaultFileIndexer(client *elastic.Client, session *r.Session) *Indexer {
 		Apply: func(item interface{}) {
 			dfile := item.(*doc.File)
 			dfile.Type = "datafile"
-			dfile.Contents = ReadFileContents(dfile.ID, dfile.MediaType.Mime, dfile.Name, dfile.Size)
+			dfile.Contents = ReadFileContents(dfile.FileID(), dfile.MediaType.Mime, dfile.Name, dfile.Size)
 		},
 		Client:   client,
 		Session:  session,

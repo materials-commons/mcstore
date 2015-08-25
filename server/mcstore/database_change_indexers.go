@@ -46,6 +46,31 @@ func fileChangeIndexer(client *elastic.Client, session *r.Session) {
 	}
 }
 
+type proj2fileChange struct {
+	OldValue schema.Project2DataFile `gorethink:"old_val"`
+	NewValue schema.Project2DataFile `gorethink:"new_val"`
+}
+
+func projectFileChangeIndexer(client *elastic.Client, session *r.Session) {
+	var (
+		change proj2fileChange
+	)
+
+	files, _ := r.Table("project2datafile").Changes().Run(session)
+	for files.Next(&change) {
+		fileID := getFileID(change.OldValue, change.NewValue)
+		app.Log.Infof("Indexing file added to project: %s", fileID)
+		indexFiles(client, session, fileID)
+	}
+}
+
+func getFileID(oldVal, newVal schema.Project2DataFile) string {
+	if oldVal.ID != "" {
+		return oldVal.DataFileID
+	}
+	return newVal.DataFileID
+}
+
 func sampleChangeIndexer(client *elastic.Client, session *r.Session) {
 	var (
 		change changeItem

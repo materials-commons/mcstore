@@ -3,13 +3,13 @@ package search
 import (
 	"bufio"
 	"errors"
-	"fmt"
-	"github.com/materials-commons/gohandy/file"
-	"github.com/materials-commons/mcstore/pkg/app"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/materials-commons/gohandy/file"
+	"github.com/materials-commons/mcstore/pkg/app"
 )
 
 const twoMeg = 2 * 1024 * 1024
@@ -32,7 +32,6 @@ var tikableMediaTypes map[string]bool = map[string]bool{
 func ReadFileContents(fileID, mimeType, name string, size int64) string {
 	switch mimeType {
 	case "text/csv":
-		//fmt.Println("Reading csv file: ", fileID, name, size)
 		if contents, err := readCSVLines(fileID); err == nil {
 			return contents
 		}
@@ -40,7 +39,6 @@ func ReadFileContents(fileID, mimeType, name string, size int64) string {
 		if size > twoMeg {
 			return ""
 		}
-		//fmt.Println("Reading text file: ", fileID, name, size)
 		if contents, err := ioutil.ReadFile(app.MCDir.FilePath(fileID)); err == nil {
 			return string(contents)
 		}
@@ -65,10 +63,8 @@ func readCSVLines(fileID string) (string, error) {
 				return text, nil
 			}
 		}
-		//fmt.Println("readCSVLines no data")
 		return "", errors.New("No data")
 	} else {
-		//fmt.Println("readCSVLines failed to open", err)
 		return "", err
 	}
 }
@@ -84,8 +80,8 @@ func extractUsingTika(fileID, mimeType, name string, size int64) string {
 
 	out, err := exec.Command("tika.sh", "--text", app.MCDir.FilePath(fileID)).Output()
 	if err != nil {
-		fmt.Println("Tika failed for:", fileID, name, mimeType)
-		fmt.Println("exec failed:", err)
+		app.Log.Infof("Tika failed for: %s %s %s", fileID, name, mimeType)
+		app.Log.Infof("exec failed: %s", err)
 		return ""
 	}
 
