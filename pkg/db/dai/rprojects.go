@@ -118,9 +118,7 @@ func (p rProjects) Insert(project *schema.Project) (*schema.Project, error) {
 		return &newProject, err
 	}
 
-	err = p.AddDirectories(&newProject, newDir.ID)
-
-	return &newProject, err
+	return &newProject, nil
 }
 
 // AddDirectories adds new directories to the project.
