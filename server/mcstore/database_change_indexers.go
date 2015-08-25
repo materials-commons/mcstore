@@ -112,6 +112,34 @@ func noteChangeIndexer(client *elastic.Client, session *r.Session) {
 	}
 }
 
+type noteItemChange struct {
+	OldValue note2item `gorethink:"old_val"`
+	NewValue note2item `gorethink:"new_val"`
+}
+
+func noteItemChangeIndexer(client *elastic.Client, session *r.Session) {
+	var (
+		change noteItemChange
+	)
+
+	items, _ := r.Table("note2item").Changes().Run(session)
+	for items.Next(&change) {
+		noteItem := getNoteItem(change)
+		if noteItem.ItemType == "datafile" {
+			app.Log.Infof("Index datafile because of note: %s", noteItem.ItemID)
+			indexFiles(client, session, noteItem.ItemID)
+			indexSamplesUsingFile(client, session, noteItem.ItemID)
+		}
+	}
+}
+
+func getNoteItem(change noteItemChange) note2item {
+	if change.OldValue.ItemID != "" {
+		return change.OldValue
+	}
+	return change.NewValue
+}
+
 type sample2datafile struct {
 	SampleID   string `gorethink:"sample_id"`
 	DataFileID string `gorethink:"datafile_id"`
