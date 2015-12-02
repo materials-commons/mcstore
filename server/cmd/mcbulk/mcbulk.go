@@ -42,7 +42,7 @@ var mappings string = `
 	              }
 	         },
 	         "_source": {
-	              "excludes": [ "contents"]
+	              "excludes": [ "contents" ]
 	         }
 	     },
 	     "projects": {
