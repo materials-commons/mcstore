@@ -40,6 +40,9 @@ var mappings string = `
 	                  "type": "string",
 	                  "index": "not_analyzed"
 	              }
+	         },
+	         "_source": {
+	              "excludes": [ "contents"]
 	         }
 	     },
 	     "projects": {
