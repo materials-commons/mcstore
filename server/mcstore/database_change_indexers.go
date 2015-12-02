@@ -39,10 +39,15 @@ func fileChangeIndexer(client *elastic.Client, session *r.Session) {
 
 	files, _ := r.Table("datafiles").Changes().Run(session)
 	for files.Next(&change) {
-		id := getItemID(change.OldValue, change.NewValue)
-		app.Log.Infof("Indexing file id: %s", id)
-		indexFiles(client, session, id)
-		indexSamplesUsingFile(client, session, id)
+		if change.OldValue.ID != "" && change.NewValue.ID == "" {
+			app.Log.Infof("File Deleted, removing from Index: %s", change.OldValue.ID)
+			client.Delete().Index("mc").Type("files").Id(change.OldValue.ID).Do()
+		} else {
+			id := getItemID(change.OldValue, change.NewValue)
+			app.Log.Infof("Indexing file id: %s", id)
+			indexFiles(client, session, id)
+			indexSamplesUsingFile(client, session, id)
+		}
 	}
 }
 
