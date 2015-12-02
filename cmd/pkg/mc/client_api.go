@@ -60,6 +60,15 @@ func (c *ClientAPI) CreateProject(name, path string) error {
 	}
 }
 
+func (c *ClientAPI) CreateProjectDirectories(projectName string) error {
+	if projectDB, err := ProjectOpener.OpenProjectDB(projectName); err != nil {
+		return err
+	} else {
+		var _ = projectDB
+		return nil
+	}
+}
+
 func (c *ClientAPI) CreateDirectory(projectName, path string) error {
 	return nil
 }
