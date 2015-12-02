@@ -181,6 +181,8 @@ func setupConfig(c *cli.Context) {
 
 	dbcon := c.String("db-connection")
 	config.Set("MCDB_CONNECTION", dbcon)
+
+	config.Set("MCDIR", c.String("mc-dir"))
 }
 
 func runCommands(c *cli.Context) {
