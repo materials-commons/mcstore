@@ -1,19 +1,32 @@
 package mc
 
 import (
-	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/server/mcstore"
 	"os"
 	"path/filepath"
+
+	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/server/mcstore"
 )
 
 type ClientAPI struct {
-	serverAPI *mcstore.ServerAPI
+	serverAPI     *mcstore.ServerAPI
+	projectOpener ProjectDBOpener
 }
 
 func NewClientAPI() *ClientAPI {
 	return &ClientAPI{
-		serverAPI: mcstore.NewServerAPI(),
+		serverAPI:     mcstore.NewServerAPI(),
+		projectOpener: ProjectOpener,
+	}
+}
+
+func newClientAPIWithConfiger(configer Configer) *ClientAPI {
+	opener := sqlProjectDBOpener{
+		configer: configer,
+	}
+	return &ClientAPI{
+		serverAPI:     mcstore.NewServerAPI(),
+		projectOpener: opener,
 	}
 }
 
@@ -42,7 +55,7 @@ func (c *ClientAPI) ProjectStatus(projectID string) error {
 }
 
 func (c *ClientAPI) CreateProject(name, path string) error {
-	if ProjectOpener.ProjectExists(name) {
+	if c.projectOpener.ProjectExists(name) {
 		return app.ErrExists
 	}
 
@@ -57,7 +70,7 @@ func (c *ClientAPI) CreateProject(name, path string) error {
 			ProjectID: resp.ProjectID,
 			Path:      path,
 		}
-		_, err := ProjectOpener.CreateProjectDB(projectDBSpec)
+		_, err := c.projectOpener.CreateProjectDB(projectDBSpec)
 		return err
 	}
 }
@@ -80,7 +93,7 @@ func (c *ClientAPI) CreateProjectDirectories(projectName string) error {
 }
 
 func (c *ClientAPI) CreateDirectory(projectName, path string) (string, error) {
-	projectDB, err := ProjectOpener.OpenProjectDB(projectName)
+	projectDB, err := c.projectOpener.OpenProjectDB(projectName)
 	if err != nil {
 		return "", err
 	}
