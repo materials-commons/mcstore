@@ -25,6 +25,7 @@ type ProjectOpenFlags int
 type ProjectDBOpener interface {
 	CreateProjectDB(dbSpec ProjectDBSpec) (ProjectDB, error)
 	OpenProjectDB(name string) (ProjectDB, error)
+	ProjectExists(name string) bool
 	PathToName(path string) string
 }
 
