@@ -46,6 +46,7 @@ func (s *dirService) createDir(projectID, path string) (*schema.Directory, error
 		return nil, app.ErrInvalid
 	}
 
+	path = convertPath(path)
 	dir, err := s.dirs.ByPath(path, projectID)
 	switch {
 	case err == app.ErrNotFound:
@@ -60,6 +61,10 @@ func (s *dirService) createDir(projectID, path string) (*schema.Directory, error
 		// Existing directory found, so just return it.
 		return dir, nil
 	}
+}
+
+func convertPath(path string) string {
+	return filepath.Clean(strings.Replace(path, `\`, "/", -1))
 }
 
 // validDirPath verifies that the directory path starts with the project name.
