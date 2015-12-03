@@ -70,7 +70,6 @@ var _ = Describe("ProjectUploader", func() {
 		}
 		Expect(err).To(BeNil())
 		u = newUploader(pdb, pdb.Project())
-		u.retryCount = 0
 	})
 
 	AfterEach(func() {
