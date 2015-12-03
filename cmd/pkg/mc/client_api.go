@@ -3,6 +3,8 @@ package mc
 import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore"
+	"os"
+	"path/filepath"
 )
 
 type ClientAPI struct {
@@ -61,16 +63,39 @@ func (c *ClientAPI) CreateProject(name, path string) error {
 }
 
 func (c *ClientAPI) CreateProjectDirectories(projectName string) error {
-	if projectDB, err := ProjectOpener.OpenProjectDB(projectName); err != nil {
+	projectDB, err := ProjectOpener.OpenProjectDB(projectName)
+	if err != nil {
 		return err
-	} else {
-		var _ = projectDB
-		return nil
 	}
+
+	project := projectDB.Project()
+	filepath.Walk(project.Path, func(path string, finfo os.FileInfo, err error) error {
+		if err != nil && finfo.IsDir() {
+			c.createDir(project, path)
+		}
+		return nil
+	})
+
+	return nil
 }
 
-func (c *ClientAPI) CreateDirectory(projectName, path string) error {
-	return nil
+func (c *ClientAPI) CreateDirectory(projectName, path string) (string, error) {
+	projectDB, err := ProjectOpener.OpenProjectDB(projectName)
+	if err != nil {
+		return "", err
+	}
+
+	return c.createDir(projectDB.Project(), path)
+}
+
+func (c *ClientAPI) createDir(project *Project, path string) (directoryID string, err error) {
+	req := mcstore.DirectoryRequest{
+		ProjectName: project.Name,
+		ProjectID:   project.ProjectID,
+		Path:        path,
+	}
+
+	return c.serverAPI.GetDirectory(req)
 }
 
 func (c *ClientAPI) RenameProject(oldName, newName string) error {
