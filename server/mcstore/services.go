@@ -21,12 +21,16 @@ func NewServicesContainer(sc db.SessionCreater) *restful.Container {
 	apikeyFilter := newAPIKeyFilter(apiKeyCache)
 	container.Filter(apikeyFilter.Filter)
 
-	// launch routine to track changes to users and
-	// update the keycache appropriately.
-	go updateKeyCacheOnChange(sc.RSessionMust(), apiKeyCache)
+	if config.GetBool("MCSTORED_MONITOR_USERS") {
+		// launch routine to track changes to users and
+		// update the keycache appropriately.
+		go updateKeyCacheOnChange(sc.RSessionMust(), apiKeyCache)
+	}
 
-	// launch routines to monitor for database changes
-	launchSearchIndexChangeMonitors(sc)
+	if config.GetBool("MCSTORED_MONITOR_DB_CHANGES") {
+		// launch routines to monitor for database changes
+		launchSearchIndexChangeMonitors(sc)
+	}
 
 	uploadResource := newUploadResource()
 	container.Add(uploadResource.WebService())
