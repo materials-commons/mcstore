@@ -118,6 +118,13 @@ def make_tables(conn):
     create_table("users", conn, "apikey")
     create_table("access", conn, "user_id", "project_id")
     create_table("uploads", conn, "owner", "project_id")
+    create_table("processes", conn)
+    create_table("samples", conn)
+    create_table("notes", conn)
+    create_table("note2item", conn)
+    create_table("sample2datafile", conn)
+    create_table("propertyset2property", conn)
+    create_table("tag2item", conn)
     print "Done..."
 
 
