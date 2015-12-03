@@ -42,7 +42,7 @@ var _ = Describe("ClientApi", func() {
 	})
 
 	AfterEach(func() {
-		//os.RemoveAll(".materialscommons")
+		os.RemoveAll(".materialscommons")
 	})
 
 	Describe("CreateDirectory", func() {
@@ -63,6 +63,13 @@ var _ = Describe("ClientApi", func() {
 		It("Should succeed with windows style path", func() {
 			c := newClientAPIWithConfiger(configConfiger{})
 			dirID, err := c.CreateDirectory("test2", `c:\tmp\test2\mydir`)
+			Expect(err).To(Succeed())
+			Expect(dirID).NotTo(Equal(""))
+		})
+
+		It("Should succeed with Linux style path", func() {
+			c := newClientAPIWithConfiger(configConfiger{})
+			dirID, err := c.CreateDirectory("test2", "/tmp/test2/mydir2")
 			Expect(err).To(Succeed())
 			Expect(dirID).NotTo(Equal(""))
 		})
