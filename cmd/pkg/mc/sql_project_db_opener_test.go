@@ -19,6 +19,7 @@ var _ = Describe("SqlProjectDBOpener", func() {
 				configer: configConfiger{},
 			}
 		)
+
 		BeforeEach(func() {
 			config.Set("mcconfigdir", ".materialscommons")
 			os.Mkdir(".materialscommons", 0777)
