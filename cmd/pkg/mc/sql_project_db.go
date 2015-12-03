@@ -13,11 +13,6 @@ type sqlProjectDB struct {
 	db *sqlx.DB
 }
 
-// TODO: Remove this reference, only here to get project building during refactor.
-func Find(dir string) (ProjectDB, error) {
-	return nil, app.ErrInvalid
-}
-
 func (p *sqlProjectDB) Project() *Project {
 	var proj Project
 	if err := p.db.Get(&proj, "select * from project"); err != nil {
