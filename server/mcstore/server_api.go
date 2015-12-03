@@ -110,10 +110,10 @@ type DirectoryRequest struct {
 	Path        string
 }
 
-func (s *ServerAPI) GetDirectory(req DirectoryRequest) (emptyDirectoryID string, err error) {
+func (s *ServerAPI) GetDirectory(req DirectoryRequest) (directoryID string, err error) {
 	var projectBasedPath string
 	if projectBasedPath, err = toProjectPath(req.ProjectName, req.Path); err != nil {
-		return emptyDirectoryID, err
+		return directoryID, err
 	}
 
 	getDirReq := GetDirectoryRequest{
@@ -122,12 +122,12 @@ func (s *ServerAPI) GetDirectory(req DirectoryRequest) (emptyDirectoryID string,
 	}
 	r, body, errs := s.agent.Post(Url("/projects/directory")).Send(getDirReq).End()
 	if err = ToError(r, errs); err != nil {
-		return emptyDirectoryID, err
+		return directoryID, err
 	}
 
 	var dirResponse GetDirectoryResponse
 	if err = ToJSON(body, &dirResponse); err != nil {
-		return emptyDirectoryID, err
+		return directoryID, err
 	}
 
 	return dirResponse.DirectoryID, nil
