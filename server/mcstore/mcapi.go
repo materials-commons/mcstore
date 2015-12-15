@@ -31,7 +31,12 @@ func MCClient() *ezhttp.EzClient {
 func Url(path string) string {
 	values := url.Values{}
 	values.Add("apikey", config.GetString("apikey"))
-	mcurl := urlutil.MustJoin(MCUrl(), path)
+	mcurl := MCUrl()
+	if strings.HasPrefix("/", path) {
+		mcurl = MCUrl() + path
+	} else {
+		mcurl = MCUrl() + "/" + path
+	}
 	mcurl = urlutil.AppendQuery(mcurl, values)
 	return mcurl
 }
