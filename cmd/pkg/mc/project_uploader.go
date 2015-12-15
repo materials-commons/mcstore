@@ -99,17 +99,19 @@ func (u *uploader) uploadEntry(entry files.TreeEntry) string {
 // local database. If it doesn't it will create the directory on the server and insert the directory
 // into its local database.
 func (u *uploader) handleDirEntry(entry files.TreeEntry) {
-	path := filepath.ToSlash(entry.Finfo.Name())
-	_, err := u.db.FindDirectory(path)
-	switch {
-	case err == app.ErrNotFound:
-		u.createDirectory(entry)
-	case err != nil:
-		app.Log.Panicf("Local database returned err, panic!: %s", err)
-	default:
-		// directory already known nothing to do
-		return
-	}
+	//path := filepath.ToSlash(entry.Finfo.Name())
+	u.createDirectory(entry)
+	/*
+		_, err := u.db.FindDirectory(path)
+		switch {
+		case err == app.ErrNotFound:
+			u.createDirectory(entry)
+		case err != nil:
+			app.Log.Panicf("Local database returned err, panic!: %s", err)
+		default:
+			// directory already known nothing to do
+			return
+		}*/
 }
 
 // createDirectory creates a new directory entry on the server.
@@ -121,13 +123,14 @@ func (u *uploader) createDirectory(entry files.TreeEntry) {
 		Path:        dirPath,
 	}
 	dirID := u.getDirectoryWithRetry(req)
-	dir := &Directory{
-		DirectoryID: dirID,
-		Path:        dirPath,
-	}
-	if _, err := u.db.InsertDirectory(dir); err != nil {
-		app.Log.Panicf("Local database returned err, panic!: %s", err)
-	}
+	var _ = dirID
+	//	dir := &Directory{
+	//		DirectoryID: dirID,
+	//		Path:        dirPath,
+	//	}
+	//	if _, err := u.db.InsertDirectory(dir); err != nil {
+	//		app.Log.Panicf("Local database returned err, panic!: %s", err)
+	//	}
 }
 
 // getDirectoryWithRetry will make the server API GetDirectory call. If it fails
@@ -200,6 +203,9 @@ func (u *uploader) getFileByName(name string, dirID int64) *File {
 func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory) {
 	uploadResponse, checksum := u.getUploadResponse(dir.DirectoryID, entry)
 	requestID := uploadResponse.RequestID
+
+	var _ = checksum
+
 	// TODO: do something with the starting block (its ignored for now)
 	var n int
 	var err error
@@ -244,34 +250,35 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 
 	if err != nil && err != io.EOF {
 		app.Log.Errorf("Unable to complete read on file for upload: %s", entry.Path)
-	} else {
-		// done, add or update the entry in the database.
-		if file == nil {
-			// create new entry
-			newFile := File{
-				FileID:     uploadResp.FileID,
-				Name:       entry.Finfo.Name(),
-				Checksum:   checksum,
-				Size:       entry.Finfo.Size(),
-				MTime:      entry.Finfo.ModTime(),
-				LastUpload: time.Now(),
-				Directory:  dir.ID,
-			}
-			u.db.InsertFile(&newFile)
-		} else {
-			// update existing entry
-			file.MTime = entry.Finfo.ModTime()
-			file.LastUpload = time.Now()
-			if file.Checksum != checksum {
-				// Existing file uploaded but we created a new version on the server.
-				// We could get here if a previous upload did not complete.
-				file.Checksum = checksum
-				file.FileID = uploadResp.FileID
-				file.Size = entry.Finfo.Size()
-			}
-			u.db.UpdateFile(file)
-		}
 	}
+	//else {
+	//		// done, add or update the entry in the database.
+	//		if file == nil {
+	//			// create new entry
+	//			newFile := File{
+	//				FileID:     uploadResp.FileID,
+	//				Name:       entry.Finfo.Name(),
+	//				Checksum:   checksum,
+	//				Size:       entry.Finfo.Size(),
+	//				MTime:      entry.Finfo.ModTime(),
+	//				LastUpload: time.Now(),
+	//				Directory:  dir.ID,
+	//			}
+	//			u.db.InsertFile(&newFile)
+	//		} else {
+	//			// update existing entry
+	//			file.MTime = entry.Finfo.ModTime()
+	//			file.LastUpload = time.Now()
+	//			if file.Checksum != checksum {
+	//				// Existing file uploaded but we created a new version on the server.
+	//				// We could get here if a previous upload did not complete.
+	//				file.Checksum = checksum
+	//				file.FileID = uploadResp.FileID
+	//				file.Size = entry.Finfo.Size()
+	//			}
+	//			u.db.UpdateFile(file)
+	//		}
+	//	}
 }
 
 // getUploadResponse sends an upload request to the server and gets the response.
