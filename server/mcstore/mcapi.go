@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 
+	"fmt"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -32,12 +33,16 @@ func Url(path string) string {
 	values := url.Values{}
 	values.Add("apikey", config.GetString("apikey"))
 	mcurl := MCUrl()
-	if strings.HasPrefix("/", path) {
+	fmt.Println("Url path = ", path)
+	fmt.Println("MCUrl() = ", MCUrl())
+	if strings.HasPrefix(path, "/") {
+		fmt.Println("hasprefix")
 		mcurl = MCUrl() + path
 	} else {
 		mcurl = MCUrl() + "/" + path
 	}
 	mcurl = urlutil.AppendQuery(mcurl, values)
+	fmt.Println("url = ", mcurl)
 	return mcurl
 }
 

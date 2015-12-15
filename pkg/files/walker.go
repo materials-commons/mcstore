@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sync"
 
+	"fmt"
 	"github.com/materials-commons/gohandy/file"
 )
 
@@ -56,6 +57,7 @@ func (p *PWalker) walkFiles(done <-chan struct{}, root string) (<-chan TreeEntry
 	go func() {
 		defer close(filesChan)
 		errChan <- filepath.Walk(root, func(path string, finfo os.FileInfo, err error) error {
+			fmt.Println("filepath.Walk", path)
 			switch {
 			case err != nil && os.IsPermission(err):
 				// Permission errors are ignored. Just continue walking the tree
@@ -68,6 +70,7 @@ func (p *PWalker) walkFiles(done <-chan struct{}, root string) (<-chan TreeEntry
 
 			case p.IgnoreFn(path, finfo):
 				// if ignorePathFn returns true then skip processing this entry.
+				fmt.Println("  p.IgnoreFn returned true")
 				if finfo.IsDir() {
 					// If entry is a directory, then skip processing that
 					// entry sub tree.
@@ -87,6 +90,7 @@ func (p *PWalker) walkFiles(done <-chan struct{}, root string) (<-chan TreeEntry
 			default:
 				// Directories aren't being processed, so skip this entry.
 				if finfo.IsDir() && !p.ProcessDirs {
+					fmt.Println("  IsDir && !p.ProcessDirs")
 					return nil
 				}
 
@@ -140,6 +144,7 @@ func (p *PWalker) PWalk(root string) (<-chan string, <-chan error) {
 
 	// Start "n" fn routines to process files. When each one completes
 	// processing all entries along its channel signal done.
+	fmt.Println("p.NumParallel", p.NumParallel)
 	for i := 0; i < p.NumParallel; i++ {
 		go func() {
 			p.ProcessFn(done, filesChan, results)

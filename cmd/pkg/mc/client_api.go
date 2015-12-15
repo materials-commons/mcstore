@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"fmt"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore"
 )
@@ -49,6 +50,8 @@ func (c *ClientAPI) UploadDirectory(projectName string, path string) error {
 
 // UploadProject will upload all the changed and new files in a given project.
 func (c *ClientAPI) UploadProject(projectName string, numThreads int) error {
+	fmt.Println("UploadProject", numThreads)
+
 	if projectDB, err := ProjectOpener.OpenProjectDB(projectName); err != nil {
 		return err
 	} else {

@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"fmt"
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
@@ -54,6 +55,9 @@ func (s *dirService) createDir(projectID, path string) (*schema.Directory, error
 		parent := filepath.Dir(path)
 		d := schema.NewDirectory(path, proj.Owner, projectID, parent)
 		dir, err = s.dirs.Insert(&d)
+		if err != nil {
+			fmt.Println("s.dirs.Insert returned err", err)
+		}
 		return dir, err
 	case err != nil:
 		return nil, err

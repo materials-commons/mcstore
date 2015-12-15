@@ -9,7 +9,7 @@ import (
 )
 
 var uploadProjectCommand = cli.Command{
-	Name:    "upload",
+	Name:    "project",
 	Aliases: []string{"up", "u"},
 	Usage:   "Upload project to MaterialsCommons",
 	Flags: []cli.Flag{

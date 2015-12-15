@@ -72,6 +72,11 @@ func (l *Logger) Panicf(format string, args ...interface{}) {
 	Panicf(format, args...)
 }
 
+func (l *Logger) Exitf(format string, args ...interface{}) {
+	l.Crit(fmt.Sprintf(format, args...))
+	os.Exit(1)
+}
+
 // Logf is short hand to create a message string using fmt.Sprintf.
 func Logf(format string, args ...interface{}) string {
 	return fmt.Sprintf(format, args...)

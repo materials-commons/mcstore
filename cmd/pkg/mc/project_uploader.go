@@ -99,19 +99,20 @@ func (u *uploader) uploadEntry(entry files.TreeEntry) string {
 // local database. If it doesn't it will create the directory on the server and insert the directory
 // into its local database.
 func (u *uploader) handleDirEntry(entry files.TreeEntry) {
-	//path := filepath.ToSlash(entry.Finfo.Name())
-	u.createDirectory(entry)
-	/*
-		_, err := u.db.FindDirectory(path)
-		switch {
-		case err == app.ErrNotFound:
-			u.createDirectory(entry)
-		case err != nil:
-			app.Log.Panicf("Local database returned err, panic!: %s", err)
-		default:
-			// directory already known nothing to do
-			return
-		}*/
+	fmt.Println("handleDirEntry", entry.Finfo.Name(), entry.Path)
+	path := filepath.ToSlash(entry.Path)
+
+	_, err := u.db.FindDirectory(path)
+	switch {
+	case err == app.ErrNotFound:
+		fmt.Println("   Did not find directory")
+		u.createDirectory(entry)
+	case err != nil:
+		app.Log.Panicf("Local database returned err, panic!: %s", err)
+	default:
+		// directory already known nothing to do
+		return
+	}
 }
 
 // createDirectory creates a new directory entry on the server.
@@ -122,38 +123,39 @@ func (u *uploader) createDirectory(entry files.TreeEntry) {
 		ProjectID:   u.project.ProjectID,
 		Path:        dirPath,
 	}
-	dirID := u.getDirectoryWithRetry(req)
-	var _ = dirID
-	//	dir := &Directory{
-	//		DirectoryID: dirID,
-	//		Path:        dirPath,
-	//	}
-	//	if _, err := u.db.InsertDirectory(dir); err != nil {
-	//		app.Log.Panicf("Local database returned err, panic!: %s", err)
-	//	}
+	dirID, _ := u.getDirectory(req)
+	dir := &Directory{
+		DirectoryID: dirID,
+		Path:        dirPath,
+	}
+	if _, err := u.db.InsertDirectory(dir); err != nil {
+		app.Log.Panicf("Local database returned err, panic!: %s", err)
+	}
 }
 
 // getDirectoryWithRetry will make the server API GetDirectory call. If it fails
 // it will retry (dependent on retry settings).
-func (u *uploader) getDirectoryWithRetry(req mcstore.DirectoryRequest) string {
-	var dirID string
-	fn := func() error {
-		var err error
-		if dirID, err = u.serverAPI.GetDirectory(req); err != nil {
-			return with.ErrRetry
-		}
-		return nil
+func (u *uploader) getDirectory(req mcstore.DirectoryRequest) (string, error) {
+	var (
+		dirID string
+		err   error
+	)
+	if dirID, err = u.serverAPI.GetDirectory(req); err != nil {
+		fmt.Printf("u.serverAPI.GetDirectory failed %#v/%s\n", req, err)
+		return "", err
 	}
-	u.retrier.WithRetry(fn)
-	return dirID
+	fmt.Printf("u.serverAPI.GetDirectory succeeded:%s\n", dirID)
+	return dirID, nil
 }
 
 // handleFileEntry will handle processing file entries. It will check if the file
 // has already been uploaded. If it hasn't it will upload the file to the server.
 func (u *uploader) handleFileEntry(entry files.TreeEntry) {
+	fmt.Println("handleFileEntry %#v\n", entry)
 	if dir := u.getDirByPath(filepath.Dir(entry.Path)); dir == nil {
-		app.Log.Panicf("Should have found dir")
+		app.Log.Exitf("Should have found dir %s", filepath.Dir(entry.Path))
 	} else {
+		fmt.Printf("handleFileEntry dir = %#v\n", dir)
 		file := u.getFileByName(entry.Finfo.Name(), dir.ID)
 		switch {
 		case file == nil:
@@ -232,7 +234,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 				DirectoryID:      dir.DirectoryID,
 				Chunk:            buf[:n],
 			}
-			uploadResp = u.sendFlowDataWithRetry(req)
+			uploadResp, _ = u.sendFlowData(req)
 			if uploadResp.Done {
 				break
 			}
@@ -283,7 +285,6 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 
 // getUploadResponse sends an upload request to the server and gets the response.
 func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) (*mcstore.CreateUploadResponse, string) {
-	// retry forever
 	checksum, _ := file.HashStr(md5.New(), entry.Path)
 	chunkSize := int32(1024 * 1024)
 	uploadReq := mcstore.CreateUploadRequest{
@@ -295,23 +296,24 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 		FileMTime:   entry.Finfo.ModTime().Format(time.RFC1123),
 		Checksum:    checksum,
 	}
-	resp := u.createUploadRequestWithRetry(uploadReq)
+	fmt.Printf("%#v\n", uploadReq)
+	resp, err := u.createUploadRequest(uploadReq)
+	fmt.Println("getUploadResponse err", err)
 	return resp, checksum
 }
 
 // createUploadRequestWithRetry will make the server API CreateUploadRequest call. If it fails
 // it will retry (dependent on retry settings).
-func (u *uploader) createUploadRequestWithRetry(uploadReq mcstore.CreateUploadRequest) *mcstore.CreateUploadResponse {
-	var resp *mcstore.CreateUploadResponse
-	fn := func() error {
-		var err error
-		if resp, err = u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
-			return with.ErrRetry
-		}
-		return nil
+func (u *uploader) createUploadRequest(uploadReq mcstore.CreateUploadRequest) (*mcstore.CreateUploadResponse, error) {
+	var (
+		resp *mcstore.CreateUploadResponse
+		err  error
+	)
+	if resp, err = u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
+		return nil, err
 	}
-	u.retrier.WithRetry(fn)
-	return resp
+
+	return resp, nil
 }
 
 // numChunks determines the number of chunks that will be sent to the server.
@@ -323,15 +325,13 @@ func numChunks(size int64) int32 {
 
 // sendFlowDataWithRetry will make the server API SendFlowData call. If it fails
 // it will retry (dependent on retry settings).
-func (u *uploader) sendFlowDataWithRetry(req *flow.Request) *mcstore.UploadChunkResponse {
-	var resp *mcstore.UploadChunkResponse
-	fn := func() error {
-		var err error
-		if resp, err = u.serverAPI.SendFlowData(req); err != nil {
-			return with.ErrRetry
-		}
-		return nil
+func (u *uploader) sendFlowData(req *flow.Request) (*mcstore.UploadChunkResponse, error) {
+	var (
+		resp *mcstore.UploadChunkResponse
+		err  error
+	)
+	if resp, err = u.serverAPI.SendFlowData(req); err != nil {
+		return nil, err
 	}
-	u.retrier.WithRetry(fn)
-	return resp
+	return resp, nil
 }
