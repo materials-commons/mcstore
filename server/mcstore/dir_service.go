@@ -52,8 +52,13 @@ func (s *dirService) createDir(projectID, path string) (*schema.Directory, error
 	switch {
 	case err == app.ErrNotFound:
 		// Doesn't exist, create it
-		parent := filepath.Dir(path)
-		d := schema.NewDirectory(path, proj.Owner, projectID, parent)
+		parentPath := filepath.Dir(path)
+		parentID := ""
+		if parentPath != "" {
+			pdir, _ := s.dirs.ByPath(parentPath, projectID)
+			parentID = pdir.ID
+		}
+		d := schema.NewDirectory(path, proj.Owner, projectID, parentID)
 		dir, err = s.dirs.Insert(&d)
 		if err != nil {
 			fmt.Println("s.dirs.Insert returned err", err)
