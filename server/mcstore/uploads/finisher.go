@@ -7,7 +7,6 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstore/uploads/processor"
 )
 
@@ -50,7 +49,7 @@ func (f *finisher) finish(req *UploadRequest, fileID, checksum string, upload *s
 		return app.ErrInvalid
 	}
 
-	mediatype := files.MediaType(upload.File.Name, filePath)
+	mediatype := MediaType(upload.File.Name, filePath)
 	fields := map[string]interface{}{
 		schema.FileFields.Current():   true,
 		schema.FileFields.Parent():    parentID,
