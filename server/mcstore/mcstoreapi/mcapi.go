@@ -1,4 +1,4 @@
-package mcstore
+package mcstoreapi
 
 import (
 	"encoding/json"

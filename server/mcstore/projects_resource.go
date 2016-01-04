@@ -2,49 +2,19 @@ package mcstore
 
 import (
 	"fmt"
+
 	rethinkdb "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
 
 // An projectsResource holds the state and services needed for the
 // projects REST resource.
 type projectsResource struct {
 	log *app.Logger
-}
-
-//////////////////////// Request/Response Definitions /////////////////////
-
-// CreateProjectRequest requests that a project be created. If MustNotExist
-// is true, then the given project must not already exist. Existence is
-// determined by the project name for that user.
-type CreateProjectRequest struct {
-	Name         string `json:"name"`
-	MustNotExist bool   `json:"must_not_exist"`
-}
-
-// CreateProjectResponse returns the created project. If the project was an
-// existing project and no new project was created then the Existing flag
-// will be set to false.
-type CreateProjectResponse struct {
-	ProjectID string `json:"project_id"`
-	Existing  bool   `json:"existing"`
-}
-
-// GetDirectoryRequest is a request to get a directory for a project. The
-// directory lookup is by path within the context of the given project.
-type GetDirectoryRequest struct {
-	Path      string
-	ProjectID string
-}
-
-// GetDirectoryResponse returns the directory id for a directory
-// path for a given project.
-type GetDirectoryResponse struct {
-	DirectoryID string `json:"directory_id"`
-	Path        string `json:"path"`
 }
 
 // newProjectsResource creates a new projects resource.
@@ -62,13 +32,13 @@ func (r *projectsResource) WebService() *restful.WebService {
 
 	ws.Route(ws.POST("").To(rest.RouteHandler(r.createProject)).
 		Doc("Creates a new project for user. If project exists it returns the existing project.").
-		Reads(CreateProjectRequest{}).
-		Writes(CreateProjectResponse{}))
+		Reads(mcstoreapi.CreateProjectRequest{}).
+		Writes(mcstoreapi.CreateProjectResponse{}))
 
 	ws.Route(ws.POST("directory").To(rest.RouteHandler(r.getDirectory)).
 		Doc("Gets or creates a directory by its directory path").
-		Reads(GetDirectoryRequest{}).
-		Writes(GetDirectoryResponse{}))
+		Reads(mcstoreapi.GetDirectoryRequest{}).
+		Writes(mcstoreapi.GetDirectoryResponse{}))
 
 	ws.Route(ws.GET("{id}").To(rest.RouteHandler(r.getProject)).
 		Doc("Gets project details").
@@ -86,7 +56,7 @@ func (r *projectsResource) WebService() *restful.WebService {
 // doesn't have a project matching the given project name.
 func (r *projectsResource) createProject(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	session := request.Attribute("session").(*rethinkdb.Session)
-	var req CreateProjectRequest
+	var req mcstoreapi.CreateProjectRequest
 	if err := request.ReadEntity(&req); err != nil {
 		app.Log.Debugf("createProject ReadEntity failed: %s", err)
 		return nil, err
@@ -98,7 +68,7 @@ func (r *projectsResource) createProject(request *restful.Request, response *res
 	case err != nil:
 		return nil, err
 	default:
-		resp := &CreateProjectResponse{
+		resp := &mcstoreapi.CreateProjectResponse{
 			ProjectID: proj.ID,
 			Existing:  existing,
 		}
@@ -112,7 +82,7 @@ func (r *projectsResource) createProject(request *restful.Request, response *res
 func (r *projectsResource) getDirectory(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	fmt.Println("getDirectory found")
 	session := request.Attribute("session").(*rethinkdb.Session)
-	var req GetDirectoryRequest
+	var req mcstoreapi.GetDirectoryRequest
 	if err := request.ReadEntity(&req); err != nil {
 		app.Log.Debugf("getDirectory ReadEntity failed: %s", err)
 		return nil, err
@@ -124,7 +94,7 @@ func (r *projectsResource) getDirectory(request *restful.Request, response *rest
 	case err != nil:
 		return nil, err
 	default:
-		resp := &GetDirectoryResponse{
+		resp := &mcstoreapi.GetDirectoryResponse{
 			DirectoryID: dir.ID,
 			Path:        req.Path,
 		}

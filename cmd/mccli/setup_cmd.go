@@ -15,7 +15,7 @@ import (
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/server/mcstore"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 	"github.com/parnurzeal/gorequest"
 	"gnd.la/net/urlutil"
 	"golang.org/x/crypto/ssh/terminal"
@@ -78,11 +78,11 @@ func getAPIKey(username, password string) (string, error) {
 		Password: password,
 	}
 	request := gorequest.New().TLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-	resp, body, errs := request.Put(urlutil.MustJoin(mcstore.MCUrl(), path.Join("api", "user", username, "apikey"))).
+	resp, body, errs := request.Put(urlutil.MustJoin(mcstoreapi.MCUrl(), path.Join("api", "user", username, "apikey"))).
 		Send(l).
 		End()
 	if len(errs) != 0 {
-		fmt.Printf("Unable to communicate with MaterialsCommons at: %s\n", mcstore.MCUrl())
+		fmt.Printf("Unable to communicate with MaterialsCommons at: %s\n", mcstoreapi.MCUrl())
 		return "", app.ErrInvalid
 	}
 	if resp.StatusCode > 299 {

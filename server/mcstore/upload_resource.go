@@ -10,6 +10,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/filters"
 	"github.com/materials-commons/mcstore/server/mcstore/uploads"
 	"github.com/willf/bitset"
@@ -20,18 +21,6 @@ var _ = fmt.Println
 // An uploadResource handles all upload requests.
 type uploadResource struct {
 	log *app.Logger
-}
-
-// UploadEntry is a client side representation of an upload.
-type UploadEntry struct {
-	RequestID   string    `json:"request_id"`
-	FileName    string    `json:"filename"`
-	DirectoryID string    `json:"directory_id"`
-	ProjectID   string    `json:"project_id"`
-	Size        int64     `json:"size"`
-	Host        string    `json:"host"`
-	Checksum    string    `json:"checksum"`
-	Birthtime   time.Time `json:"birthtime"`
 }
 
 // newUploadResource creates a new upload resource
@@ -49,12 +38,12 @@ func (r *uploadResource) WebService() *restful.WebService {
 
 	ws.Route(ws.POST("").Filter(filters.ProjectAccess).Filter(directoryFilter).To(rest.RouteHandler(r.createUploadRequest)).
 		Doc("Creates a new upload request").
-		Reads(CreateUploadRequest{}).
-		Writes(CreateUploadResponse{}))
+		Reads(mcstoreapi.CreateUploadRequest{}).
+		Writes(mcstoreapi.CreateUploadResponse{}))
 
 	ws.Route(ws.POST("/chunk").To(rest.RouteHandler(r.uploadFileChunk)).
 		Consumes("multipart/form-data").
-		Writes(UploadChunkResponse{}).
+		Writes(mcstoreapi.UploadChunkResponse{}).
 		Doc("Upload a file chunk"))
 
 	ws.Route(ws.DELETE("{id}").To(rest.RouteHandler1(r.deleteUploadRequest)).
@@ -64,28 +53,9 @@ func (r *uploadResource) WebService() *restful.WebService {
 	ws.Route(ws.GET("{project}").Filter(filters.ProjectAccess).To(rest.RouteHandler(r.listProjectUploadRequests)).
 		Param(ws.PathParameter("project", "project id").DataType("string")).
 		Doc("Lists upload requests for project").
-		Writes([]UploadEntry{}))
+		Writes([]mcstoreapi.UploadEntry{}))
 
 	return ws
-}
-
-// CreateRequest describes the JSON request a client will send
-// to create a new upload request.
-type CreateUploadRequest struct {
-	ProjectID   string `json:"project_id"`
-	DirectoryID string `json:"directory_id"`
-	FileName    string `json:"filename"`
-	FileSize    int64  `json:"filesize"`
-	ChunkSize   int32  `json:"chunk_size"`
-	FileMTime   string `json:"filemtime"`
-	Checksum    string `json:"checksum"`
-}
-
-// uploadCreateResponse is the format of JSON sent back containing
-// the upload request ID.
-type CreateUploadResponse struct {
-	RequestID     string `json:"request_id"`
-	StartingBlock uint   `json:"starting_block"`
 }
 
 // createUploadRequest services requests to create a new upload id. It validates
@@ -106,7 +76,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 			return nil, err
 		} else {
 			startingBlock := findStartingBlock(upload.File.Blocks)
-			resp := CreateUploadResponse{
+			resp := mcstoreapi.CreateUploadResponse{
 				RequestID:     upload.ID,
 				StartingBlock: startingBlock,
 			}
@@ -118,7 +88,7 @@ func (r *uploadResource) createUploadRequest(request *restful.Request, response 
 // request2IDRequest fills out an id request to send to the idService. It handles request parameter errors.
 func request2IDRequest(request *restful.Request, userID string) (uploads.IDRequest, error) {
 	var (
-		req CreateUploadRequest
+		req mcstoreapi.CreateUploadRequest
 		cr  uploads.IDRequest
 	)
 
@@ -175,11 +145,6 @@ func findStartingBlock(blocks *bitset.BitSet) uint {
 	}
 }
 
-type UploadChunkResponse struct {
-	FileID string `json:"file_id"`
-	Done   bool   `json:"done"`
-}
-
 // uploadFileChunk uploads a new file chunk.
 func (r *uploadResource) uploadFileChunk(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
 	session := request.Attribute("session").(*rethinkdb.Session)
@@ -197,7 +162,7 @@ func (r *uploadResource) uploadFileChunk(request *restful.Request, response *res
 	if uploadStatus, err := uploadService.Upload(&req); err != nil {
 		return nil, err
 	} else {
-		uploadResp := &UploadChunkResponse{
+		uploadResp := &mcstoreapi.UploadChunkResponse{
 			FileID: uploadStatus.FileID,
 			Done:   uploadStatus.Done,
 		}
@@ -223,7 +188,7 @@ func (r *uploadResource) listProjectUploadRequests(request *restful.Request, res
 	entries, err := idService.UploadsForProject(project.ID)
 	switch {
 	case err == app.ErrNotFound:
-		var uploads []UploadEntry
+		var uploads []mcstoreapi.UploadEntry
 		return uploads, nil
 	case err != nil:
 		return nil, err
@@ -233,10 +198,10 @@ func (r *uploadResource) listProjectUploadRequests(request *restful.Request, res
 }
 
 // uploads2uploadEntries converts schema.Upload array into an array of UploadEntry.
-func uploads2uploadEntries(projectUploads []schema.Upload) []UploadEntry {
-	entries := make([]UploadEntry, len(projectUploads))
+func uploads2uploadEntries(projectUploads []schema.Upload) []mcstoreapi.UploadEntry {
+	entries := make([]mcstoreapi.UploadEntry, len(projectUploads))
 	for i, entry := range projectUploads {
-		entries[i] = UploadEntry{
+		entries[i] = mcstoreapi.UploadEntry{
 			RequestID:   entry.ID,
 			FileName:    entry.File.Name,
 			DirectoryID: entry.DirectoryID,

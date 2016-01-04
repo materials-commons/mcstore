@@ -5,13 +5,14 @@ import (
 	"path/filepath"
 
 	"fmt"
+
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/server/mcstore"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
 
 // ClientAPI implements API calls to the mcstored server.
 type ClientAPI struct {
-	serverAPI     *mcstore.ServerAPI
+	serverAPI     *mcstoreapi.ServerAPI
 	projectOpener ProjectDBOpener
 }
 
@@ -19,7 +20,7 @@ type ClientAPI struct {
 // data in $HOME/.materialscommons
 func NewClientAPI() *ClientAPI {
 	return &ClientAPI{
-		serverAPI:     mcstore.NewServerAPI(),
+		serverAPI:     mcstoreapi.NewServerAPI(),
 		projectOpener: ProjectOpener,
 	}
 }
@@ -31,7 +32,7 @@ func newClientAPIWithConfiger(configer Configer) *ClientAPI {
 		configer: configer,
 	}
 	return &ClientAPI{
-		serverAPI:     mcstore.NewServerAPI(),
+		serverAPI:     mcstoreapi.NewServerAPI(),
 		projectOpener: opener,
 	}
 }
@@ -75,7 +76,7 @@ func (c *ClientAPI) CreateProject(name, path string) error {
 		return app.ErrExists
 	}
 
-	req := mcstore.CreateProjectRequest{
+	req := mcstoreapi.CreateProjectRequest{
 		Name: name,
 	}
 	if resp, err := c.serverAPI.CreateProject(req); err != nil {
@@ -122,7 +123,7 @@ func (c *ClientAPI) CreateDirectory(projectName, path string) (string, error) {
 
 // createDir performs the actual call to the server to create a directory.
 func (c *ClientAPI) createDir(project *Project, path string) (directoryID string, err error) {
-	req := mcstore.DirectoryRequest{
+	req := mcstoreapi.DirectoryRequest{
 		ProjectName: project.Name,
 		ProjectID:   project.ProjectID,
 		Path:        path,

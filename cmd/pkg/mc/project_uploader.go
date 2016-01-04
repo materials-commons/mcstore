@@ -17,7 +17,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/files"
-	"github.com/materials-commons/mcstore/server/mcstore"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
 
 var _ = fmt.Println
@@ -56,7 +56,7 @@ func (p *projectUploader) upload() error {
 // uploader holds the state for one upload thread.
 type uploader struct {
 	db        ProjectDB
-	serverAPI *mcstore.ServerAPI
+	serverAPI *mcstoreapi.ServerAPI
 	project   *Project
 	retrier   with.Retrier
 }
@@ -66,7 +66,7 @@ func newUploader(db ProjectDB, project *Project) *uploader {
 	return &uploader{
 		db:        db.Clone(),
 		project:   project,
-		serverAPI: mcstore.NewServerAPI(),
+		serverAPI: mcstoreapi.NewServerAPI(),
 	}
 }
 
@@ -116,7 +116,7 @@ func (u *uploader) handleDirEntry(entry files.TreeEntry) {
 // createDirectory creates a new directory entry on the server.
 func (u *uploader) createDirectory(entry files.TreeEntry) {
 	dirPath := filepath.ToSlash(entry.Path)
-	req := mcstore.DirectoryRequest{
+	req := mcstoreapi.DirectoryRequest{
 		ProjectName: u.project.Name,
 		ProjectID:   u.project.ProjectID,
 		Path:        dirPath,
@@ -133,7 +133,7 @@ func (u *uploader) createDirectory(entry files.TreeEntry) {
 
 // getDirectoryWithRetry will make the server API GetDirectory call. If it fails
 // it will retry (dependent on retry settings).
-func (u *uploader) getDirectory(req mcstore.DirectoryRequest) (string, error) {
+func (u *uploader) getDirectory(req mcstoreapi.DirectoryRequest) (string, error) {
 	var (
 		dirID string
 		err   error
@@ -215,7 +215,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 	defer f.Close()
 	buf := make([]byte, 1024*1024)
 	totalChunks := numChunks(entry.Finfo.Size())
-	var uploadResp *mcstore.UploadChunkResponse
+	var uploadResp *mcstoreapi.UploadChunkResponse
 	for {
 		n, err = f.Read(buf)
 		if n != 0 {
@@ -281,10 +281,10 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 }
 
 // getUploadResponse sends an upload request to the server and gets the response.
-func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) (*mcstore.CreateUploadResponse, string) {
+func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) (*mcstoreapi.CreateUploadResponse, string) {
 	checksum, _ := file.HashStr(md5.New(), entry.Path)
 	chunkSize := int32(1024 * 1024)
-	uploadReq := mcstore.CreateUploadRequest{
+	uploadReq := mcstoreapi.CreateUploadRequest{
 		ProjectID:   u.project.ProjectID,
 		DirectoryID: directoryID,
 		FileName:    entry.Finfo.Name(),
@@ -299,9 +299,9 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 
 // createUploadRequestWithRetry will make the server API CreateUploadRequest call. If it fails
 // it will retry (dependent on retry settings).
-func (u *uploader) createUploadRequest(uploadReq mcstore.CreateUploadRequest) (*mcstore.CreateUploadResponse, error) {
+func (u *uploader) createUploadRequest(uploadReq mcstoreapi.CreateUploadRequest) (*mcstoreapi.CreateUploadResponse, error) {
 	var (
-		resp *mcstore.CreateUploadResponse
+		resp *mcstoreapi.CreateUploadResponse
 		err  error
 	)
 	if resp, err = u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
@@ -320,9 +320,9 @@ func numChunks(size int64) int32 {
 
 // sendFlowDataWithRetry will make the server API SendFlowData call. If it fails
 // it will retry (dependent on retry settings).
-func (u *uploader) sendFlowData(req *flow.Request) (*mcstore.UploadChunkResponse, error) {
+func (u *uploader) sendFlowData(req *flow.Request) (*mcstoreapi.UploadChunkResponse, error) {
 	var (
-		resp *mcstore.UploadChunkResponse
+		resp *mcstoreapi.UploadChunkResponse
 		err  error
 	)
 	if resp, err = u.serverAPI.SendFlowData(req); err != nil {

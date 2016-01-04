@@ -10,7 +10,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/cmd/pkg/client"
-	"github.com/materials-commons/mcstore/server/mcstore"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 	"github.com/olekukonko/tablewriter"
 	"github.com/parnurzeal/gorequest"
 )
@@ -106,15 +106,15 @@ func (s *projectStatusCmd) displayStatusUploads(projectID string) {
 }
 
 // getUploads queries the server for the uploads for the project.
-func (s *projectStatusCmd) getUploads(projectID string) ([]mcstore.UploadEntry, error) {
+func (s *projectStatusCmd) getUploads(projectID string) ([]mcstoreapi.UploadEntry, error) {
 	config.Set("apikey", "test")
-	r, body, errs := s.client.Get(mcstore.Url("/upload/test")).End()
-	if err := mcstore.ToError(r, errs); err != nil {
+	r, body, errs := s.client.Get(mcstoreapi.Url("/upload/test")).End()
+	if err := mcstoreapi.ToError(r, errs); err != nil {
 		return nil, err
 	}
 
-	var uploads []mcstore.UploadEntry
-	mcstore.ToJSON(body, &uploads)
+	var uploads []mcstoreapi.UploadEntry
+	mcstoreapi.ToJSON(body, &uploads)
 	return uploads, nil
 }
 

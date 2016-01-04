@@ -5,7 +5,7 @@ import (
 
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/config"
-	"github.com/materials-commons/mcstore/server/mcstore"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
 
 var ShowCommand = cli.Command{
@@ -26,6 +26,6 @@ var showConfigCommand = cli.Command{
 
 func showConfigCLI(c *cli.Context) {
 	fmt.Println("apikey:", config.GetString("apikey"))
-	fmt.Println("mcurl:", mcstore.MCUrl())
+	fmt.Println("mcurl:", mcstoreapi.MCUrl())
 	fmt.Println("mclogging:", config.GetString("mclogging"))
 }
