@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"fmt"
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -117,15 +116,12 @@ func (s *ServerAPI) GetDirectory(req DirectoryRequest) (directoryID string, err 
 		return directoryID, err
 	}
 
-	fmt.Println("GetDirectory projectBasedPath", projectBasedPath)
-
 	getDirReq := GetDirectoryRequest{
 		Path:      projectBasedPath,
 		ProjectID: req.ProjectID,
 	}
 	r, body, errs := s.agent.Post(Url("/project2/directory")).Send(getDirReq).End()
 	if err = ToError(r, errs); err != nil {
-		fmt.Printf("GetDirectory failed %#v/%s\n", getDirReq, err)
 		return directoryID, err
 	}
 
@@ -138,7 +134,6 @@ func (s *ServerAPI) GetDirectory(req DirectoryRequest) (directoryID string, err 
 }
 
 func toProjectPath(projectName, path string) (string, error) {
-	fmt.Println("toProjectPath", projectName, path)
 	i := strings.Index(path, projectName)
 	if i == -1 {
 		return "", app.ErrInvalid
