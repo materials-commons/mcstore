@@ -3,6 +3,8 @@ package mc
 import (
 	"database/sql"
 
+	"fmt"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/materials-commons/mcstore/pkg/app"
 	_ "github.com/mattn/go-sqlite3"
@@ -79,11 +81,13 @@ func (p *sqlProjectDB) InsertFile(f *File) (*File, error) {
 		return nil, err
 	}
 	f.ID, _ = res.LastInsertId()
+	fmt.Printf("InsertFile: %#v\n", f)
 	return f, err
 }
 
 func (p *sqlProjectDB) FindFile(fileName string, dirID int64) (*File, error) {
 	query := `select * from files where directory = $1 and name = $2`
+	fmt.Printf("FindFile: Looking for file %s, dirID %d\n", fileName, dirID)
 	var f File
 	err := p.db.Get(&f, query, dirID, fileName)
 	switch {
@@ -110,6 +114,7 @@ func (p *sqlProjectDB) UpdateFile(f *File) error {
 	           directory = :directory
 	       where id=:id
 	`
+	fmt.Printf("UpdateFile: %#v\n", f)
 	_, err := p.db.Exec(sql, f.FileID, f.Name, f.Checksum, f.Size, f.MTime,
 		f.CTime, f.LastUpload, f.LastDownload, f.Directory, f.ID)
 	return err
