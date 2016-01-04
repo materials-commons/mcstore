@@ -1,8 +1,6 @@
 package mcstore
 
 import (
-	"fmt"
-
 	rethinkdb "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/mcstore/pkg/app"
@@ -80,7 +78,6 @@ func (r *projectsResource) createProject(request *restful.Request, response *res
 // by their path relative to the project. The getDirectory service will create a directory
 // that doesn't exist.
 func (r *projectsResource) getDirectory(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	fmt.Println("getDirectory found")
 	session := request.Attribute("session").(*rethinkdb.Session)
 	var req mcstoreapi.GetDirectoryRequest
 	if err := request.ReadEntity(&req); err != nil {
