@@ -16,6 +16,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/pkg/testdb"
 	"github.com/materials-commons/mcstore/server/mcstore"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -24,12 +25,12 @@ var _ = fmt.Println
 
 var _ = Describe("ProjectUploader", func() {
 	var (
-		api           *mcstore.ServerAPI
+		api           *mcstoreapi.ServerAPI
 		server        *httptest.Server
 		container     *restful.Container
 		rr            *httptest.ResponseRecorder
 		uploads       dai.Uploads
-		uploadRequest mcstore.CreateUploadRequest
+		uploadRequest mcstoreapi.CreateUploadRequest
 		u             *uploader
 	)
 
@@ -44,8 +45,8 @@ var _ = Describe("ProjectUploader", func() {
 		config.Set("mcurl", server.URL)
 		config.Set("apikey", "test")
 		uploads = dai.NewRUploads(testdb.RSessionMust())
-		api = mcstore.NewServerAPI()
-		uploadRequest = mcstore.CreateUploadRequest{
+		api = mcstoreapi.NewServerAPI()
+		uploadRequest = mcstoreapi.CreateUploadRequest{
 			ProjectID:   "test",
 			DirectoryID: "test",
 			FileName:    "testreq.txt",

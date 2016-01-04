@@ -1,4 +1,4 @@
-package mcstore
+package mcstoreapi
 
 import (
 	"time"
@@ -15,6 +15,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/model"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/testdb"
+	"github.com/materials-commons/mcstore/server/mcstore"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -32,7 +33,7 @@ var _ = Describe("ServerAPI", func() {
 	)
 
 	BeforeEach(func() {
-		container = NewServicesContainer(testdb.Sessions)
+		container = mcstore.NewServicesContainer(testdb.Sessions)
 		server = httptest.NewServer(container)
 		rr = httptest.NewRecorder()
 		config.Set("mcurl", server.URL)
@@ -65,19 +66,19 @@ var _ = Describe("ServerAPI", func() {
 		})
 
 		It("Should create an upload request", func() {
-			resp, err = api.CreateUploadRequest(uploadRequest)
+			resp, err = api.CreateUpload(uploadRequest)
 			Expect(err).To(BeNil())
 			Expect(resp.RequestID).NotTo(Equal(""))
 			Expect(resp.StartingBlock).To(BeNumerically("==", 1))
 		})
 
 		It("Should return the same id for a duplicate upload request", func() {
-			resp, err = api.CreateUploadRequest(uploadRequest)
+			resp, err = api.CreateUpload(uploadRequest)
 			Expect(err).To(BeNil())
 			Expect(resp.RequestID).NotTo(Equal(""))
 			Expect(resp.StartingBlock).To(BeNumerically("==", 1))
 
-			resp2, err := api.CreateUploadRequest(uploadRequest)
+			resp2, err := api.CreateUpload(uploadRequest)
 			Expect(err).To(BeNil())
 			Expect(resp2.RequestID).To(Equal(resp.RequestID))
 			Expect(resp.StartingBlock).To(BeNumerically("==", 1))
@@ -116,14 +117,14 @@ var _ = Describe("ServerAPI", func() {
 		})
 
 		It("Should Send the data an increment and increment starting block", func() {
-			resp, err = api.CreateUploadRequest(uploadRequest)
+			resp, err = CreateUploadRequest(uploadRequest)
 			Expect(err).To(BeNil())
 			flowReq.FlowIdentifier = resp.RequestID
 			cresp, err := api.SendFlowData(&flowReq)
 			Expect(err).To(BeNil())
 			Expect(cresp.Done).To(BeFalse())
 
-			resp2, err := api.CreateUploadRequest(uploadRequest)
+			resp2, err := api.CreateUpload(uploadRequest)
 			Expect(err).To(BeNil())
 			Expect(resp2.RequestID).To(Equal(resp.RequestID))
 			Expect(resp2.StartingBlock).To(BeNumerically("==", 2))
@@ -147,7 +148,7 @@ var _ = Describe("ServerAPI", func() {
 
 		It("Should return a list with one request when a single upload request has been created", func() {
 			var err error
-			resp, err = api.CreateUploadRequest(uploadRequest)
+			resp, err = api.CreateUpload(uploadRequest)
 			Expect(err).To(BeNil())
 			uploads, err := api.ListUploadRequests("test")
 			Expect(err).To(BeNil())
@@ -171,7 +172,7 @@ var _ = Describe("ServerAPI", func() {
 
 		It("Should return an error if user doesn't have permission", func() {
 			var err error
-			resp, err = api.CreateUploadRequest(uploadRequest)
+			resp, err = api.CreateUpload(uploadRequest)
 			Expect(err).To(BeNil())
 
 			// Change to a user who doesn't have permission
@@ -183,7 +184,7 @@ var _ = Describe("ServerAPI", func() {
 
 		It("Should succeed if request exists and user has permission", func() {
 			var err error
-			resp, err = api.CreateUploadRequest(uploadRequest)
+			resp, err = CreateUploadRequest(uploadRequest)
 			Expect(err).To(BeNil())
 			err = api.DeleteUploadRequest(resp.RequestID)
 			Expect(err).To(BeNil())

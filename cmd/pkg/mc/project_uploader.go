@@ -304,7 +304,7 @@ func (u *uploader) createUploadRequest(uploadReq mcstoreapi.CreateUploadRequest)
 		resp *mcstoreapi.CreateUploadResponse
 		err  error
 	)
-	if resp, err = u.serverAPI.CreateUploadRequest(uploadReq); err != nil {
+	if resp, err = u.serverAPI.CreateUpload(uploadReq); err != nil {
 		return nil, err
 	}
 
