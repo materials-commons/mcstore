@@ -92,6 +92,7 @@ func (r *projectsResource) getDirectory(request *restful.Request, response *rest
 	dir, err := dirService.createDir(req.ProjectID, req.Path)
 	switch {
 	case err != nil:
+		app.Log.Debugf("dirService.createDir failed for project/dir %s/%s: %s", req.ProjectID, req.Path, err)
 		return nil, err
 	default:
 		resp := &mcstoreapi.GetDirectoryResponse{
