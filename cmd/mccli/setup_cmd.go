@@ -11,10 +11,11 @@ import (
 	"path"
 	"strings"
 
+	"syscall"
+
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/pkg/app"
-	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 	"github.com/parnurzeal/gorequest"
 	"gnd.la/net/urlutil"
@@ -65,7 +66,7 @@ func getUsernameAndPassword() (username, password string) {
 	username = strings.TrimSpace(username)
 
 	fmt.Print("  Please enter your MaterialsCommons password: ")
-	pw, _ := terminal.ReadPassword(0)
+	pw, _ := terminal.ReadPassword(syscall.Stdin)
 
 	return username, string(pw)
 }
@@ -73,7 +74,9 @@ func getUsernameAndPassword() (username, password string) {
 // getAPIKey communicates with the materials commons api to retrieve
 // the users application apikey.
 func getAPIKey(username, password string) (string, error) {
-	var u schema.User
+	var u struct {
+		APIKey string `json:"apikey"`
+	}
 	l := userLogin{
 		Password: password,
 	}
