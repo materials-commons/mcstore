@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"fmt"
 	"github.com/materials-commons/gohandy/file"
 )
 
@@ -57,7 +56,6 @@ func (p *PWalker) walkFiles(done <-chan struct{}, root string) (<-chan TreeEntry
 	go func() {
 		defer close(filesChan)
 		errChan <- filepath.Walk(root, func(path string, finfo os.FileInfo, err error) error {
-			fmt.Println("filepath.Walk", path)
 			switch {
 			case err != nil && os.IsPermission(err):
 				// Permission errors are ignored. Just continue walking the tree
@@ -70,18 +68,17 @@ func (p *PWalker) walkFiles(done <-chan struct{}, root string) (<-chan TreeEntry
 
 			case p.IgnoreFn(path, finfo):
 				// if ignorePathFn returns true then skip processing this entry.
-				fmt.Println("  p.IgnoreFn returned true")
 				if finfo.IsDir() {
 					// If entry is a directory, then skip processing that
-					// entry sub tree.
+					// entire sub tree.
 					return filepath.SkipDir
 				}
 				return nil
 
 			case !finfo.Mode().IsRegular() && !finfo.IsDir():
 				// Only process regular files. This means the following types
-				// are not processed: Symbol Link, Named Pip, Socket,
-				// and Device files.
+				// are not processed: Symbol Link, Named Pipe, Socket, and
+				// device files.
 				//
 				// Directories are a special case and are handled in the default
 				// clause, where regulars files are also handled.
@@ -90,7 +87,6 @@ func (p *PWalker) walkFiles(done <-chan struct{}, root string) (<-chan TreeEntry
 			default:
 				// Directories aren't being processed, so skip this entry.
 				if finfo.IsDir() && !p.ProcessDirs {
-					fmt.Println("  IsDir && !p.ProcessDirs")
 					return nil
 				}
 
@@ -144,7 +140,6 @@ func (p *PWalker) PWalk(root string) (<-chan string, <-chan error) {
 
 	// Start "n" fn routines to process files. When each one completes
 	// processing all entries along its channel signal done.
-	fmt.Println("p.NumParallel", p.NumParallel)
 	for i := 0; i < p.NumParallel; i++ {
 		go func() {
 			p.ProcessFn(done, filesChan, results)
