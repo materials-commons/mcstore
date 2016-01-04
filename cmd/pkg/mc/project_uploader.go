@@ -99,13 +99,11 @@ func (u *uploader) uploadEntry(entry files.TreeEntry) string {
 // local database. If it doesn't it will create the directory on the server and insert the directory
 // into its local database.
 func (u *uploader) handleDirEntry(entry files.TreeEntry) {
-	fmt.Println("handleDirEntry", entry.Finfo.Name(), entry.Path)
 	path := filepath.ToSlash(entry.Path)
 
 	_, err := u.db.FindDirectory(path)
 	switch {
 	case err == app.ErrNotFound:
-		fmt.Println("   Did not find directory")
 		u.createDirectory(entry)
 	case err != nil:
 		app.Log.Panicf("Local database returned err, panic!: %s", err)
@@ -144,25 +142,25 @@ func (u *uploader) getDirectory(req mcstore.DirectoryRequest) (string, error) {
 		fmt.Printf("u.serverAPI.GetDirectory failed %#v/%s\n", req, err)
 		return "", err
 	}
-	fmt.Printf("u.serverAPI.GetDirectory succeeded:%s\n", dirID)
 	return dirID, nil
 }
 
 // handleFileEntry will handle processing file entries. It will check if the file
 // has already been uploaded. If it hasn't it will upload the file to the server.
 func (u *uploader) handleFileEntry(entry files.TreeEntry) {
-	fmt.Println("handleFileEntry %#v\n", entry)
 	if dir := u.getDirByPath(filepath.Dir(entry.Path)); dir == nil {
 		app.Log.Exitf("Should have found dir %s", filepath.Dir(entry.Path))
 	} else {
-		fmt.Printf("handleFileEntry dir = %#v\n", dir)
 		file := u.getFileByName(entry.Finfo.Name(), dir.ID)
 		switch {
 		case file == nil:
+			fmt.Println("file == nil uploading:", entry.Finfo.Name())
 			u.uploadFile(entry, file, dir)
 		case entry.Finfo.ModTime().Unix() > file.MTime.Unix():
+			fmt.Println("modtime different uploading:", entry.Finfo.Name())
 			u.uploadFile(entry, file, dir)
 		default:
+			fmt.Println("file already uploaded:", entry.Finfo.Name())
 			// nothing to do
 		}
 	}
@@ -252,35 +250,34 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 
 	if err != nil && err != io.EOF {
 		app.Log.Errorf("Unable to complete read on file for upload: %s", entry.Path)
+	} else {
+		// done, add or update the entry in the database.
+		if file == nil {
+			// create new entry
+			newFile := File{
+				FileID:     uploadResp.FileID,
+				Name:       entry.Finfo.Name(),
+				Checksum:   checksum,
+				Size:       entry.Finfo.Size(),
+				MTime:      entry.Finfo.ModTime(),
+				LastUpload: time.Now(),
+				Directory:  dir.ID,
+			}
+			u.db.InsertFile(&newFile)
+		} else {
+			// update existing entry
+			file.MTime = entry.Finfo.ModTime()
+			file.LastUpload = time.Now()
+			if file.Checksum != checksum {
+				// Existing file uploaded but we created a new version on the server.
+				// We could get here if a previous upload did not complete.
+				file.Checksum = checksum
+				file.FileID = uploadResp.FileID
+				file.Size = entry.Finfo.Size()
+			}
+			u.db.UpdateFile(file)
+		}
 	}
-	//else {
-	//		// done, add or update the entry in the database.
-	//		if file == nil {
-	//			// create new entry
-	//			newFile := File{
-	//				FileID:     uploadResp.FileID,
-	//				Name:       entry.Finfo.Name(),
-	//				Checksum:   checksum,
-	//				Size:       entry.Finfo.Size(),
-	//				MTime:      entry.Finfo.ModTime(),
-	//				LastUpload: time.Now(),
-	//				Directory:  dir.ID,
-	//			}
-	//			u.db.InsertFile(&newFile)
-	//		} else {
-	//			// update existing entry
-	//			file.MTime = entry.Finfo.ModTime()
-	//			file.LastUpload = time.Now()
-	//			if file.Checksum != checksum {
-	//				// Existing file uploaded but we created a new version on the server.
-	//				// We could get here if a previous upload did not complete.
-	//				file.Checksum = checksum
-	//				file.FileID = uploadResp.FileID
-	//				file.Size = entry.Finfo.Size()
-	//			}
-	//			u.db.UpdateFile(file)
-	//		}
-	//	}
 }
 
 // getUploadResponse sends an upload request to the server and gets the response.
@@ -296,9 +293,7 @@ func (u *uploader) getUploadResponse(directoryID string, entry files.TreeEntry) 
 		FileMTime:   entry.Finfo.ModTime().Format(time.RFC1123),
 		Checksum:    checksum,
 	}
-	fmt.Printf("%#v\n", uploadReq)
-	resp, err := u.createUploadRequest(uploadReq)
-	fmt.Println("getUploadResponse err", err)
+	resp, _ := u.createUploadRequest(uploadReq)
 	return resp, checksum
 }
 
