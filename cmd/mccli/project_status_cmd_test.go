@@ -8,7 +8,9 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
 	c "github.com/materials-commons/mcstore/cmd/pkg/client"
+	"github.com/materials-commons/mcstore/pkg/testdb"
 	"github.com/materials-commons/mcstore/server/mcstore"
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/parnurzeal/gorequest"
@@ -23,21 +25,20 @@ var _ = Describe("ProjectStatusCmd", func() {
 			server        *httptest.Server
 			container     *restful.Container
 			rr            *httptest.ResponseRecorder
-			uploadRequest mcstore.CreateUploadRequest
+			uploadRequest mcstoreapi.CreateUploadRequest
 		)
 
 		BeforeEach(func() {
 			client = c.NewGoRequest()
-			uploadRequest = mcstore.CreateUploadRequest{
-				ProjectID:     "test",
-				DirectoryID:   "test",
-				DirectoryPath: "test/test",
-				FileName:      "testreq.txt",
-				FileSize:      4,
-				FileMTime:     time.Now().Format(time.RFC1123),
-				Checksum:      "abc123",
+			uploadRequest = mcstoreapi.CreateUploadRequest{
+				ProjectID:   "test",
+				DirectoryID: "test",
+				FileName:    "testreq.txt",
+				FileSize:    4,
+				FileMTime:   time.Now().Format(time.RFC1123),
+				Checksum:    "abc123",
 			}
-			container = mcstore.NewServicesContainerForTest()
+			container = mcstore.NewServicesContainer(testdb.Sessions)
 			server = httptest.NewServer(container)
 			rr = httptest.NewRecorder()
 			config.Set("mcurl", server.URL)
@@ -50,8 +51,8 @@ var _ = Describe("ProjectStatusCmd", func() {
 		It("Should return an error when the user doesn't have permission", func() {
 			// Set apikey for user who doesn't have permission
 			config.Set("apikey", "test2")
-			r, _, errs := client.Post(mcstore.Url("/upload")).Send(uploadRequest).End()
-			err := mcstore.ToError(r, errs)
+			r, _, errs := client.Post(mcstoreapi.Url("/upload")).Send(uploadRequest).End()
+			err := mcstoreapi.ToError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})
@@ -59,16 +60,16 @@ var _ = Describe("ProjectStatusCmd", func() {
 		It("Should return an error when the project doesn't exist", func() {
 			config.Set("apikey", "test")
 			uploadRequest.ProjectID = "does-not-exist"
-			r, _, errs := client.Post(mcstore.Url("/upload")).Send(uploadRequest).End()
-			err := mcstore.ToError(r, errs)
+			r, _, errs := client.Post(mcstoreapi.Url("/upload")).Send(uploadRequest).End()
+			err := mcstoreapi.ToError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 400))
 		})
 
 		It("Should return an error when the apikey doesn't exist", func() {
 			config.Set("apikey", "does-not-exist")
-			r, _, errs := client.Post(mcstore.Url("/upload")).Send(uploadRequest).End()
-			err := mcstore.ToError(r, errs)
+			r, _, errs := client.Post(mcstoreapi.Url("/upload")).Send(uploadRequest).End()
+			err := mcstoreapi.ToError(r, errs)
 			Expect(err).NotTo(BeNil())
 			Expect(r.StatusCode).To(BeNumerically("==", 401))
 		})
