@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"golang.org/x/net/html"
 	"bytes"
+	"golang.org/x/net/html"
 )
 
 func main() {

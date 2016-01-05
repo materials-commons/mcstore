@@ -65,7 +65,7 @@ func (bt *blockTracker) setBlock(id string, block int) {
 func (bt *blockTracker) isBlockSet(id string, block int) bool {
 	var blockIsSet bool
 	bt.withReadLock(id, func(b *blockTrackerEntry) {
-		blockIsSet = b.bset.Test(uint(block-1))
+		blockIsSet = b.bset.Test(uint(block - 1))
 	})
 	return blockIsSet
 }
