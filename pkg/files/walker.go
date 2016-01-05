@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"sync"
 
+	"strings"
+
 	"github.com/materials-commons/gohandy/file"
 )
 
@@ -119,7 +121,7 @@ func (p *PWalker) PWalk(root string) (<-chan string, <-chan error) {
 	defer close(done)
 
 	if p.IgnoreFn == nil {
-		p.IgnoreFn = neverIgnore
+		p.IgnoreFn = IgnoreDotFiles
 	}
 
 	if p.NumParallel < 1 {
@@ -157,8 +159,17 @@ func (p *PWalker) PWalk(root string) (<-chan string, <-chan error) {
 	return results, errChan
 }
 
-// neverIgnore is the default method for checking if an entry should be ignored.
-// It never ignores an entry.
-func neverIgnore(_ string, _ os.FileInfo) bool {
+// NeverIgnore never ignores an entry.
+func NeverIgnore(_ string, _ os.FileInfo) bool {
+	return false
+}
+
+// IgnoreDotFiles returns true if the name starts with a ".".
+// This is the default method for checking if an entry should be ignored.
+func IgnoreDotFiles(_ string, fileInfo os.FileInfo) bool {
+	if strings.HasPrefix(fileInfo.Name(), ".") {
+		return true
+	}
+
 	return false
 }
