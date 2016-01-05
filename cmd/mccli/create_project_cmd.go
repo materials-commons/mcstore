@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"path/filepath"
+
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
-	"path/filepath"
 )
 
 var (
