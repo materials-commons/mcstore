@@ -29,13 +29,12 @@ type projectUploader struct {
 	numThreads int
 }
 
-// upload will upload the project. It starts a parallel walker to process entries.
-func (p *projectUploader) upload() error {
+// uploadProject will upload the project. It starts a parallel walker to process entries.
+func (p *projectUploader) uploadProject() error {
 	db := p.db
 	project := db.Project()
 
-	// create a func to process entries. Since we have some state to close over we create
-	// a closure here to call.
+	// create a func to process entries.
 	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
 		uploader := newUploader(p.db, project)
 		uploader.retrier.RetryCount = 1
@@ -49,6 +48,55 @@ func (p *projectUploader) upload() error {
 	}
 
 	_, errc := walker.PWalk(project.Path)
+	err := <-errc
+	return err
+}
+
+// uploadFile will upload a single file.
+func (p *projectUploader) uploadFile(path string) error {
+	uploader := newUploader(p.db, p.db.Project())
+	finfo, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+
+	treeEntry := files.TreeEntry{
+		Finfo: finfo,
+		Path:  path,
+	}
+
+	uploader.handleFileEntry(treeEntry)
+	return nil
+}
+
+// uploadDirectory will upload a single directory. It will ignore sub directories when ignoreSubDirectories
+// is true.
+func (p *projectUploader) uploadDirectory(path string, recursive bool) error {
+	// create a custom ignore function that will ignore sub directories if recursive is false.
+	ignoreFunc := func(path string, fileInfo os.FileInfo) bool {
+		if fileInfo.IsDir() && !recursive {
+			return true
+		}
+		return files.IgnoreDotFiles(path, fileInfo)
+	}
+	db := p.db
+	project := db.Project()
+
+	// create a func to process entries.
+	fn := func(done <-chan struct{}, entries <-chan files.TreeEntry, result chan<- string) {
+		uploader := newUploader(p.db, project)
+		uploader.retrier.RetryCount = 1
+		uploader.uploadEntries(done, entries, result)
+	}
+
+	walker := files.PWalker{
+		NumParallel: p.numThreads,
+		ProcessFn:   fn,
+		ProcessDirs: true,
+		IgnoreFn:    ignoreFunc,
+	}
+
+	_, errc := walker.PWalk(path)
 	err := <-errc
 	return err
 }
