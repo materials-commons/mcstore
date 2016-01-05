@@ -4,8 +4,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"fmt"
-
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
@@ -39,20 +37,21 @@ func newClientAPIWithConfiger(configer Configer) *ClientAPI {
 
 // UploadFile uploads a single file to the given project.
 func (c *ClientAPI) UploadFile(projectName string, path string) error {
-	return nil
+	if projectDB, err := ProjectOpener.OpenProjectDB(projectName); err != nil {
+		return err
+	} else {
+		uploader := &projectUploader{
+			db:         projectDB,
+			numThreads: 1,
+		}
+		return uploader.uploadFile(path)
+	}
 }
 
 // UploadDirectory uploads all the entries in a given directory. It will
 // not follow sub directories. However it will create sub directories
 // that are direct children of the given path.
-func (c *ClientAPI) UploadDirectory(projectName string, path string) error {
-	return nil
-}
-
-// UploadProject will upload all the changed and new files in a given project.
-func (c *ClientAPI) UploadProject(projectName string, numThreads int) error {
-	fmt.Println("UploadProject", numThreads)
-
+func (c *ClientAPI) UploadDirectory(projectName string, path string, recursive bool, numThreads int) error {
 	if projectDB, err := ProjectOpener.OpenProjectDB(projectName); err != nil {
 		return err
 	} else {
@@ -60,7 +59,20 @@ func (c *ClientAPI) UploadProject(projectName string, numThreads int) error {
 			db:         projectDB,
 			numThreads: numThreads,
 		}
-		return uploader.upload()
+		return uploader.uploadDirectory(path, recursive)
+	}
+}
+
+// UploadProject will upload all the changed and new files in a given project.
+func (c *ClientAPI) UploadProject(projectName string, numThreads int) error {
+	if projectDB, err := ProjectOpener.OpenProjectDB(projectName); err != nil {
+		return err
+	} else {
+		uploader := &projectUploader{
+			db:         projectDB,
+			numThreads: numThreads,
+		}
+		return uploader.uploadProject()
 	}
 }
 
