@@ -9,15 +9,24 @@ import (
 )
 
 var (
+	mkdirsProjectCommand = cli.Command{
+		Name:    "project",
+		Aliases: []string{"proj", "p"},
+		Usage:   "Create project directories on MaterialsCommons",
+		Action:  mkdirsProjectCLI,
+	}
+
 	MkdirsCommand = cli.Command{
 		Name:    "mkdirs",
 		Aliases: []string{"mkd"},
 		Usage:   "Create project directories",
-		Action:  mkdirsCLI,
+		Subcommands: []cli.Command{
+			mkdirsProjectCommand,
+		},
 	}
 )
 
-func mkdirsCLI(c *cli.Context) {
+func mkdirsProjectCLI(c *cli.Context) {
 	if len(c.Args()) != 1 {
 		fmt.Println("You must specify a project name")
 		os.Exit(1)
@@ -27,7 +36,7 @@ func mkdirsCLI(c *cli.Context) {
 
 	client := mc.NewClientAPI()
 	if err := client.CreateProjectDirectories(projectName); err != nil {
-		fmt.Println("Unable to create project directories:", err)
+		fmt.Printf("Unable to create project directories for project %s: %s\n", projectName, err)
 		os.Exit(1)
 	}
 
