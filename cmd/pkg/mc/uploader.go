@@ -202,13 +202,13 @@ func (u *uploader) handleFileEntry(entry files.TreeEntry) {
 		file := u.getFileByName(entry.Finfo.Name(), dir.ID)
 		switch {
 		case file == nil:
-			fmt.Println("file == nil uploading:", entry.Finfo.Name())
+			fmt.Println("Uploading new file:", entry.Finfo.Name())
 			u.uploadFile(entry, file, dir)
 		case entry.Finfo.ModTime().Unix() > file.MTime.Unix():
-			fmt.Println("modtime different uploading:", entry.Finfo.Name())
+			fmt.Println("Uploading changed file:", entry.Finfo.Name())
 			u.uploadFile(entry, file, dir)
 		default:
-			fmt.Println("file already uploaded:", entry.Finfo.Name())
+			fmt.Println("File already uploaded:", entry.Finfo.Name())
 			// nothing to do
 		}
 	}
