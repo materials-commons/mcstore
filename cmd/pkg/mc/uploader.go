@@ -71,11 +71,16 @@ func (p *projectUploader) uploadFile(path string) error {
 // is true.
 func (p *projectUploader) uploadDirectory(path string, recursive bool) error {
 	// create a custom ignore function that will ignore sub directories if recursive is false.
-	ignoreFunc := func(path string, fileInfo os.FileInfo) bool {
+	ignoreFunc := func(pathEntry string, fileInfo os.FileInfo) bool {
 		if fileInfo.IsDir() && !recursive {
+			// Special case pathEntry is the dir we are uploading. In that case return
+			// false (do not ignore)
+			if path == pathEntry {
+				return false
+			}
 			return true
 		}
-		return files.IgnoreDotFiles(path, fileInfo)
+		return files.IgnoreDotFiles(pathEntry, fileInfo)
 	}
 	db := p.db
 	project := db.Project()
