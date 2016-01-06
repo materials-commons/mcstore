@@ -43,6 +43,8 @@ var showProjectCommand = cli.Command{
 	Action:  showProjectCLI,
 }
 
+const uploadTimeFormat = "Mon, 02 Jan 2006 at 3:04PM"
+
 func showProjectCLI(c *cli.Context) {
 	if len(c.Args()) != 1 {
 		fmt.Println("You must specify a project.")
@@ -59,47 +61,50 @@ func showProjectCLI(c *cli.Context) {
 		fmt.Println("Project:", project.Name)
 		fmt.Println("Path   :", project.Path)
 		fmt.Println("ID     :", project.ProjectID)
-		//fmt.Println("Last Upload:", project.LastUpload.Format(time.RFC1123))
 		filepath.Walk(project.Path, func(path string, finfo os.FileInfo, err error) error {
 			switch {
 			case err != nil:
 				// nothing to do
-
 			case finfo.IsDir():
 				if files.IgnoreDotFiles(path, finfo) {
 					fmt.Printf("\nDirectory: %s is ignored\n", path)
 					return filepath.SkipDir
 				}
-
-				if dir, err := projectDB.FindDirectory(path); err != nil {
-					fmt.Printf("\nDirectory: %s is new\n", path)
-				} else {
-					var _ = dir
-					fmt.Printf("\nDirectory:%s\n", path)
-					//fmt.Println("Last Upload   :", dir.LastUpload.Format(time.RFC1123))
-				}
-
+				showDirStatus(path, finfo, projectDB)
 			case finfo.Mode().IsRegular():
-				if files.IgnoreDotFiles(path, finfo) {
-					fmt.Printf("  File: %s is ignored\n", finfo.Name())
-				} else {
-					fileDir := filepath.Dir(path)
-					if dir, err := projectDB.FindDirectory(fileDir); err != nil {
-						fmt.Printf("  File: %s is new\n", finfo.Name())
-					} else {
-						if f, err := projectDB.FindFile(finfo.Name(), dir.ID); err != nil {
-							fmt.Printf("  File: %s is new\n", finfo.Name())
-						} else if finfo.ModTime().Unix() > f.MTime.Unix() {
-							fmt.Printf("  File: %s has changed, last uploaded on %s\n",
-								finfo.Name(), f.LastUpload.Format("Mon, 02 Jan 2006 at 3:04PM"))
-						} else {
-							fmt.Printf("  File: %s was uploaded on %s\n",
-								finfo.Name(), f.LastUpload.Format("Mon, 02 Jan 2006 at 3:04PM"))
-						}
-					}
-				}
+				showFileStatus(path, finfo, projectDB)
 			}
 			return nil
 		})
+	}
+}
+
+func showDirStatus(path string, finfo os.FileInfo, projectDB mc.ProjectDB) {
+	if dir, err := projectDB.FindDirectory(path); err != nil {
+		fmt.Printf("\nDirectory: %s is new\n", path)
+	} else {
+		var _ = dir
+		fmt.Printf("\nDirectory:%s\n", path)
+	}
+}
+
+func showFileStatus(path string, finfo os.FileInfo, projectDB mc.ProjectDB) {
+	if files.IgnoreDotFiles(path, finfo) {
+		fmt.Printf("  File: %s is ignored\n", finfo.Name())
+	} else {
+		fileDir := filepath.Dir(path)
+		if dir, err := projectDB.FindDirectory(fileDir); err != nil {
+			fmt.Printf("  File: %s is new\n", finfo.Name())
+		} else {
+			if f, err := projectDB.FindFile(finfo.Name(), dir.ID); err != nil {
+				fmt.Printf("  File: %s is new\n", finfo.Name())
+			} else if finfo.ModTime().Unix() > f.MTime.Unix() {
+				fmt.Printf("  File: %s has changed, last uploaded on %s\n",
+					finfo.Name(), f.LastUpload.Format(uploadTimeFormat))
+			} else {
+				fmt.Printf("  File: %s was uploaded on %s\n",
+					finfo.Name(), f.LastUpload.Format(uploadTimeFormat))
+			}
+		}
 	}
 }
