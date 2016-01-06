@@ -99,25 +99,14 @@ func (s *idService) createFinishedUpload(req IDRequest, proj *schema.Project, di
 	// Create a new upload request and then set all blocks as already uploaded.
 	upload := s.prepareUploadRequest(req, proj, dir)
 	upload.IsExisting = true
-	s.tracker.markAllBlocks(upload.ID)
-	s.tracker.setIsExistingFile(upload.ID, true)
-	upload.SetFBlocks(s.tracker.getBlocks(upload.ID))
-	return s.finishUploadRequest(upload)
-
-	// Commented out logic as it should be. However the rest of the system doesn't support files that
-	// are already uploaded. So this code exists for when we have time to deal with this issue so
-	// that already uploaded files don't need to be sent up again.
-	//	upload := s.prepareUploadRequest(req, proj, dir)
-	//	upload, err := s.finishUploadRequest(upload)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	upload.IsExisting = true
-	//	fmt.Println("Created finished upload id", upload.ID)
-	//	s.tracker.markAllBlocks(upload.ID)
-	//	s.tracker.setIsExistingFile(upload.ID, true)
-	//	upload.SetFBlocks(s.tracker.getBlocks(upload.ID))
-	//	return upload, nil
+	u, err := s.finishUploadRequest(upload)
+	if err != nil {
+		return nil, err
+	}
+	s.tracker.markAllBlocks(u.ID)
+	s.tracker.setIsExistingFile(u.ID, true)
+	u.SetFBlocks(s.tracker.getBlocks(u.ID))
+	return u, nil
 }
 
 // findMatchingUploadRequest will search the set of upload requests and see if there
