@@ -8,8 +8,9 @@ import (
 )
 
 func TestClientPutGetDelete(t *testing.T) {
+	t.Parallel()
 	c, s := makeClient(t)
-	defer s.stop()
+	defer s.Stop()
 
 	kv := c.KV()
 
@@ -64,8 +65,9 @@ func TestClientPutGetDelete(t *testing.T) {
 }
 
 func TestClient_List_DeleteRecurse(t *testing.T) {
+	t.Parallel()
 	c, s := makeClient(t)
-	defer s.stop()
+	defer s.Stop()
 
 	kv := c.KV()
 
@@ -117,9 +119,56 @@ func TestClient_List_DeleteRecurse(t *testing.T) {
 	}
 }
 
-func TestClient_CAS(t *testing.T) {
+func TestClient_DeleteCAS(t *testing.T) {
+	t.Parallel()
 	c, s := makeClient(t)
-	defer s.stop()
+	defer s.Stop()
+
+	kv := c.KV()
+
+	// Put the key
+	key := testKey()
+	value := []byte("test")
+	p := &KVPair{Key: key, Value: value}
+	if work, _, err := kv.CAS(p, nil); err != nil {
+		t.Fatalf("err: %v", err)
+	} else if !work {
+		t.Fatalf("CAS failure")
+	}
+
+	// Get should work
+	pair, meta, err := kv.Get(key, nil)
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if pair == nil {
+		t.Fatalf("expected value: %#v", pair)
+	}
+	if meta.LastIndex == 0 {
+		t.Fatalf("unexpected value: %#v", meta)
+	}
+
+	// CAS update with bad index
+	p.ModifyIndex = 1
+	if work, _, err := kv.DeleteCAS(p, nil); err != nil {
+		t.Fatalf("err: %v", err)
+	} else if work {
+		t.Fatalf("unexpected CAS")
+	}
+
+	// CAS update with valid index
+	p.ModifyIndex = meta.LastIndex
+	if work, _, err := kv.DeleteCAS(p, nil); err != nil {
+		t.Fatalf("err: %v", err)
+	} else if !work {
+		t.Fatalf("unexpected CAS failure")
+	}
+}
+
+func TestClient_CAS(t *testing.T) {
+	t.Parallel()
+	c, s := makeClient(t)
+	defer s.Stop()
 
 	kv := c.KV()
 
@@ -165,8 +214,9 @@ func TestClient_CAS(t *testing.T) {
 }
 
 func TestClient_WatchGet(t *testing.T) {
+	t.Parallel()
 	c, s := makeClient(t)
-	defer s.stop()
+	defer s.Stop()
 
 	kv := c.KV()
 
@@ -216,8 +266,9 @@ func TestClient_WatchGet(t *testing.T) {
 }
 
 func TestClient_WatchList(t *testing.T) {
+	t.Parallel()
 	c, s := makeClient(t)
-	defer s.stop()
+	defer s.Stop()
 
 	kv := c.KV()
 
@@ -269,8 +320,9 @@ func TestClient_WatchList(t *testing.T) {
 }
 
 func TestClient_Keys_DeleteRecurse(t *testing.T) {
+	t.Parallel()
 	c, s := makeClient(t)
-	defer s.stop()
+	defer s.Stop()
 
 	kv := c.KV()
 
@@ -318,8 +370,9 @@ func TestClient_Keys_DeleteRecurse(t *testing.T) {
 }
 
 func TestClient_AcquireRelease(t *testing.T) {
+	t.Parallel()
 	c, s := makeClient(t)
-	defer s.stop()
+	defer s.Stop()
 
 	session := c.Session()
 	kv := c.KV()

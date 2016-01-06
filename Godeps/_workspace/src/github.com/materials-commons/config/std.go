@@ -85,7 +85,7 @@ func GetBoolErr(key string, args ...interface{}) (bool, error) {
 	return std.GetBoolErr(key, args...)
 }
 
-// GetBool gets an integer key. It returns the default value of false if
+// GetBool gets an boolean key. It returns the default value of false if
 // there is an error. GetLastError can be called to see the error. if a
 // function is set with SetErrorHandler then the function will be called
 // when an error occurs.

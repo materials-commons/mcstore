@@ -14,7 +14,7 @@ import (
 func (c *Connection) writeData(data []byte) error {
 	_, err := c.conn.Write(data[:])
 	if err != nil {
-		return RqlConnectionError{err.Error()}
+		return RQLConnectionError{err.Error()}
 	}
 
 	return nil
@@ -23,11 +23,7 @@ func (c *Connection) writeData(data []byte) error {
 func (c *Connection) writeHandshakeReq() error {
 	pos := 0
 	dataLen := 4 + 4 + len(c.opts.AuthKey) + 4
-
-	data := c.buf.takeSmallBuffer(dataLen)
-	if data == nil {
-		return RqlDriverError{ErrBusyBuffer.Error()}
-	}
+	data := make([]byte, dataLen)
 
 	// Send the protocol version to the server as a 4-byte little-endian-encoded integer
 	binary.LittleEndian.PutUint32(data[pos:], uint32(p.VersionDummy_V0_4))
@@ -56,27 +52,38 @@ func (c *Connection) readHandshakeSuccess() error {
 		if err == io.EOF {
 			return fmt.Errorf("Unexpected EOF: %s", string(line))
 		}
-		return RqlConnectionError{err.Error()}
+		return RQLConnectionError{err.Error()}
 	}
 	// convert to string and remove trailing NUL byte
 	response := string(line[:len(line)-1])
 	if response != "SUCCESS" {
 		response = strings.TrimSpace(response)
 		// we failed authorization or something else terrible happened
-		return RqlDriverError{fmt.Sprintf("Server dropped connection with message: \"%s\"", response)}
+		return RQLDriverError{fmt.Sprintf("Server dropped connection with message: \"%s\"", response)}
 	}
 
 	return nil
 }
 
+func (c *Connection) read(buf []byte, length int) (total int, err error) {
+	var n int
+	for total < length {
+		if n, err = c.conn.Read(buf[total:length]); err != nil {
+			break
+		}
+		total += n
+	}
+	if err != nil {
+		return total, err
+	}
+
+	return total, nil
+}
+
 func (c *Connection) writeQuery(token int64, q []byte) error {
 	pos := 0
 	dataLen := 8 + 4 + len(q)
-
-	data := c.buf.takeBuffer(dataLen)
-	if data == nil {
-		return RqlDriverError{ErrBusyBuffer.Error()}
-	}
+	data := make([]byte, dataLen)
 
 	// Send the protocol version to the server as a 4-byte little-endian-encoded integer
 	binary.LittleEndian.PutUint64(data[pos:], uint64(token))

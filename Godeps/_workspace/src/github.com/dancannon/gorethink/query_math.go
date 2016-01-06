@@ -7,7 +7,7 @@ import (
 var (
 	// MinVal represents the smallest possible value RethinkDB can store
 	MinVal = constructRootTerm("MinVal", p.Term_MINVAL, []interface{}{}, map[string]interface{}{})
-	// MaxVal represents the smallest possible value RethinkDB can store
+	// MaxVal represents the largest possible value RethinkDB can store
 	MaxVal = constructRootTerm("MaxVal", p.Term_MAXVAL, []interface{}{}, map[string]interface{}{})
 )
 
@@ -151,6 +151,7 @@ func Not(args ...interface{}) Term {
 	return constructRootTerm("Not", p.Term_NOT, args, map[string]interface{}{})
 }
 
+// RandomOpts contains the optional arguments for the Random term.
 type RandomOpts struct {
 	Float interface{} `gorethink:"float,omitempty"`
 }
@@ -159,8 +160,8 @@ func (o *RandomOpts) toMap() map[string]interface{} {
 	return optArgsToMap(o)
 }
 
-// Generate a random number between the given bounds. If no arguments are
-// given, the result will be a floating-point number in the range [0,1).
+// Random generates a random number between the given bounds. If no arguments
+// are given, the result will be a floating-point number in the range [0,1).
 //
 // When passing a single argument, r.random(x), the result will be in the
 // range [0,x), and when passing two arguments, r.random(x,y), the range is
@@ -182,4 +183,38 @@ func (t Term) Random(args ...interface{}) Term {
 	}
 
 	return constructMethodTerm(t, "Random", p.Term_RANDOM, args, opts)
+}
+
+// Round causes the input number to be rounded the given value to the nearest whole integer.
+func (t Term) Round(args ...interface{}) Term {
+	return constructMethodTerm(t, "Round", p.Term_ROUND, args, map[string]interface{}{})
+}
+
+// Round causes the input number to be rounded the given value to the nearest whole integer.
+func Round(args ...interface{}) Term {
+	return constructRootTerm("Round", p.Term_ROUND, args, map[string]interface{}{})
+}
+
+// Ceil rounds the given value up, returning the smallest integer value greater
+// than or equal to the given value (the value’s ceiling).
+func (t Term) Ceil(args ...interface{}) Term {
+	return constructMethodTerm(t, "Ceil", p.Term_CEIL, args, map[string]interface{}{})
+}
+
+// Ceil rounds the given value up, returning the smallest integer value greater
+// than or equal to the given value (the value’s ceiling).
+func Ceil(args ...interface{}) Term {
+	return constructRootTerm("Ceil", p.Term_CEIL, args, map[string]interface{}{})
+}
+
+// Floor rounds the given value down, returning the largest integer value less
+// than or equal to the given value (the value’s floor).
+func (t Term) Floor(args ...interface{}) Term {
+	return constructMethodTerm(t, "Floor", p.Term_FLOOR, args, map[string]interface{}{})
+}
+
+// Floor rounds the given value down, returning the largest integer value less
+// than or equal to the given value (the value’s floor).
+func Floor(args ...interface{}) Term {
+	return constructRootTerm("Floor", p.Term_FLOOR, args, map[string]interface{}{})
 }

@@ -4,8 +4,8 @@ import (
 	"crypto/tls"
 	"encoding/binary"
 	"encoding/json"
-	"io"
 	"net"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -16,6 +16,8 @@ const (
 	respHeaderLen = 12
 )
 
+// Response represents the raw response from a query, most of the time you
+// should instead use a Cursor when reading from the database.
 type Response struct {
 	Token     int64
 	Type      p.Response_ResponseType   `json:"t"`
@@ -31,13 +33,12 @@ type Connection struct {
 	address string
 	opts    *ConnectOpts
 	conn    net.Conn
+
 	_       [4]byte
+	mu      sync.Mutex
 	token   int64
 	cursors map[int64]*Cursor
 	bad     bool
-
-	headerBuf [respHeaderLen]byte
-	buf       buffer
 }
 
 // NewConnection creates a new connection to the database server
@@ -67,7 +68,6 @@ func NewConnection(address string, opts *ConnectOpts) (*Connection, error) {
 			return nil, err
 		}
 	}
-	c.buf = newBuffer(c.conn)
 	// Send handshake request
 	if err = c.writeHandshakeReq(); err != nil {
 		c.Close()
@@ -85,6 +85,9 @@ func NewConnection(address string, opts *ConnectOpts) (*Connection, error) {
 
 // Close closes the underlying net.Conn
 func (c *Connection) Close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	if c.conn != nil {
 		c.conn.Close()
 		c.conn = nil
@@ -95,22 +98,34 @@ func (c *Connection) Close() error {
 	return nil
 }
 
+// Query sends a Query to the database, returning both the raw Response and a
+// Cursor which should be used to view the query's response.
+//
+// This function is used internally by Run which should be used for most queries.
 func (c *Connection) Query(q Query) (*Response, *Cursor, error) {
+	c.mu.Lock()
 	if c == nil {
-		return nil, nil, nil
+		c.mu.Unlock()
+		return nil, nil, ErrConnectionClosed
 	}
 	if c.conn == nil {
 		c.bad = true
-		return nil, nil, nil
+		c.mu.Unlock()
+		return nil, nil, ErrConnectionClosed
 	}
 
 	// Add token if query is a START/NOREPLY_WAIT
 	if q.Type == p.Query_START || q.Type == p.Query_NOREPLY_WAIT {
 		q.Token = c.nextToken()
 		if c.opts.Database != "" {
-			q.Opts["db"] = Db(c.opts.Database).build()
+			var err error
+			q.Opts["db"], err = DB(c.opts.Database).build()
+			if err != nil {
+				return nil, nil, err
+			}
 		}
 	}
+	c.mu.Unlock()
 
 	err := c.sendQuery(q)
 	if err != nil {
@@ -139,24 +154,25 @@ func (c *Connection) Query(q Query) (*Response, *Cursor, error) {
 	}
 }
 
+// sendQuery marshals the Query and sends the JSON to the server.
 func (c *Connection) sendQuery(q Query) error {
 	// Build query
 	b, err := json.Marshal(q.build())
 	if err != nil {
-		return RqlDriverError{"Error building query"}
+		return RQLDriverError{"Error building query"}
 	}
 
 	// Set timeout
 	if c.opts.Timeout == 0 {
 		c.conn.SetWriteDeadline(time.Time{})
 	} else {
-		c.conn.SetWriteDeadline(time.Now().Add(c.opts.Timeout))
+		c.conn.SetWriteDeadline(time.Now().Add(c.opts.WriteTimeout))
 	}
 
 	// Send the JSON encoding of the query itself.
 	if err = c.writeQuery(q.Token, b); err != nil {
 		c.bad = true
-		return RqlConnectionError{err.Error()}
+		return RQLConnectionError{err.Error()}
 	}
 
 	return nil
@@ -169,35 +185,38 @@ func (c *Connection) nextToken() int64 {
 	return atomic.AddInt64(&c.token, 1)
 }
 
+// readResponse attempts to read a Response from the server, if no response
+// could be read then an error is returned.
 func (c *Connection) readResponse() (*Response, error) {
 	// Set timeout
 	if c.opts.Timeout == 0 {
 		c.conn.SetReadDeadline(time.Time{})
 	} else {
-		c.conn.SetReadDeadline(time.Now().Add(c.opts.Timeout))
+		c.conn.SetReadDeadline(time.Now().Add(c.opts.ReadTimeout))
 	}
 
 	// Read response header (token+length)
-	_, err := io.ReadFull(c.conn, c.headerBuf[:respHeaderLen])
-	if err != nil {
+	headerBuf := [respHeaderLen]byte{}
+	if _, err := c.read(headerBuf[:], respHeaderLen); err != nil {
 		return nil, err
 	}
 
-	responseToken := int64(binary.LittleEndian.Uint64(c.headerBuf[:8]))
-	messageLength := binary.LittleEndian.Uint32(c.headerBuf[8:])
+	responseToken := int64(binary.LittleEndian.Uint64(headerBuf[:8]))
+	messageLength := binary.LittleEndian.Uint32(headerBuf[8:])
 
 	// Read the JSON encoding of the Response itself.
-	b := c.buf.takeBuffer(int(messageLength))
-	if _, err := io.ReadFull(c.conn, b[:]); err != nil {
+	b := make([]byte, int(messageLength))
+
+	if _, err := c.read(b, int(messageLength)); err != nil {
 		c.bad = true
-		return nil, RqlConnectionError{err.Error()}
+		return nil, RQLConnectionError{err.Error()}
 	}
 
 	// Decode the response
 	var response = newCachedResponse()
 	if err := json.Unmarshal(b, response); err != nil {
 		c.bad = true
-		return nil, RqlDriverError{err.Error()}
+		return nil, RQLDriverError{err.Error()}
 	}
 	response.Token = responseToken
 
@@ -207,11 +226,11 @@ func (c *Connection) readResponse() (*Response, error) {
 func (c *Connection) processResponse(q Query, response *Response) (*Response, *Cursor, error) {
 	switch response.Type {
 	case p.Response_CLIENT_ERROR:
-		return c.processErrorResponse(q, response, RqlClientError{rqlResponseError{response, q.Term}})
+		return c.processErrorResponse(q, response, RQLClientError{rqlResponseError{response, q.Term}})
 	case p.Response_COMPILE_ERROR:
-		return c.processErrorResponse(q, response, RqlCompileError{rqlResponseError{response, q.Term}})
+		return c.processErrorResponse(q, response, RQLCompileError{rqlResponseError{response, q.Term}})
 	case p.Response_RUNTIME_ERROR:
-		return c.processErrorResponse(q, response, RqlRuntimeError{rqlResponseError{response, q.Term}})
+		return c.processErrorResponse(q, response, RQLRuntimeError{rqlResponseError{response, q.Term}})
 	case p.Response_SUCCESS_ATOM:
 		return c.processAtomResponse(q, response)
 	case p.Response_SUCCESS_PARTIAL:
@@ -222,14 +241,16 @@ func (c *Connection) processResponse(q Query, response *Response) (*Response, *C
 		return c.processWaitResponse(q, response)
 	default:
 		putResponse(response)
-		return nil, nil, RqlDriverError{"Unexpected response type"}
+		return nil, nil, RQLDriverError{"Unexpected response type"}
 	}
 }
 
 func (c *Connection) processErrorResponse(q Query, response *Response, err error) (*Response, *Cursor, error) {
+	c.mu.Lock()
 	cursor := c.cursors[response.Token]
 
 	delete(c.cursors, response.Token)
+	c.mu.Unlock()
 
 	return response, cursor, err
 }
@@ -261,6 +282,7 @@ func (c *Connection) processPartialResponse(q Query, response *Response) (*Respo
 		}
 	}
 
+	c.mu.Lock()
 	cursor, ok := c.cursors[response.Token]
 	if !ok {
 		// Create a new cursor if needed
@@ -269,6 +291,7 @@ func (c *Connection) processPartialResponse(q Query, response *Response) (*Respo
 
 		c.cursors[response.Token] = cursor
 	}
+	c.mu.Unlock()
 
 	cursor.extend(response)
 
@@ -276,6 +299,7 @@ func (c *Connection) processPartialResponse(q Query, response *Response) (*Respo
 }
 
 func (c *Connection) processSequenceResponse(q Query, response *Response) (*Response, *Cursor, error) {
+	c.mu.Lock()
 	cursor, ok := c.cursors[response.Token]
 	if !ok {
 		// Create a new cursor if needed
@@ -284,6 +308,7 @@ func (c *Connection) processSequenceResponse(q Query, response *Response) (*Resp
 	}
 
 	delete(c.cursors, response.Token)
+	c.mu.Unlock()
 
 	cursor.extend(response)
 
@@ -291,7 +316,28 @@ func (c *Connection) processSequenceResponse(q Query, response *Response) (*Resp
 }
 
 func (c *Connection) processWaitResponse(q Query, response *Response) (*Response, *Cursor, error) {
+	c.mu.Lock()
 	delete(c.cursors, response.Token)
+	c.mu.Unlock()
 
 	return response, nil, nil
+}
+
+var responseCache = make(chan *Response, 16)
+
+func newCachedResponse() *Response {
+	select {
+	case r := <-responseCache:
+		return r
+	default:
+		return new(Response)
+	}
+}
+
+func putResponse(r *Response) {
+	*r = Response{} // zero it
+	select {
+	case responseCache <- r:
+	default:
+	}
 }

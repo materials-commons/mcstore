@@ -11,7 +11,6 @@ type RunWatchAndBuildCommandFlags struct {
 	Recurse     bool
 	Race        bool
 	Cover       bool
-	CoverPkg    string
 	SkipPackage string
 	Tags        string
 
@@ -20,7 +19,6 @@ type RunWatchAndBuildCommandFlags struct {
 	NumCompilers   int
 	ParallelStream bool
 	Notify         bool
-	AfterSuiteHook string
 	AutoNodes      bool
 
 	//only for run command
@@ -93,7 +91,6 @@ func (c *RunWatchAndBuildCommandFlags) flags(mode int) {
 	c.FlagSet.BoolVar(&(c.Recurse), "r", false, "Find and run test suites under the current directory recursively")
 	c.FlagSet.BoolVar(&(c.Race), "race", false, "Run tests with race detection enabled")
 	c.FlagSet.BoolVar(&(c.Cover), "cover", false, "Run tests with coverage analysis, will generate coverage profiles with the package name in the current directory")
-	c.FlagSet.StringVar(&(c.CoverPkg), "coverpkg", "", "Run tests with coverage on the given external modules")
 	c.FlagSet.StringVar(&(c.SkipPackage), "skipPackage", "", "A comma-separated list of package names to be skipped.  If any part of the package's path matches, that package is ignored.")
 	c.FlagSet.StringVar(&(c.Tags), "tags", "", "A list of build tags to consider satisfied during the build")
 
@@ -106,7 +103,6 @@ func (c *RunWatchAndBuildCommandFlags) flags(mode int) {
 		if !onWindows {
 			c.FlagSet.BoolVar(&(c.Notify), "notify", false, "Send desktop notifications when a test run completes")
 		}
-		c.FlagSet.StringVar(&(c.AfterSuiteHook), "afterSuiteHook", "", "Run a command when a suite test run completes")
 	}
 
 	if mode == runMode {

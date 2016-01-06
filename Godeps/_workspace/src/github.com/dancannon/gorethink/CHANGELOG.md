@@ -2,6 +2,79 @@
 All notable changes to this project will be documented in this file.
 This project adheres to [Semantic Versioning](http://semver.org/).
 
+## v1.1.1
+### Fixed
+ - Corrected protobuf import
+ - Fixed documentation
+ - Fixed issues with time pseudotype conversion that caused issues with milliseconds
+
+## v1.1.0
+### Added
+ - Replaced `UseOutdated` with `ReadMode`
+ - Added `EmergencyRepair` and `NonVotingReplicaTags` to `ReconfigureOpts`
+ - Added `Union` as a root term
+ - Added `Branch` as a root term
+ - Added `ReadTimeout` and `WriteTimeout` to `RunOpts` and `ExecOpts`
+ - Exported `github.com/Sirupsen/logrus.Logger` as `Log`
+ - Added support for encoding maps with non-string keys
+ - Added 'Round', 'Ceil' and 'Floor' terms
+ - Added race detector to CI
+
+### Changed
+ - Changed `Timeout` connect argument to only configure the connection timeout.
+ - Replaced `Db` with `DB` in `RunOpts` and `ExecOpts` (`Db` still works for now)
+ - Made `Cursor` and `Session` safe for concurrent use
+ - Replaced `ErrClusterClosed` with `ErrConnectionClosed`
+
+## Deprecated
+ - Deprecated `UseOutdated` optional argument
+ - Deprecated `Db` in `RunOpt`
+
+### Fixed
+ - Fixed race condition in node pool
+ - Fixed node refresh issue with RethinkDB 2.1 due to an API change
+ - Fixed encoding errors not being returned when running queries
+
+## v1.0.0 - 2015-06-27
+
+1.0.0 is finally here, This is the first stable production ready release of GoRethink!
+
+![GoRethink Logo](https://raw.github.com/wiki/dancannon/gorethink/gopher-and-thinker.png "Golang Gopher and RethinkDB Thinker")
+
+In an attempt to make this library more "idiomatic" some functions have been renamed, for the full list of changes and bug fixes see below.
+
+### Added
+ - Added more documentation.
+ - Added `Shards`, `Replicas` and `PrimaryReplicaTag` optional arguments in `TableCreateOpts`.
+ - Added `MultiGroup` and `MultiGroupByIndex` which are equivalent to the running `group` with the `multi` optional argument set to true.
+
+### Changed 
+ - Renamed `Db` to `DB`.
+ - Renamed `DbCreate` to `DBCreate`.
+ - Renamed `DbDrop` to `DBDrop`.
+ - Renamed `RqlConnectionError` to `RQLConnectionError`.
+ - Renamed `RqlDriverError` to `RQLDriverError`.
+ - Renamed `RqlClientError` to `RQLClientError`.
+ - Renamed `RqlRuntimeError` to `RQLRuntimeError`.
+ - Renamed `RqlCompileError` to `RQLCompileError`.
+ - Renamed `Js` to `JS`.
+ - Renamed `Json` to `JSON`.
+ - Renamed `Http` to `HTTP`.
+ - Renamed `GeoJson` to `GeoJSON`.
+ - Renamed `ToGeoJson` to `ToGeoJSON`.
+ - Renamed `WriteChanges` to `ChangeResponse`, this is now a general type and can be used when dealing with changefeeds.
+ - Removed depth limit when encoding values using `Expr`
+
+### Fixed
+ - Fixed issue causing errors when closing a changefeed cursor (#191)
+ - Fixed issue causing nodes to remain unhealthy when host discovery is disabled (#195)
+ - Fixed issue causing driver to fail when connecting to DB which did not have its canonical address set correctly (#200).
+- Fixed ongoing queries not being properly stopped when closing the cursor.
+
+### Removed
+ - Removed `CacheSize` and `DataCenter` optional arguments in `TableCreateOpts`.
+ - Removed `CacheSize` optional argument from `InsertOpts`
+
 ## v0.7.2 - 2015-05-05
 ### Added
  - Added support for connecting to a server using TLS (#179)
@@ -133,7 +206,7 @@ Internal Changes
 
 - Updated the driver to support RethinkDB v1.14 (#116)
 - Added the Binary data type
-- Added the Binary command which takes a `[]byte`, `io.Reader` or `bytes.Buffer{}` as an argument.
+- Added the Binary command which takes a `[]byte` or `bytes.Buffer{}` as an argument.
 - Added the `BinaryFormat` optional argument to `RunOpts` 
 - Added the `GroupFormat` optional argument to `RunOpts` 
 - Added the `ArrayLimit` optional argument to `RunOpts` 

@@ -1,13 +1,14 @@
 # GoRethink - RethinkDB Driver for Go 
 
-[![GitHub tag](https://img.shields.io/github/tag/dancannon/gorethink.svg?style=flat)]()
+[![GitHub tag](https://img.shields.io/github/tag/dancannon/gorethink.svg?style=flat)](https://github.com/dancannon/gorethink/releases)
 [![GoDoc](https://godoc.org/github.com/dancannon/gorethink?status.png)](https://godoc.org/github.com/dancannon/gorethink)
 [![build status](https://img.shields.io/travis/dancannon/gorethink/master.svg "build status")](https://travis-ci.org/dancannon/gorethink) 
 
 [Go](http://golang.org/) driver for [RethinkDB](http://www.rethinkdb.com/) 
 
+![GoRethink Logo](https://raw.github.com/wiki/dancannon/gorethink/gopher-and-thinker-s.png "Golang Gopher and RethinkDB Thinker")
 
-Current version: v0.7.2 (RethinkDB v2.0) 
+Current version: v1.1.1 (RethinkDB v2.1)
 
 Please note that this version of the driver only supports versions of RethinkDB using the v0.4 protocol (any versions of the driver older than RethinkDB 2.0 will not work).
 
@@ -17,6 +18,11 @@ Please note that this version of the driver only supports versions of RethinkDB 
 
 ```sh
 go get -u github.com/dancannon/gorethink
+```
+
+Or (pinned to the v1.x.x tag)
+```
+go get gopkg.in/dancannon/gorethink.v1
 ```
 
 ## Connection
@@ -46,7 +52,7 @@ See the [documentation](http://godoc.org/github.com/dancannon/gorethink#Connect)
 
 The driver uses a connection pool at all times, by default it creates and frees connections automatically. It's safe for concurrent use by multiple goroutines.
 
-To configure the connection pool `MaxIdle`, `MaxOpen` and `IdleTimeout` can be specified during connection. If you wish to change the value of `MaxIdle` or `MaxOpen` during runtime then the functions `SetMaxIdleConns` and `SetMaxOpenConns` can be used.
+To configure the connection pool `MaxIdle`, `MaxOpen` and `Timeout` can be specified during connection. If you wish to change the value of `MaxIdle` or `MaxOpen` during runtime then the functions `SetMaxIdleConns` and `SetMaxOpenConns` can be used.
 
 ```go
 var session *r.Session
@@ -82,14 +88,14 @@ if err != nil {
 }
 ```
 
-When `DiscoverHosts` is true any nodes are added to the cluster after the initial connection then the new node will be added to the pool of available nodes used by GoRethink.
+When `DiscoverHosts` is true any nodes are added to the cluster after the initial connection then the new node will be added to the pool of available nodes used by GoRethink. Unfortunately the canonical address of each server in the cluster **MUST** be set as otherwise clients will try to connect to the database nodes locally. For more information about how to set a RethinkDB servers canonical address set this page http://www.rethinkdb.com/docs/config-file/.
 
 
 ## Query Functions
 
 This library is based on the official drivers so the code on the [API](http://www.rethinkdb.com/api/) page should require very few changes to work.
 
-To view full documentation for the query functions check the [GoDoc](http://godoc.org/github.com/dancannon/gorethink#Term)
+To view full documentation for the query functions check the [API reference](https://github.com/dancannon/gorethink/wiki/Go-ReQL-command-reference) or [GoDoc](http://godoc.org/github.com/dancannon/gorethink#Term)
 
 Slice Expr Example
 ```go
@@ -101,7 +107,7 @@ r.Expr(map[string]interface{}{"a": 1, "b": 2, "c": 3}).Run(session)
 ```
 Get Example
 ```go
-r.Db("database").Table("table").Get("GUID").Run(session)
+r.DB("database").Table("table").Get("GUID").Run(session)
 ```
 Map Example (Func)
 ```go
@@ -115,7 +121,7 @@ r.Expr([]interface{}{1, 2, 3, 4, 5}).Map(r.Row.Add(1)).Run(session)
 ```
 Between (Optional Args) Example
 ```go
-r.Db("database").Table("table").Between(1, 10, r.BetweenOpts{
+r.DB("database").Table("table").Between(1, 10, r.BetweenOpts{
     Index: "num",
     RightBound: "closed",
 }).Run(session)
@@ -136,7 +142,7 @@ Different result types are returned depending on what function is used to execut
 Example:
 
 ```go
-res, err := r.Db("database").Table("tablename").Get(key).Run(session)
+res, err := r.DB("database").Table("tablename").Get(key).Run(session)
 if err != nil {
     // error
 }
@@ -180,7 +186,7 @@ if err != nil {
 }
 ```
 
-## Encoding/Decoding Structs
+## Encoding/Decoding
 When passing structs to Expr(And functions that use Expr such as Insert, Update) the structs are encoded into a map before being sent to the server. Each exported field is added to the map unless
 
   - the field's tag is "-", or
@@ -205,19 +211,9 @@ Field int `gorethink:"myName,omitempty"`
 Field int `gorethink:",omitempty"`
 ```
 
-Alternatively you can implement the FieldMapper interface  by providing the FieldMap function which returns a map of strings in the form of `"FieldName": "NewName"`. For example:
+**NOTE:** It is strongly recommended that struct tags are used to explicitly define the mapping between your Go type and how the data is stored by RethinkDB. This is especially important when using an `Id` field as by default RethinkDB will create a field named `id` as the primary key (note that the RethinkDB field is lowercase but the Go version starts with a capital letter).
 
-```go
-type A struct {
-    Field int
-}
-
-func (a A) FieldMap() map[string]string {
-    return map[string]string{
-        "Field": "myName",
-    }
-}
-```
+When encoding maps with non-string keys the key values are automatically converted to strings where possible, however it is recommended that you use strings where possible (for example `map[string]T`).
 
 ## Benchmarks
 
@@ -253,7 +249,13 @@ BenchmarkSequentialSoftWritesParallel10      10000                           263
 
 ## Examples
 
-View other examples on the [wiki](https://github.com/dancannon/gorethink/wiki/Examples).
+Many functions have examples and are viewable in the godoc, alternatively view some more full features examples on the [wiki](https://github.com/dancannon/gorethink/wiki/Examples).
+
+## Further reading
+
+- [GoRethink Goes 1.0](https://www.compose.io/articles/gorethink-goes-1-0/)
+- [Go, RethinkDB & Changefeeds](https://www.compose.io/articles/go-rethinkdb-and-changefeeds-part-1/)
+- [Build an IRC bot in Go with RethinkDB changefeeds](http://rethinkdb.com/blog/go-irc-bot/)
 
 ## License
 
@@ -270,3 +272,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+## Donations
+
+[![Donations](https://pledgie.com/campaigns/29517.png "Donations")](https://pledgie.com/campaigns/29517) 

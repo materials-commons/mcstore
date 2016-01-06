@@ -5,12 +5,10 @@ import (
 	"strconv"
 	"strings"
 	"sync/atomic"
-	"time"
 
 	"github.com/dancannon/gorethink/encoding"
 
 	p "github.com/dancannon/gorethink/ql2"
-	"github.com/golang/protobuf/proto"
 )
 
 // Helper functions for constructing terms
@@ -43,21 +41,33 @@ func constructMethodTerm(prevVal Term, name string, termType p.Term_TermType, ar
 
 // Helper functions for creating internal RQL types
 
-func newQuery(t Term, qopts map[string]interface{}, copts *ConnectOpts) Query {
+func newQuery(t Term, qopts map[string]interface{}, copts *ConnectOpts) (q Query, err error) {
 	queryOpts := map[string]interface{}{}
 	for k, v := range qopts {
-		queryOpts[k] = Expr(v).build()
+		queryOpts[k], err = Expr(v).build()
+		if err != nil {
+			return
+		}
 	}
 	if copts.Database != "" {
-		queryOpts["db"] = Db(copts.Database).build()
+		queryOpts["db"], err = DB(copts.Database).build()
+		if err != nil {
+			return
+		}
+	}
+
+	builtTerm, err := t.build()
+	if err != nil {
+		return q, err
 	}
 
 	// Construct query
 	return Query{
-		Type: p.Query_START,
-		Term: &t,
-		Opts: queryOpts,
-	}
+		Type:      p.Query_START,
+		Term:      &t,
+		Opts:      queryOpts,
+		builtTerm: builtTerm,
+	}, nil
 }
 
 // makeArray takes a slice of terms and produces a single MAKE_ARRAY term
@@ -78,7 +88,7 @@ func makeObject(args termsObj) Term {
 	}
 }
 
-var nextVarId int64
+var nextVarID int64
 
 func makeFunc(f interface{}) Term {
 	value := reflect.ValueOf(f)
@@ -88,9 +98,9 @@ func makeFunc(f interface{}) Term {
 	var args = make([]reflect.Value, valueType.NumIn())
 	for i := 0; i < valueType.NumIn(); i++ {
 		// Get a slice of the VARs to use as the function arguments
-		args[i] = reflect.ValueOf(constructRootTerm("var", p.Term_VAR, []interface{}{nextVarId}, map[string]interface{}{}))
-		argNums[i] = nextVarId
-		atomic.AddInt64(&nextVarId, 1)
+		args[i] = reflect.ValueOf(constructRootTerm("var", p.Term_VAR, []interface{}{nextVarID}, map[string]interface{}{}))
+		argNums[i] = nextVarID
+		atomic.AddInt64(&nextVarID, 1)
 
 		// make sure all input arguments are of type Term
 		if valueType.In(i).String() != "gorethink.Term" {
@@ -181,21 +191,6 @@ func convertTermObj(o map[string]interface{}) termsObj {
 	return terms
 }
 
-func mergeArgs(args ...interface{}) []interface{} {
-	newArgs := []interface{}{}
-
-	for _, arg := range args {
-		switch v := arg.(type) {
-		case []interface{}:
-			newArgs = append(newArgs, v...)
-		default:
-			newArgs = append(newArgs, v)
-		}
-	}
-
-	return newArgs
-}
-
 // Helper functions for debugging
 
 func allArgsToStringSlice(args termsList, optArgs termsObj) []string {
@@ -236,13 +231,6 @@ func optArgsToStringSlice(optArgs termsObj) []string {
 	return allArgs
 }
 
-func prefixLines(s string, prefix string) (result string) {
-	for _, line := range strings.Split(s, "\n") {
-		result += prefix + line + "\n"
-	}
-	return
-}
-
 func splitAddress(address string) (hostname string, port int) {
 	hostname = "localhost"
 	port = 28015
@@ -258,13 +246,6 @@ func splitAddress(address string) (hostname string, port int) {
 
 	return
 }
-
-func protobufToString(p proto.Message, indentLevel int) string {
-	return prefixLines(proto.MarshalTextString(p), strings.Repeat("    ", indentLevel))
-}
-
-var timeType = reflect.TypeOf(time.Time{})
-var termType = reflect.TypeOf(Term{})
 
 func encode(data interface{}) (interface{}, error) {
 	if _, ok := data.(Term); ok {
