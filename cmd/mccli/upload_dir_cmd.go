@@ -10,8 +10,8 @@ import (
 )
 
 var uploadDirCommand = cli.Command{
-	Name:    "file",
-	Aliases: []string{"f"},
+	Name:    "directory",
+	Aliases: []string{"dir", "d"},
 	Usage:   "Upload a file to MaterialsCommons",
 	Flags: []cli.Flag{
 		cli.StringFlag{
