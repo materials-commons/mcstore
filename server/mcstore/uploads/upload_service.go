@@ -147,7 +147,7 @@ func (service *uploadService) assemble(req *UploadRequest, dir string) (*schema.
 		return file, err
 	}
 
-	app.Log.Infof("successfully upload fileID %s", file.ID)
+	app.Log.Infof("successfully uploaded fileID %s", file.ID)
 
 	service.cleanupUploadRequest(req.UploadID())
 	return file, nil

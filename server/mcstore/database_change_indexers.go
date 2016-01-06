@@ -64,7 +64,7 @@ func projectFileChangeIndexer(client *elastic.Client, session *r.Session) {
 	files, _ := r.Table("project2datafile").Changes().Run(session)
 	for files.Next(&change) {
 		fileID := getFileID(change.OldValue, change.NewValue)
-		app.Log.Infof("Indexing file added to project: %s", fileID)
+		app.Log.Infof("Indexing file %s that was added to a project", fileID)
 		indexFiles(client, session, fileID)
 	}
 }
