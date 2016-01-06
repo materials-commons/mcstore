@@ -114,8 +114,16 @@ func (c *ClientAPI) CreateProjectDirectories(projectName string) error {
 
 	project := projectDB.Project()
 	filepath.Walk(project.Path, func(path string, finfo os.FileInfo, err error) error {
-		if err != nil && finfo.IsDir() {
-			c.createDir(project, path)
+		if err == nil && finfo.IsDir() {
+			if dirID, err := c.createDir(project, path); err == nil {
+				if _, err := projectDB.FindDirectory(path); err == app.ErrNotFound {
+					dir := &Directory{
+						DirectoryID: dirID,
+						Path:        path,
+					}
+					projectDB.InsertDirectory(dir)
+				}
+			}
 		}
 		return nil
 	})
