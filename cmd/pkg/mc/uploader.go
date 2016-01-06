@@ -20,8 +20,6 @@ import (
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
 
-var _ = fmt.Println
-
 // projectUploader holds the starting state for a project upload. It controls
 // how many threads process requests.
 type projectUploader struct {
@@ -187,7 +185,7 @@ func (u *uploader) getDirectory(req mcstoreapi.DirectoryRequest) (string, error)
 		err   error
 	)
 	if dirID, err = u.serverAPI.GetDirectory(req); err != nil {
-		fmt.Printf("u.serverAPI.GetDirectory failed %#v/%s\n", req, err)
+		app.Log.Errorf("Failed creating directory: %#v/%s", req, err)
 		return "", err
 	}
 	return dirID, nil
