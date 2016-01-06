@@ -47,8 +47,8 @@ func main() {
 
 // setupConfigHandler creates the handler for the mc package. It sets up a
 // multi handler. If the user has setup a config.json in their .materialscommons
-// directory then it will add that to the handler list. Handlers will searched
-// in the following order: env - (optional) config file - defaults.
+// directory then it will add that to the handler list. Handlers are searched in
+// the following order: env - (optional) config file - defaults.
 //
 // This means that configuration set in the environment will override all other
 // settings, then it will check the config file (if one is setup), and finally
