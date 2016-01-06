@@ -90,7 +90,7 @@ func showProjectCLI(c *cli.Context) {
 						if f, err := projectDB.FindFile(finfo.Name(), dir.ID); err != nil {
 							fmt.Printf("  File: %s is new\n", finfo.Name())
 						} else if finfo.ModTime().Unix() > f.MTime.Unix() {
-							fmt.Printf("  File: %s has changed, last uploaded on%s\n",
+							fmt.Printf("  File: %s has changed, last uploaded on %s\n",
 								finfo.Name(), f.LastUpload.Format("Mon, 02 Jan 2006 at 3:04PM"))
 						} else {
 							fmt.Printf("  File: %s was uploaded on %s\n",
