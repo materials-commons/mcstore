@@ -66,7 +66,7 @@ func getUsernameAndPassword() (username, password string) {
 	username = strings.TrimSpace(username)
 
 	fmt.Print("  Please enter your MaterialsCommons password: ")
-	pw, _ := terminal.ReadPassword(syscall.Stdin)
+	pw, _ := terminal.ReadPassword(int(syscall.Stdin))
 
 	return username, string(pw)
 }
