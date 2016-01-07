@@ -62,7 +62,7 @@ func watchProject(path string, db mc.ProjectDB) {
 			case event := <-watcher.Events:
 				handleFileChangeEvent(event, db)
 			case err := <-watcher.ErrorEvents:
-				fmt.Println("error:", err)
+				fmt.Println("file events error:", err)
 				break FsEventsLoop
 			}
 		}
@@ -71,6 +71,49 @@ func watchProject(path string, db mc.ProjectDB) {
 }
 
 func handleFileChangeEvent(event *fsnotify.FileEvent, db mc.ProjectDB) {
-	// check type of event, then check if file or dir. If dir and new then create.
-	// If file and new or changed, then upload. Ignore delete and rename for the moment.
+	switch {
+	case event.IsCreate():
+		handleCreate(event.Name)
+	case event.IsDelete():
+		// ignore
+	case event.IsModify():
+		handleModify(event.Name)
+	case event.IsRename():
+		// ignore
+	case event.IsAttrib():
+		// ignore
+	default:
+		// ignore
+	}
+}
+
+func handleCreate(path string) {
+	switch finfo, err := os.Stat(path); {
+	case err != nil:
+		fmt.Printf("Error stating %s: %s\n", path, err)
+	case finfo.IsDir():
+		handleDirCreate(path, finfo)
+	case finfo.Mode().IsRegular():
+		handleFileCreate(path, finfo)
+	}
+}
+
+func handleDirCreate(path string, finfo os.FileInfo) {
+	// create new directory
+}
+
+func handleFileCreate(path string, finfo os.FileInfo) {
+	// upload new file
+}
+
+func handleModify(path string) {
+	if finfo, err := os.Stat(path); err != nil {
+		fmt.Printf("Error stating %s: %s\n", path, err)
+	} else if finfo.Mode().IsRegular() {
+		handleFileModify(path, finfo)
+	}
+}
+
+func handleFileModify(path string, finfo os.FileInfo) {
+	// upload changed file
 }
