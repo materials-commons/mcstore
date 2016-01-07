@@ -115,15 +115,7 @@ func (c *ClientAPI) CreateProjectDirectories(projectName string) error {
 	project := projectDB.Project()
 	filepath.Walk(project.Path, func(path string, finfo os.FileInfo, err error) error {
 		if err == nil && finfo.IsDir() {
-			if dirID, err := c.createDir(project, path); err == nil {
-				if _, err := projectDB.FindDirectory(path); err == app.ErrNotFound {
-					dir := &Directory{
-						DirectoryID: dirID,
-						Path:        path,
-					}
-					projectDB.InsertDirectory(dir)
-				}
-			}
+			c.createDirectory(projectDB, path)
 		}
 		return nil
 	})
@@ -132,17 +124,31 @@ func (c *ClientAPI) CreateProjectDirectories(projectName string) error {
 }
 
 // CreateDirectory will create a single directory on the server for the named project.
-func (c *ClientAPI) CreateDirectory(projectName, path string) (string, error) {
+func (c *ClientAPI) CreateDirectory(projectName, path string) error {
 	projectDB, err := c.projectOpener.OpenProjectDB(projectName)
 	if err != nil {
-		return "", err
+		return err
 	}
+	return c.createDirectory(projectDB, path)
+}
 
-	return c.createDir(projectDB.Project(), path)
+func (c *ClientAPI) createDirectory(db ProjectDB, path string) error {
+	if dirID, err := c.getDir(db.Project(), path); err != nil {
+		return err
+	} else {
+		if _, err := db.FindDirectory(path); err == app.ErrNotFound {
+			dir := &Directory{
+				DirectoryID: dirID,
+				Path:        path,
+			}
+			db.InsertDirectory(dir)
+		}
+		return nil
+	}
 }
 
 // createDir performs the actual call to the server to create a directory.
-func (c *ClientAPI) createDir(project *Project, path string) (directoryID string, err error) {
+func (c *ClientAPI) getDir(project *Project, path string) (directoryID string, err error) {
 	req := mcstoreapi.DirectoryRequest{
 		ProjectName: project.Name,
 		ProjectID:   project.ProjectID,
