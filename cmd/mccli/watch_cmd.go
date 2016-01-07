@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/codegangsta/cli"
-	"github.com/howeyc/fsnotify"
 	"github.com/materials-commons/gohandy/fs"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 )
@@ -29,6 +28,11 @@ var (
 	}
 )
 
+type projectWatcher struct {
+	*mc.ClientAPI
+	projectName string
+}
+
 func watchProjectCLI(c *cli.Context) {
 	if len(c.Args()) != 1 {
 		fmt.Println("You must specify a project.")
@@ -41,13 +45,17 @@ func watchProjectCLI(c *cli.Context) {
 		fmt.Println("Unknown project:", projectName)
 		os.Exit(1)
 	} else {
-		project := db.Project()
-		path := project.Path
-		watchProject(path, db)
+		p := &projectWatcher{
+			ClientAPI:   mc.NewClientAPI(),
+			projectName: projectName,
+		}
+		path := db.Project().Path
+		fmt.Printf("Watching project %s located at %s for changes...\n", projectName, path)
+		p.watchProject(path, db)
 	}
 }
 
-func watchProject(path string, db mc.ProjectDB) {
+func (w *projectWatcher) watchProject(path string, db mc.ProjectDB) {
 	for {
 		watcher, err := fs.NewRecursiveWatcher(path)
 		if err != nil {
@@ -60,7 +68,7 @@ func watchProject(path string, db mc.ProjectDB) {
 		for {
 			select {
 			case event := <-watcher.Events:
-				handleFileChangeEvent(event, db)
+				w.handleFileChangeEvent(event, db)
 			case err := <-watcher.ErrorEvents:
 				fmt.Println("file events error:", err)
 				break FsEventsLoop
@@ -70,14 +78,14 @@ func watchProject(path string, db mc.ProjectDB) {
 	}
 }
 
-func handleFileChangeEvent(event *fsnotify.FileEvent, db mc.ProjectDB) {
+func (w *projectWatcher) handleFileChangeEvent(event fs.Event, db mc.ProjectDB) {
 	switch {
 	case event.IsCreate():
-		handleCreate(event.Name)
+		w.handleCreate(event.Name)
 	case event.IsDelete():
 		// ignore
 	case event.IsModify():
-		handleModify(event.Name)
+		w.handleModify(event.Name)
 	case event.IsRename():
 		// ignore
 	case event.IsAttrib():
@@ -87,33 +95,35 @@ func handleFileChangeEvent(event *fsnotify.FileEvent, db mc.ProjectDB) {
 	}
 }
 
-func handleCreate(path string) {
+func (w *projectWatcher) handleCreate(path string) {
 	switch finfo, err := os.Stat(path); {
 	case err != nil:
 		fmt.Printf("Error stating %s: %s\n", path, err)
 	case finfo.IsDir():
-		handleDirCreate(path, finfo)
+		w.dirCreate(path)
 	case finfo.Mode().IsRegular():
-		handleFileCreate(path, finfo)
+		w.fileUpload(path)
 	}
 }
 
-func handleDirCreate(path string, finfo os.FileInfo) {
-	// create new directory
+func (w *projectWatcher) dirCreate(path string) {
+	if err := w.CreateDirectory(w.projectName, path); err != nil {
+		fmt.Printf("Failed to create new directory %s: %s\n", path, err)
+	} else {
+		fmt.Println("Created new directory: ", path)
+	}
 }
 
-func handleFileCreate(path string, finfo os.FileInfo) {
-	// upload new file
+func (w *projectWatcher) fileUpload(path string) {
+	if err := w.UploadFile(w.projectName, path); err != nil {
+		fmt.Printf("Failed to upload file %s: %s\n", path, err)
+	}
 }
 
-func handleModify(path string) {
+func (w *projectWatcher) handleModify(path string) {
 	if finfo, err := os.Stat(path); err != nil {
-		fmt.Printf("Error stating %s: %s\n", path, err)
+		fmt.Printf("Error getting file info for %s: %s\n", path, err)
 	} else if finfo.Mode().IsRegular() {
-		handleFileModify(path, finfo)
+		w.fileUpload(path)
 	}
-}
-
-func handleFileModify(path string, finfo os.FileInfo) {
-	// upload changed file
 }
