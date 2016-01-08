@@ -66,7 +66,7 @@ func showProjectCLI(c *cli.Context) {
 			case err != nil:
 				// nothing to do
 			case finfo.IsDir():
-				if files.IgnoreDotFiles(path, finfo) {
+				if files.IgnoreDotAndTempFiles(path, finfo) {
 					fmt.Printf("\nDirectory: %s is ignored\n", path)
 					return filepath.SkipDir
 				}
@@ -89,7 +89,7 @@ func showDirStatus(path string, finfo os.FileInfo, projectDB mc.ProjectDB) {
 }
 
 func showFileStatus(path string, finfo os.FileInfo, projectDB mc.ProjectDB) {
-	if files.IgnoreDotFiles(path, finfo) {
+	if files.IgnoreDotAndTempFiles(path, finfo) {
 		fmt.Printf("  File: %s is ignored\n", finfo.Name())
 	} else {
 		fileDir := filepath.Dir(path)

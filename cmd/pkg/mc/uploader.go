@@ -80,7 +80,7 @@ func (p *projectUploader) uploadDirectory(path string, recursive bool) error {
 			}
 			return true
 		}
-		return files.IgnoreDotFiles(pathEntry, fileInfo)
+		return files.IgnoreDotAndTempFiles(pathEntry, fileInfo)
 	}
 	db := p.db
 	project := db.Project()

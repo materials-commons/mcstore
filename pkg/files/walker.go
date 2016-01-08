@@ -121,7 +121,7 @@ func (p *PWalker) PWalk(root string) (<-chan string, <-chan error) {
 	defer close(done)
 
 	if p.IgnoreFn == nil {
-		p.IgnoreFn = IgnoreDotFiles
+		p.IgnoreFn = IgnoreDotAndTempFiles
 	}
 
 	if p.NumParallel < 1 {
@@ -166,8 +166,12 @@ func NeverIgnore(_ string, _ os.FileInfo) bool {
 
 // IgnoreDotFiles returns true if the name starts with a ".".
 // This is the default method for checking if an entry should be ignored.
-func IgnoreDotFiles(_ string, fileInfo os.FileInfo) bool {
+func IgnoreDotAndTempFiles(_ string, fileInfo os.FileInfo) bool {
 	if strings.HasPrefix(fileInfo.Name(), ".") {
+		return true
+	}
+
+	if strings.Contains(fileInfo.Name(), "~") {
 		return true
 	}
 
