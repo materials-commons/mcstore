@@ -8,6 +8,7 @@ import (
 	"github.com/codegangsta/cli"
 	"github.com/materials-commons/gohandy/fs"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
+	"github.com/materials-commons/mcstore/pkg/files"
 )
 
 var (
@@ -99,6 +100,8 @@ func (w *projectWatcher) handleCreate(path string) {
 	switch finfo, err := os.Stat(path); {
 	case err != nil:
 		fmt.Printf("Error stating %s: %s\n", path, err)
+	case files.IgnoreDotAndTempFiles(path, finfo):
+		// ignore
 	case finfo.IsDir():
 		w.dirCreate(path)
 	case finfo.Mode().IsRegular():
@@ -124,6 +127,8 @@ func (w *projectWatcher) handleModify(path string) {
 	if finfo, err := os.Stat(path); err != nil {
 		fmt.Printf("Error getting file info for %s: %s\n", path, err)
 	} else if finfo.Mode().IsRegular() {
-		w.fileUpload(path)
+		if !files.IgnoreDotAndTempFiles(path, finfo) {
+			w.fileUpload(path)
+		}
 	}
 }
