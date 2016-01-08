@@ -76,6 +76,18 @@ func (c *ClientAPI) UploadProject(projectName string, numThreads int) error {
 	}
 }
 
+func (c *ClientAPI) DownloadProject(projectName string, numThreads int) error {
+	return nil
+}
+
+func (c *ClientAPI) DownloadDirectory(projectName string, path string, recursive bool, numThreads int) error {
+	return nil
+}
+
+func (c *ClientAPI) DownloadFile(projectName string, path string) error {
+	return nil
+}
+
 //
 func (c *ClientAPI) ProjectStatus(projectID string) error {
 	return nil
