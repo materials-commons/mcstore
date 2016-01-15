@@ -8,6 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"io"
+	"net/http"
+	"os"
+
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -168,4 +172,22 @@ func (s *ServerAPI) CreateProject(req CreateProjectRequest) (*CreateProjectRespo
 		return nil, err
 	}
 	return &response, nil
+}
+
+func (s *ServerAPI) DownloadFile(fileID, path string) error {
+	out, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	fileURL := Url(filepath.Join("/datafiles/static", fileID)) + "&original=true"
+	resp, err := http.Get(fileURL)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	return err
 }

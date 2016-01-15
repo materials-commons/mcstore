@@ -4,7 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"path/filepath"
+
 	"github.com/codegangsta/cli"
+	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 )
 
 var downloadDirCommand = cli.Command{
@@ -30,4 +33,21 @@ func downloadDirCLI(c *cli.Context) {
 		fmt.Println("You must specify a directory to download.")
 		os.Exit(1)
 	}
+
+	dirPath := filepath.Clean(c.Args()[0])
+	if !validateDirectoryPath(dirPath) {
+		os.Exit(1)
+	}
+
+	project := c.String("project")
+	numThreads := getNumThreads(c)
+	recursive := c.Bool("recursive")
+	client := mc.NewClientAPI()
+
+	if err := client.DownloadDirectory(project, dirPath, recursive, numThreads); err != nil {
+		fmt.Println("Directory download failed:", err)
+		os.Exit(1)
+	}
+
+	os.Exit(1)
 }
