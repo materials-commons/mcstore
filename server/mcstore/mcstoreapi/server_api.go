@@ -174,8 +174,8 @@ func (s *ServerAPI) CreateProject(req CreateProjectRequest) (*CreateProjectRespo
 	return &response, nil
 }
 
-func (s *ServerAPI) DownloadFile(fileID, path string) error {
-	out, err := os.Create(path)
+func (s *ServerAPI) DownloadFile(projectID, fileID, fpath string) error {
+	out, err := os.Create(fpath)
 	if err != nil {
 		return err
 	}
@@ -190,4 +190,25 @@ func (s *ServerAPI) DownloadFile(fileID, path string) error {
 
 	_, err = io.Copy(out, resp.Body)
 	return err
+}
+
+func (s *ServerAPI) GetFileForPath(projectID, fpath string) (*schema.File, error) {
+	filePathArg := struct {
+		FilePath string `json:"string"`
+	}{
+		FilePath: fpath,
+	}
+
+	apiURL := urlutil.MustJoin(MCUrl(), path.Join("api", "v2", "projects", projectID, "files_by_path"))
+	r, body, errs := s.agent.Put(apiURL).Send(filePathArg).End()
+	if err := ToError(r, errs); err != nil {
+		return nil, err
+	}
+
+	var f schema.File
+	if err := ToJSON(body, &f); err != nil {
+		return nil, err
+	}
+
+	return &f, nil
 }
