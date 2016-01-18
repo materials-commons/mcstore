@@ -1,19 +1,14 @@
 package mccli
 
-import (
-	"fmt"
-
-	"github.com/codegangsta/cli"
-)
+import "github.com/codegangsta/cli"
 
 var DownloadCommand = cli.Command{
 	Name:    "download",
 	Aliases: []string{"down", "d"},
-	Usage:   "Download data from MaterialsCommons",
-	Flags:   []cli.Flag{},
-	Action:  downloadCLI,
-}
-
-func downloadCLI(c *cli.Context) {
-	fmt.Println("download: ", c.Args())
+	Usage:   "Downloads files, directories or projects",
+	Subcommands: []cli.Command{
+		downloadProjectCommand,
+		downloadFileCommand,
+		downloadDirCommand,
+	},
 }
