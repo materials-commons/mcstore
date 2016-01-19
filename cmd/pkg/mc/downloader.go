@@ -7,14 +7,16 @@ import (
 
 	"time"
 
-	"github.com/materials-commons/mcstore/pkg/db/schema"
+	"fmt"
+
+	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
 
 type downloader struct {
 	projectDB  ProjectDB
 	dir        *Directory
 	file       *File
-	serverFile *schema.File
+	serverFile *mcstoreapi.ServerFile
 	c          *ClientAPI
 }
 
@@ -51,6 +53,7 @@ func (d *downloader) downloadFile(path string) error {
 func (d *downloader) downloadNewFile(path string) error {
 	project := d.projectDB.Project()
 	if err := d.c.serverAPI.DownloadFile(project.ProjectID, d.serverFile.ID, path); err != nil {
+		fmt.Println("serverAPI.DownloadFile error", err)
 		return err
 	}
 	finfo, _ := os.Stat(path)
@@ -87,6 +90,9 @@ func (d *downloader) downloadExistingFile(finfo os.FileInfo, path string) error 
 	case finfo.ModTime().Unix() > d.file.MTime.Unix():
 		// Existing file with updates that haven't been uploaded. Don't overwrite.
 		return ErrFileVersionNotUploaded
+	case d.file.Checksum == d.serverFile.Checksum:
+		// Latest file already downloaded
+		return nil
 	default:
 		return d.downloadNewFile(path)
 	}
