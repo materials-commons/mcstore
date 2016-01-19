@@ -42,6 +42,7 @@ func main() {
 		mccli.UploadCommand,
 		mccli.MkdirsCommand,
 		mccli.WatchCommand,
+		mccli.DownloadCommand,
 	}
 	app.Run(os.Args)
 }
