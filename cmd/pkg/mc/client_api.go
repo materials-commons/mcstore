@@ -103,50 +103,8 @@ func (c *ClientAPI) DownloadFile(projectName string, path string) error {
 		return ErrInvalidProjectFilePath
 	}
 
-	if err := os.MkdirAll(filepath.Dir(normalizedPath), 0770); err != err {
-		return err
-	}
-
-	f, err := c.serverAPI.GetFileForPath(project.ProjectID, normalizedPath)
-	if err != nil {
-		return err
-	}
-
-	dir, err := projectDB.FindDirectory(filepath.Dir(normalizedPath))
-	if err != nil {
-		c.createDirectory(projectDB, filepath.Dir(normalizedPath))
-		dir, _ = projectDB.FindDirectory(filepath.Dir(normalizedPath))
-	}
-
-	var _ = f
-	var _ = dir
-	fclient, _ := projectDB.FindFile(filepath.Base(normalizedPath), dir.ID)
-
-	finfo, serr := os.Stat(normalizedPath)
-
-	var _ = f
-	var _ = fclient
-	var _ = finfo
-	var _ = serr
-	//if serr != nil
-	/*
-		if clientSideFileMeta exists and local file has changed {
-		    return err
-		} else if clientSideFileMeta doesn't exist and local file exists
-		    return err
-		}
-
-		if downloadFile fails {
-		   return err
-		}
-
-		if clientSideFileMeta doesn't exist {
-		   insert client side file meta
-		} else {
-		   update client side file meta
-		}
-	*/
-	return nil
+	downloader := newDownloader(projectDB, c)
+	return downloader.downloadFile(normalizedPath)
 }
 
 func pathInProject(projectPath, filePath string) bool {
