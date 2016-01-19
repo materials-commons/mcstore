@@ -11,8 +11,8 @@ import (
 )
 
 var downloadDirCommand = cli.Command{
-	Name:    "file",
-	Aliases: []string{"f"},
+	Name:    "directory",
+	Aliases: []string{"dir", "d"},
 	Usage:   "Download a project directory",
 	Flags: []cli.Flag{
 		cli.IntFlag{
@@ -35,9 +35,6 @@ func downloadDirCLI(c *cli.Context) {
 	}
 
 	dirPath := filepath.Clean(c.Args()[0])
-	if !validateDirectoryPath(dirPath) {
-		os.Exit(1)
-	}
 
 	project := c.String("project")
 	numThreads := getNumThreads(c)

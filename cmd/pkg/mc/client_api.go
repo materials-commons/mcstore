@@ -6,6 +6,7 @@ import (
 
 	"strings"
 
+	"fmt"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
@@ -78,12 +79,87 @@ func (c *ClientAPI) UploadProject(projectName string, numThreads int) error {
 	}
 }
 
+func (c *ClientAPI) getProjectDirList(projectID, directoryID string) (*mcstoreapi.ServerDir, error) {
+	return c.serverAPI.GetDirectoryList(projectID, directoryID)
+}
+
 func (c *ClientAPI) DownloadProject(projectName string, numThreads int) error {
 	return nil
 }
 
 func (c *ClientAPI) DownloadDirectory(projectName string, path string, recursive bool, numThreads int) error {
+	projectDB, err := ProjectOpener.OpenProjectDB(projectName)
+	if err != nil {
+		return err
+	}
+
+	project := projectDB.Project()
+	if dir, err := c.getProjectDirList(project.ProjectID, ""); err != nil {
+		return err
+	} else {
+		c.walkDirectoryStructure(projectDB, dir)
+	}
 	return nil
+}
+
+func (c *ClientAPI) walkDirectoryStructure(projectDB ProjectDB, dir *mcstoreapi.ServerDir) {
+	currentDir := &fileEntry{
+		Type:     dir.Type,
+		ID:       dir.ID,
+		Path:     dir.Path,
+		Size:     dir.Size,
+		Checksum: dir.Checksum,
+	}
+	project := projectDB.Project()
+	dirStack := &fileStack{}
+	allEntriesStack := &fileStack{}
+	allEntriesStack.Push(currentDir)
+	dirStack.Push(currentDir)
+	for _, entry := range dir.Children {
+		fentry := &fileEntry{
+			Type:     entry.Type,
+			ID:       entry.ID,
+			Path:     entry.Path,
+			Size:     entry.Size,
+			Checksum: entry.Checksum,
+		}
+		allEntriesStack.Push(fentry)
+	}
+
+	for {
+		switch f := allEntriesStack.Pop(); {
+		case f == nil:
+			break
+		case f.Type == "file":
+			fmt.Println("Downloading file:", filepath.Join(currentDir.Path, f.Path))
+		case f.Type == "directory":
+			if f.ID == currentDir.ID {
+				// We've encountered the directory we were just in
+				dirStack.Pop() // pop ourselves
+				currentDir = dirStack.Peek()
+			} else {
+				if dir, err := c.getProjectDirList(project.ProjectID, f.ID); err != nil {
+					fmt.Println("failed getting dir", f.ID, err)
+				} else {
+					allEntriesStack.Push(f)
+					dirStack.Push(f)
+					for _, entry := range dir.Children {
+						fentry := &fileEntry{
+							Type:     entry.Type,
+							ID:       entry.ID,
+							Path:     entry.Path,
+							Size:     entry.Size,
+							Checksum: entry.Checksum,
+						}
+						allEntriesStack.Push(fentry)
+					}
+					currentDir = f
+				}
+			}
+		default:
+			fmt.Println("Bad entry")
+		}
+	}
 }
 
 func (c *ClientAPI) DownloadFile(projectName string, path string) error {

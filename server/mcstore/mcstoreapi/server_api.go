@@ -137,19 +137,30 @@ func (s *ServerAPI) GetDirectory(req DirectoryRequest) (directoryID string, err 
 	return dirResponse.DirectoryID, nil
 }
 
-func (s *ServerAPI) GetDirectoryList(projectID, directoryID string) ([]string, error) {
+type ServerDir struct {
+	ID       string      `json:"id"`
+	Type     string      `json:"_type"`
+	Size     int64       `json:"size"`
+	Name     string      `json:"name"`
+	Path     string      `json:"path"`
+	Checksum string      `json:"checksum"`
+	Children []ServerDir `json:"children"`
+}
+
+func (s *ServerAPI) GetDirectoryList(projectID, directoryID string) (*ServerDir, error) {
 	if directoryID == "" {
 		directoryID = "top"
 	}
 
-	apiURL := urlutil.MustJoin(MCUrl(), path.Join("api", "projects", projectID, "directories", directoryID))
-	if sc, err := s.client.JSONGet(Url(apiURL), nil); err != nil {
+	var dir ServerDir
+	apiURL := path.Join("/v2", "projects", projectID, "directories", directoryID)
+	if sc, err := s.client.JSONGet(Url(apiURL), &dir); err != nil {
 		return nil, err
 	} else if err = HTTPStatusToError(sc); err != nil {
 		return nil, err
 	}
 
-	return nil, nil
+	return &dir, nil
 }
 
 func toProjectPath(projectName, path string) (string, error) {

@@ -102,3 +102,7 @@ func pathFromProject(path, projectName string) string {
 	index := strings.Index(path, projectName)
 	return path[index:len(path)]
 }
+
+func (d *downloader) downloadDirectory(path string, recursive bool) error {
+	return nil
+}
