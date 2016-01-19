@@ -192,20 +192,26 @@ func (s *ServerAPI) DownloadFile(projectID, fileID, fpath string) error {
 	return err
 }
 
-func (s *ServerAPI) GetFileForPath(projectID, fpath string) (*schema.File, error) {
+type ServerFile struct {
+	ID       string `json:"id"`
+	Checksum string `json:"checksum"`
+	Size     int64  `json:"size"`
+}
+
+func (s *ServerAPI) GetFileForPath(projectID, fpath string) (*ServerFile, error) {
 	filePathArg := struct {
-		FilePath string `json:"string"`
+		FilePath string `json:"file_path"`
 	}{
 		FilePath: fpath,
 	}
 
-	apiURL := urlutil.MustJoin(MCUrl(), path.Join("api", "v2", "projects", projectID, "files_by_path"))
-	r, body, errs := s.agent.Put(apiURL).Send(filePathArg).End()
+	urlPath := path.Join("/v2", "projects", projectID, "files_by_path")
+	r, body, errs := s.agent.Put(Url(urlPath)).Send(filePathArg).End()
 	if err := ToError(r, errs); err != nil {
 		return nil, err
 	}
 
-	var f schema.File
+	var f ServerFile
 	if err := ToJSON(body, &f); err != nil {
 		return nil, err
 	}
