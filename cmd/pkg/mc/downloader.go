@@ -9,6 +9,7 @@ import (
 
 	"fmt"
 
+	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
 
@@ -103,6 +104,83 @@ func pathFromProject(path, projectName string) string {
 	return path[index:len(path)]
 }
 
-func (d *downloader) downloadDirectory(path string, recursive bool) error {
+type fentry struct {
+	Type     string
+	ID       string
+	Path     string
+	Size     int64
+	Checksum string
+}
+
+type projectDownloader struct {
+	downloader *downloader
+	files      []fentry
+}
+
+func newProjectDownloader(projectDB ProjectDB, clientAPI *ClientAPI) *projectDownloader {
+	return &projectDownloader{
+		downloader: newDownloader(projectDB, clientAPI),
+		files:      []fentry{},
+	}
+}
+
+func (d *projectDownloader) downloadProject() error {
+	project := d.downloader.projectDB.Project()
+
+	if dir, err := d.downloader.c.getProjectDirList(project.ProjectID, ""); err == nil {
+		d.files = append(d.files, toFentry(dir))
+		d.loadDirRecurse(project.ProjectID, dir)
+	}
+
+	// Project Path contains the name of the project. The path for each entry
+	// start with the project name. So we remove the project name from the
+	// project path since the entry path will contain it.
+	// eg, project path: /home/me/projects/PROJECT_NAME
+	// individual entry paths: PROJECT_NAME/myfile.txt
+	// so projectDir removes PROJECT_NAME, since joining with entry.Path will
+	// put the PROJECT_NAME back in to the path.
+	projectDir := filepath.Dir(project.Path)
+	for _, e := range d.files {
+		if e.Type == "file" {
+			fmt.Println("Downloading file to:", filepath.Join(projectDir, e.Path))
+			d.downloader.downloadFile(filepath.Join(projectDir, e.Path))
+		} else if e.Type == "directory" {
+			fmt.Println("Creating directory:", filepath.Join(projectDir, e.Path))
+			d.createDir(filepath.Join(projectDir, e.Path), e.ID)
+		}
+	}
 	return nil
+}
+
+func (d *projectDownloader) loadDirRecurse(projectID string, dentry *mcstoreapi.ServerDir) {
+	if dentry.Type == "directory" {
+		if dir, err := d.downloader.c.getProjectDirList(projectID, dentry.ID); err == nil {
+			for _, entry := range dir.Children {
+				d.files = append(d.files, toFentry(&entry))
+				d.loadDirRecurse(projectID, &entry)
+			}
+		}
+	}
+}
+
+func (d *projectDownloader) createDir(path, dirID string) {
+	os.MkdirAll(path, 0770)
+	if _, err := d.downloader.projectDB.FindDirectory(path); err == app.ErrNotFound {
+		dir := &Directory{
+			DirectoryID: dirID,
+			Path:        path,
+		}
+		d.downloader.projectDB.InsertDirectory(dir)
+	}
+}
+
+func toFentry(dentry *mcstoreapi.ServerDir) fentry {
+	entry := fentry{
+		Type:     dentry.Type,
+		ID:       dentry.ID,
+		Path:     dentry.Path,
+		Size:     dentry.Size,
+		Checksum: dentry.Checksum,
+	}
+	return entry
 }
