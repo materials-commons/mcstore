@@ -9,6 +9,6 @@ var DownloadCommand = cli.Command{
 	Subcommands: []cli.Command{
 		downloadProjectCommand,
 		downloadFileCommand,
-		downloadDirCommand,
+		//downloadDirCommand,
 	},
 }
