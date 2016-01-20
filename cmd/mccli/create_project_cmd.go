@@ -30,7 +30,7 @@ var (
 				Usage: "Number of simultaneous uploads to perform, defaults to 3",
 			},
 			cli.BoolFlag{
-				Name:  "download, down",
+				Name:  "download, down, dl",
 				Usage: "Download the projects files after creating it",
 			},
 		},
