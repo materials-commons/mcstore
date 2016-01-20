@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"os"
 
+	"fmt"
+
 	"github.com/materials-commons/gohandy/ezhttp"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
@@ -186,6 +188,7 @@ func (s *ServerAPI) CreateProject(req CreateProjectRequest) (*CreateProjectRespo
 }
 
 func (s *ServerAPI) DownloadFile(projectID, fileID, fpath string) error {
+	fmt.Println("DownloadFile:", projectID, fileID, fpath)
 	out, err := os.Create(fpath)
 	if err != nil {
 		return err
@@ -199,7 +202,9 @@ func (s *ServerAPI) DownloadFile(projectID, fileID, fpath string) error {
 	}
 	defer resp.Body.Close()
 
-	_, err = io.Copy(out, resp.Body)
+	var n int64
+	n, err = io.Copy(out, resp.Body)
+	fmt.Println("  wrote bytes:", n)
 	return err
 }
 
