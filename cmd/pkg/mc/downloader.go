@@ -105,7 +105,7 @@ func (d *downloader) downloadExistingFile(finfo os.FileInfo, path string) error 
 
 func pathFromProject(path, projectName string) string {
 	index := strings.Index(path, projectName)
-	return path[index:len(path)]
+	return strings.Replace(path[index:len(path)], "\\", "/", -1)
 }
 
 type fentry struct {
