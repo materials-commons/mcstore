@@ -220,7 +220,6 @@ func (u *uploader) handleFileEntry(entry files.TreeEntry) {
 // getDirByPath looks up a path in the local database. It normalizes
 // the file separator.
 func (u *uploader) getDirByPath(path string) *Directory {
-	path = filepath.ToSlash(path)
 	dir, err := u.db.FindDirectory(path)
 	switch {
 	case err == app.ErrNotFound:
