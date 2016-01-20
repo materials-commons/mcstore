@@ -35,6 +35,7 @@ func (d *downloader) downloadFile(path string) error {
 	project := d.projectDB.Project()
 	var err error
 	if d.serverFile, err = d.c.serverAPI.GetFileForPath(project.ProjectID, pathFromProject(path, project.Name)); err != nil {
+		fmt.Println("getFileForPath returned error", err)
 		return err
 	}
 	if d.dir, err = d.projectDB.FindDirectory(filepath.Dir(path)); err != nil {
@@ -87,12 +88,15 @@ func (d *downloader) downloadExistingFile(finfo os.FileInfo, path string) error 
 	switch {
 	case d.file == nil:
 		// There is an existing file that isn't in database. Don't overwrite.
+		fmt.Println("downloadExistingFile ErrFileNotUploaded")
 		return ErrFileNotUploaded
 	case finfo.ModTime().Unix() > d.file.MTime.Unix():
 		// Existing file with updates that haven't been uploaded. Don't overwrite.
+		fmt.Println("downloadExistingFile ErrFileVersionNotUploaded")
 		return ErrFileVersionNotUploaded
 	case d.file.Checksum == d.serverFile.Checksum:
 		// Latest file already downloaded
+		fmt.Println("downloadExistingFile Checksums are equal")
 		return nil
 	default:
 		return d.downloadNewFile(path)
