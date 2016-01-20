@@ -29,6 +29,10 @@ var (
 				Value: 3,
 				Usage: "Number of simultaneous uploads to perform, defaults to 3",
 			},
+			cli.BoolFlag{
+				Name:  "download, down, d",
+				Usage: "Download the projects files after creating it",
+			},
 		},
 		Action: createProjectCLI,
 	}
@@ -62,14 +66,22 @@ func createProjectCLI(c *cli.Context) {
 	}
 
 	fmt.Println("Project successfully created.")
+	numThreads := getNumThreads(c)
 
 	if c.Bool("upload") {
-		numThreads := getNumThreads(c)
 		if err := client.UploadProject(projectName, numThreads); err != nil {
 			fmt.Println("Project upload failed:", err)
 			os.Exit(1)
 		}
 		fmt.Println("Project successfully uploaded.")
+	}
+
+	if c.Bool("download") {
+		if err := client.DownloadProject(projectName, numThreads); err != nil {
+			fmt.Println("Project download failed:", err)
+			os.Exit(1)
+		}
+		fmt.Println("Project successfully downloaded.")
 	}
 }
 
