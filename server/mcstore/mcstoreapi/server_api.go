@@ -3,8 +3,6 @@ package mcstoreapi
 import (
 	"crypto/tls"
 
-	"path"
-
 	"path/filepath"
 	"strings"
 
@@ -99,7 +97,7 @@ func (s *ServerAPI) GetUserAPIKey(username, password string) (apikey string, err
 	l := userLogin{
 		Password: password,
 	}
-	apiURL := urlutil.MustJoin(MCUrl(), path.Join("api", "user", username, "apikey"))
+	apiURL := urlutil.MustJoin(MCUrl(), "api/user/"+username+"/apikey")
 	r, body, errs := s.agent.Put(apiURL).Send(l).End()
 	if err := ToError(r, errs); err != nil {
 		return apikey, err
@@ -155,7 +153,7 @@ func (s *ServerAPI) GetDirectoryList(projectID, directoryID string) (*ServerDir,
 	}
 
 	var dir ServerDir
-	apiURL := path.Join("/v2", "projects", projectID, "directories", directoryID)
+	apiURL := "/v2/projects/" + projectID + "/directories/" + directoryID
 	if sc, err := s.client.JSONGet(Url(apiURL), &dir); err != nil {
 		return nil, err
 	} else if err = HTTPStatusToError(sc); err != nil {
@@ -195,7 +193,7 @@ func (s *ServerAPI) DownloadFile(projectID, fileID, fpath string) error {
 	}
 	defer out.Close()
 
-	fileURL := Url(filepath.Join("/datafiles/static", fileID)) + "&original=true"
+	fileURL := Url("/datafiles/static/"+fileID) + "&original=true"
 	resp, err := http.Get(fileURL)
 	if err != nil {
 		return err
@@ -221,7 +219,7 @@ func (s *ServerAPI) GetFileForPath(projectID, fpath string) (*ServerFile, error)
 		FilePath: fpath,
 	}
 
-	urlPath := path.Join("/v2", "projects", projectID, "files_by_path")
+	urlPath := "/v2/projects/" + projectID + "/files_by_path"
 	r, body, errs := s.agent.Put(Url(urlPath)).Send(filePathArg).End()
 	if err := ToError(r, errs); err != nil {
 		return nil, err
