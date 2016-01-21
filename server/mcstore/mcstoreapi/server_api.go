@@ -194,7 +194,11 @@ func (s *ServerAPI) DownloadFile(projectID, fileID, fpath string) error {
 	defer out.Close()
 
 	fileURL := Url("/datafiles/static/"+fileID) + "&original=true"
-	resp, err := http.Get(fileURL)
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(fileURL)
 	if err != nil {
 		return err
 	}
