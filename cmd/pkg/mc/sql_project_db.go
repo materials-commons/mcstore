@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/materials-commons/mcstore/pkg/app"
 	_ "github.com/mattn/go-sqlite3"
+	"path/filepath"
 )
 
 // MCProject is a materials commons project on the local system.
@@ -28,7 +29,8 @@ func (p *sqlProjectDB) InsertDirectory(dir *Directory) (*Directory, error) {
            insert into directories(directoryid, path, lastupload, lastdownload)
                        values(:directoryid, :path, :lastupload, :lastdownload)
         `
-	res, err := p.db.Exec(sql, dir.DirectoryID, dir.Path, dir.LastUpload, dir.LastDownload)
+	normalizedPath := filepath.ToSlash(dir.Path)
+	res, err := p.db.Exec(sql, dir.DirectoryID, normalizedPath, dir.LastUpload, dir.LastDownload)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +47,8 @@ func (p *sqlProjectDB) UpdateDirectory(dir *Directory) error {
 	           lastdownload = :lastdownload
 	       where id=:id
 	`
-	_, err := p.db.Exec(sql, dir.DirectoryID, dir.Path, dir.LastUpload, dir.LastDownload, dir.ID)
+	normalizedPath := filepath.ToSlash(dir.Path)
+	_, err := p.db.Exec(sql, dir.DirectoryID, normalizedPath, dir.LastUpload, dir.LastDownload, dir.ID)
 	return err
 }
 
@@ -54,7 +57,8 @@ func (p *sqlProjectDB) FindDirectory(path string) (*Directory, error) {
 	query := `select * from directories where path = $1`
 	var dir Directory
 
-	err := p.db.Get(&dir, query, path)
+	normalizedPath := filepath.ToSlash(path)
+	err := p.db.Get(&dir, query, normalizedPath)
 	switch {
 	case err == sql.ErrNoRows:
 		return nil, app.ErrNotFound
@@ -121,7 +125,8 @@ func (p *sqlProjectDB) insertProject(proj *Project) (*Project, error) {
            insert into project(name, projectid, path, lastupload, lastdownload)
                        values(:name, :projectid, :path, :lastupload, :lastdownload)
         `
-	res, err := p.db.Exec(sql, proj.Name, proj.ProjectID, proj.Path, proj.LastUpload, proj.LastDownload)
+	normalizedPath := filepath.ToSlash(proj.Path)
+	res, err := p.db.Exec(sql, proj.Name, proj.ProjectID, normalizedPath, proj.LastUpload, proj.LastDownload)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +144,8 @@ func (p *sqlProjectDB) UpdateProject(proj *Project) error {
 	         lastdownload = :lastdownload
 	     where id=:id
 	`
-	_, err := p.db.Exec(sql, proj.Name, proj.ProjectID, proj.Path, proj.LastUpload, proj.LastDownload, proj.ID)
+	normalizedPath := filepath.ToSlash(proj.Path)
+	_, err := p.db.Exec(sql, proj.Name, proj.ProjectID, normalizedPath, proj.LastUpload, proj.LastDownload, proj.ID)
 	return err
 }
 
