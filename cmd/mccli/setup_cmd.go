@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/codegangsta/cli"
+	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/cmd/pkg/mc"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
@@ -24,8 +25,14 @@ import (
 
 // Command contains the options to configure the setup command.
 var SetupCommand = cli.Command{
-	Name:   "setup",
-	Usage:  "Set up the configuration",
+	Name:  "setup",
+	Usage: "Set up the configuration",
+	Flags: []cli.Flag{
+		cli.StringFlag{
+			Name:  "server, s",
+			Usage: "The server url to connect to",
+		},
+	},
 	Action: setupCLI,
 }
 
@@ -33,6 +40,7 @@ var SetupCommand = cli.Command{
 // mc command.
 type userConfigSetup struct {
 	APIKey string `json:"apikey"`
+	MCUrl  string `json:"mcurl"`
 }
 
 // userLogin contains the user password used to retrieve the users apikey.
@@ -44,6 +52,12 @@ type userLogin struct {
 // local system so that they can use the mc cli.
 func setupCLI(c *cli.Context) {
 	fmt.Println("Setting up mc configuration...")
+	mcurl := c.String("server")
+	if mcurl != "" {
+		config.Set("mcurl", mcurl)
+	}
+
+	fmt.Println("Connecting to server at:", mcstoreapi.MCUrl())
 	username, password := getUsernameAndPassword()
 	apikey, err := getAPIKey(username, password)
 	if err != nil {
@@ -51,7 +65,9 @@ func setupCLI(c *cli.Context) {
 	}
 	configSetup := userConfigSetup{
 		APIKey: apikey,
+		MCUrl:  mcstoreapi.MCUrl(),
 	}
+
 	writeConfigFile(configSetup)
 	fmt.Println("\nYou have successfully completed the setup.")
 }
