@@ -1,10 +1,20 @@
 package mcstore
 
 import (
+	"archive/zip"
+	"net/http"
+	"os"
+	"path/filepath"
+
+	"io/ioutil"
+
 	rethinkdb "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
+	"github.com/hashicorp/go-uuid"
 	"github.com/materials-commons/mcstore/pkg/app"
+	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
+	"github.com/materials-commons/mcstore/pkg/domain"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
 )
@@ -38,14 +48,11 @@ func (r *projectsResource) WebService() *restful.WebService {
 		Reads(mcstoreapi.GetDirectoryRequest{}).
 		Writes(mcstoreapi.GetDirectoryResponse{}))
 
-	ws.Route(ws.GET("{id}").To(rest.RouteHandler(r.getProject)).
-		Doc("Gets project details").
-		Param(ws.PathParameter("id", "project id").DataType("string")).
-		Writes(ProjectEntry{}))
+	ws.Route(ws.POST("archive").To(rest.RouteHandler(r.createDownloadZipFile)).
+		Doc("Creates a zipfile archive of request files ids"))
 
-	ws.Route(ws.GET("").To(rest.RouteHandler(r.getUsersProjects)).
-		Doc("Gets all projects user has access to").
-		Writes([]ProjectEntry{}))
+	ws.Route(ws.GET("/download/archive/{archive}").To(rest.RouteHandler1(r.downloadArchiveZipFile)).
+		Doc("Download a created archive"))
 
 	return ws
 }
@@ -100,15 +107,58 @@ func (r *projectsResource) getDirectory(request *restful.Request, response *rest
 	}
 }
 
-type ProjectEntry struct {
+func (r *projectsResource) createDownloadZipFile(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
+	var (
+		zipResponse struct {
+			ArchiveID string `json:"archive_id"`
+		}
+
+		zipRequest struct {
+			FileIDs []string `json:"file_ids"`
+		}
+	)
+
+	if err := request.ReadEntity(&zipRequest); err != nil {
+		app.Log.Debugf("createDownloadZipFile ReadEntity failed: %s", err)
+		return nil, err
+	}
+
+	session := request.Attribute("session").(*rethinkdb.Session)
+
+	u, err := uuid.GenerateUUID()
+	if err != nil {
+		return nil, err
+	}
+	zipfile, err := os.Create(filepath.Join("/tmp", u+".zip"))
+	defer zipfile.Close()
+
+	archive := zip.NewWriter(zipfile)
+	defer archive.Close()
+
+	rfiles := dai.NewRFiles(session)
+	rprojects := dai.NewRProjects(session)
+	rusers := dai.NewRUsers(session)
+	access := domain.NewAccess(rprojects, rfiles, rusers)
+
+	for _, fileID := range zipRequest.FileIDs {
+		if f, err := access.GetFile(user.APIKey, fileID); err == nil {
+			fpath := app.MCDir.FilePath(fileID)
+			if contents, err := ioutil.ReadFile(fpath); err == nil {
+				if f, err := archive.Create(f.Name); err == nil {
+					f.Write(contents)
+				}
+			}
+		}
+	}
+
+	zipResponse.ArchiveID = u
+
+	return &zipResponse, nil
 }
 
-func (r *projectsResource) getProject(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	//	projectID := request.PathParameter("id")
-	//	r.projectService.getProject(projectID, user.ID, false)
-	return nil, nil
-}
-
-func (r *projectsResource) getUsersProjects(request *restful.Request, response *restful.Response, user schema.User) (interface{}, error) {
-	return nil, nil
+func (r *projectsResource) downloadArchiveZipFile(request *restful.Request, response *restful.Response, user schema.User) error {
+	archiveZipPath := filepath.Join("/tmp", request.PathParameter("archive"))
+	http.ServeFile(response.ResponseWriter, request.Request, archiveZipPath)
+	defer os.Remove(archiveZipPath)
+	return nil
 }
