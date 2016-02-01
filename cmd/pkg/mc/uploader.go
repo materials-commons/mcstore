@@ -18,6 +18,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
+	"sync"
 )
 
 // projectUploader holds the starting state for a project upload. It controls
@@ -40,7 +41,7 @@ func (p *projectUploader) uploadProject() error {
 	}
 
 	walker := files.PWalker{
-		NumParallel: p.numThreads,
+		NumParallel: 1,
 		ProcessFn:   fn,
 		ProcessDirs: true,
 	}
@@ -93,7 +94,7 @@ func (p *projectUploader) uploadDirectory(path string, recursive bool) error {
 	}
 
 	walker := files.PWalker{
-		NumParallel: p.numThreads,
+		NumParallel: 1,
 		ProcessFn:   fn,
 		ProcessDirs: true,
 		IgnoreFn:    ignoreFunc,
@@ -254,12 +255,54 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 	uploadResponse, checksum := u.getUploadResponse(dir.DirectoryID, entry)
 	requestID := uploadResponse.RequestID
 
-	var _ = checksum
+	var (
+		_ = checksum
 
-	// TODO: do something with the starting block (its ignored for now)
-	var n int
-	var err error
+		// TODO: do something with the starting block (its ignored for now)
+		n         int
+		err       error
+		uploadErr error
+		isDone    bool
+		mutex     sync.Mutex
+	)
+	uploadChan := make(chan *flow.Request)
 	chunkNumber := 1
+
+	done := make(chan struct{})
+
+	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
+	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
+	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
+	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
+	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
+	// Need to assign to uploadResp and not isDone flag because the uploadResp is used after reading
+	// and sending the file.
+	uploadFunc := func(doneChan <-chan struct{}, c <-chan *flow.Request) {
+		for req := range c {
+			select {
+			case <-doneChan:
+				return
+
+			default:
+				uploadResp, err := u.sendFlowData(req)
+				if err != nil {
+					mutex.Lock()
+					uploadErr = err
+					mutex.Unlock()
+				} else {
+					if uploadResp.Done {
+						mutex.Lock()
+						isDone = true
+						mutex.Unlock()
+					}
+				}
+			}
+		}
+	}
+
+	for i := 0; i < 5; i++ {
+		go uploadFunc(done, uploadChan)
+	}
 
 	f, _ := os.Open(entry.Path)
 	defer f.Close()
@@ -282,10 +325,11 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 				DirectoryID:      dir.DirectoryID,
 				Chunk:            buf[:n],
 			}
-			uploadResp, _ = u.sendFlowData(req)
-			if uploadResp.Done {
-				break
-			}
+			uploadChan <- req
+			//			uploadResp, _ = u.sendFlowData(req)
+			//			if uploadResp.Done {
+			//				break
+			//			}
 			chunkNumber++
 		}
 		if err != nil {
@@ -293,7 +337,9 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 		}
 	}
 
-	if !uploadResp.Done {
+	close(done)
+
+	if !isDone {
 		app.Log.Errorf("uploadResp not done %#v\n", uploadResp)
 		return
 	}

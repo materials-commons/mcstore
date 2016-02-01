@@ -23,5 +23,5 @@ func getNumThreads(c *cli.Context) int {
 		os.Exit(1)
 	}
 
-	return 1
+	return numThreads
 }
