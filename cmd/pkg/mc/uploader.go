@@ -12,13 +12,14 @@ import (
 
 	"fmt"
 
+	"sync"
+
 	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/gohandy/with"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/app/flow"
 	"github.com/materials-commons/mcstore/pkg/files"
 	"github.com/materials-commons/mcstore/server/mcstore/mcstoreapi"
-	"sync"
 )
 
 // projectUploader holds the starting state for a project upload. It controls
@@ -259,46 +260,43 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 		_ = checksum
 
 		// TODO: do something with the starting block (its ignored for now)
-		n         int
-		err       error
-		uploadErr error
-		isDone    bool
-		mutex     sync.Mutex
+		n          int
+		err        error
+		uploadErr  error
+		mutex      sync.Mutex
+		uploadResp *mcstoreapi.UploadChunkResponse
+		wg         sync.WaitGroup
 	)
 	uploadChan := make(chan *flow.Request)
 	chunkNumber := 1
 
 	done := make(chan struct{})
 
-	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
-	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
-	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
-	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
-	//************** CHANGE THE CODE TO MATCH THIS COMMENT **********
-	// Need to assign to uploadResp and not isDone flag because the uploadResp is used after reading
-	// and sending the file.
 	uploadFunc := func(doneChan <-chan struct{}, c <-chan *flow.Request) {
+		defer wg.Done()
 		for req := range c {
 			select {
 			case <-doneChan:
 				return
 
 			default:
-				uploadResp, err := u.sendFlowData(req)
+				resp, err := u.sendFlowData(req)
 				if err != nil {
 					mutex.Lock()
 					uploadErr = err
 					mutex.Unlock()
 				} else {
-					if uploadResp.Done {
+					if resp.Done {
 						mutex.Lock()
-						isDone = true
+						uploadResp = resp
 						mutex.Unlock()
 					}
 				}
 			}
 		}
 	}
+
+	wg.Add(5)
 
 	for i := 0; i < 5; i++ {
 		go uploadFunc(done, uploadChan)
@@ -308,7 +306,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 	defer f.Close()
 	buf := make([]byte, 1024*1024)
 	totalChunks := numChunks(entry.Finfo.Size())
-	var uploadResp *mcstoreapi.UploadChunkResponse
+	//var uploadResp *mcstoreapi.UploadChunkResponse
 	for {
 		n, err = f.Read(buf)
 		if n != 0 {
@@ -338,8 +336,13 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 	}
 
 	close(done)
+	wg.Wait()
 
-	if !isDone {
+	// ******************************* ADD THIS *********************
+	// Need to wait on all go routines to finish before proceeding
+	// **************************************************************
+
+	if uploadResp == nil {
 		app.Log.Errorf("uploadResp not done %#v\n", uploadResp)
 		return
 	}
