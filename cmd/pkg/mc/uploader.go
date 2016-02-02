@@ -338,10 +338,6 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 	close(done)
 	wg.Wait()
 
-	// ******************************* ADD THIS *********************
-	// Need to wait on all go routines to finish before proceeding
-	// **************************************************************
-
 	if uploadResp == nil {
 		app.Log.Errorf("uploadResp not done %#v\n", uploadResp)
 		return
