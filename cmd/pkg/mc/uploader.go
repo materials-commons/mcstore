@@ -298,7 +298,6 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 				}
 			}
 		}
-		fmt.Println(" exiting uploadFunc")
 	}
 
 	wg.Add(5)
@@ -316,6 +315,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 		n, err = f.Read(buf)
 		if n != 0 {
 			// send bytes
+			b := append([]byte(nil), buf[:n]...)
 			req := &flow.Request{
 				FlowChunkNumber:  int32(chunkNumber),
 				FlowTotalChunks:  totalChunks,
@@ -326,7 +326,7 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 				FlowRelativePath: "",
 				ProjectID:        u.project.ProjectID,
 				DirectoryID:      dir.DirectoryID,
-				Chunk:            buf[:n],
+				Chunk:            b,
 			}
 			uploadChan <- req
 			//			uploadResp, _ = u.sendFlowData(req)
