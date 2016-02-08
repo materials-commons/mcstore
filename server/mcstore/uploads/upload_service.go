@@ -99,14 +99,17 @@ func (s *uploadService) Upload(req *UploadRequest) (*UploadStatus, error) {
 // on the block only if this block hasn't already been written.
 func (s *uploadService) writeBlock(dir string, req *UploadRequest) error {
 	id := req.UploadID()
+	var err error
 	if !s.tracker.isBlockSet(id, int(req.FlowChunkNumber)) {
-		if err := s.writer.write(dir, req.Request); err != nil {
-			return err
+		s.tracker.withWriteLock(id, func(b *blockTrackerEntry) {
+			err = s.writer.write(dir, req.Request)
+		})
+		if err == nil {
+			s.tracker.addToHash(id, req.Chunk)
+			s.tracker.setBlock(id, int(req.FlowChunkNumber))
 		}
-		s.tracker.addToHash(id, req.Chunk)
-		s.tracker.setBlock(id, int(req.FlowChunkNumber))
 	}
-	return nil
+	return err
 }
 
 // assemble moves the upload file to its proper location, creates a database entry

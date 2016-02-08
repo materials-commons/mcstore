@@ -272,21 +272,25 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 
 	done := make(chan struct{})
 
-	uploadFunc := func(doneChan <-chan struct{}, c <-chan *flow.Request) {
+	uploadFunc := func(doneChan <-chan struct{}, c <-chan *flow.Request, id int) {
 		defer wg.Done()
-		for req := range c {
+	REQ_LOOP:
+		for {
 			select {
 			case <-doneChan:
-				return
+				break REQ_LOOP
 
-			default:
+			case req := <-c:
+				//fmt.Println("sendFlowData...", id)
 				resp, err := u.sendFlowData(req)
+				//fmt.Println("...done", id)
 				if err != nil {
 					mutex.Lock()
 					uploadErr = err
 					mutex.Unlock()
 				} else {
 					if resp.Done {
+						//fmt.Println("Setting resp.Done")
 						mutex.Lock()
 						uploadResp = resp
 						mutex.Unlock()
@@ -294,12 +298,13 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 				}
 			}
 		}
+		fmt.Println(" exiting uploadFunc")
 	}
 
 	wg.Add(5)
 
 	for i := 0; i < 5; i++ {
-		go uploadFunc(done, uploadChan)
+		go func(id int) { uploadFunc(done, uploadChan, id) }(i)
 	}
 
 	f, _ := os.Open(entry.Path)
@@ -336,7 +341,9 @@ func (u *uploader) uploadFile(entry files.TreeEntry, file *File, dir *Directory)
 	}
 
 	close(done)
+	//fmt.Println("Closed done and starting wg.Wait")
 	wg.Wait()
+	//fmt.Println("past wg.Wait")
 
 	if uploadResp == nil {
 		app.Log.Errorf("uploadResp not done %#v\n", uploadResp)
