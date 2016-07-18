@@ -86,7 +86,7 @@ func setupConfig(opts options) {
 
 	// Server always monitors for changes in the database
 	config.Set("MCSTORED_MONITOR_USERS", true)
-	config.Set("MCSTORED_MONITOR_DB_CHANGES", true)
+	//config.Set("MCSTORED_MONITOR_DB_CHANGES", true)
 }
 
 // configSetNotEmpty sets key if to value only if value isn't equal to the empty string.
