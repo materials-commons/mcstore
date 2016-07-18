@@ -55,17 +55,9 @@ var mediaTypeDescriptions = map[string]string{
 	"unknown":                                  "Unknown",
 }
 
-var magic *magicmime.Magic
-
 func init() {
 	if err := mime.AddExtensionType(".m", "application/matlab"); err != nil {
 		app.Log.Errorf("AddExtensionType failed:", err)
-	}
-
-	var err error
-	magic, err = magicmime.New(magicmime.MAGIC_MIME)
-	if err != nil {
-		app.Panicf("Unable to initialize magicmime: %s", err)
 	}
 }
 
@@ -124,7 +116,13 @@ func mediaTypeByFile(path string) string {
 		return "unknown"
 	}
 
-	mtype, _ := magic.TypeByFile(path)
+	if err := magicmime.Open(magicmime.MAGIC_MIME_TYPE | magicmime.MAGIC_ERROR); err != nil {
+		return "unknown"
+	}
+
+	defer magicmime.Close();
+
+	mtype, _ := magicmime.TypeByFile(path)
 	if mtype == "" {
 		app.Log.Errorf("Unknown magic mediatype for file: %s", path)
 		return "unknown"
