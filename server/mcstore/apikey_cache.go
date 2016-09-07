@@ -27,12 +27,16 @@ func newAPIKeyCache() *apikeyCache {
 
 // getUser returns a user matching the given key. It
 // returns nil if no user matches the key.
-func (c *apikeyCache) getUser(key string) *schema.User {
-	var user schema.User
+func (c *apikeyCache) getUser(key string) (bool, schema.User) {
+	var (
+		user schema.User
+	)
+	found := false
 	c.withReadLock(key, func(u schema.User) {
 		user = u
+		found = true
 	})
-	return &user
+	return found, user
 }
 
 // addKey will add a new apikey/user mapping. If there is

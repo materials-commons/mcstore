@@ -5,7 +5,6 @@ import (
 
 	r "github.com/dancannon/gorethink"
 	"github.com/emicklei/go-restful"
-	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/dai"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 )
@@ -45,8 +44,8 @@ func (f *apikeyFilter) Filter(request *restful.Request, response *restful.Respon
 
 // getUser matches the user with the apikey. If it cannot find a match then it returns false.
 func (f *apikeyFilter) getUser(apikey string, users dai.Users) *schema.User {
-	if user := f.keycache.getUser(apikey); user != nil {
-		return user
+	if found, user := f.keycache.getUser(apikey); found {
+		return &user
 	}
 	return f.loadUserFromDB(apikey, users)
 }
@@ -55,7 +54,6 @@ func (f *apikeyFilter) getUser(apikey string, users dai.Users) *schema.User {
 // user to cache and return the user. Otherwise it will return nil.
 func (f *apikeyFilter) loadUserFromDB(apikey string, users dai.Users) *schema.User {
 	if user, err := users.ByAPIKey(apikey); err != nil {
-		app.Log.Infof("Look up user by apikey failed: %s\n", err)
 		return nil
 	} else {
 		f.keycache.addKey(apikey, user)
