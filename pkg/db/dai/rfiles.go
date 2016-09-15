@@ -269,3 +269,19 @@ func (f rFiles) GetProject(fileID string) (*schema.Project, error) {
 	// TODO: Fix this, only returns the first project
 	return &projects[0], nil
 }
+
+func (f rFiles) FileDatasets(fileID string) ([]schema.Dataset, error) {
+	rql := r.Table("dataset2datafile").
+		GetAllByIndex("datafile_id", fileID).
+		EqJoin("dataset_id", r.Table("datasets")).Zip()
+	var datasets []schema.Dataset
+	if err := model.Files.Qs(f.session).Rows(rql, &datasets); err != nil {
+		return nil, err
+	}
+
+	if len(datasets) == 0 {
+		return nil, app.ErrNotFound
+	}
+
+	return datasets, nil
+}
