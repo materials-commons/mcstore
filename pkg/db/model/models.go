@@ -69,3 +69,8 @@ var SampleFiles = &rModel{
 	schema: schema.Sample2DataFile{},
 	table:  "sample2datafile",
 }
+
+var Datasets = &rModel{
+	schema: schema.Dataset{},
+	table:  "datasets",
+}

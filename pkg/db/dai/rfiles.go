@@ -275,7 +275,7 @@ func (f rFiles) FileDatasets(fileID string) ([]schema.Dataset, error) {
 		GetAllByIndex("datafile_id", fileID).
 		EqJoin("dataset_id", r.Table("datasets")).Zip()
 	var datasets []schema.Dataset
-	if err := model.Files.Qs(f.session).Rows(rql, &datasets); err != nil {
+	if err := model.Datasets.Qs(f.session).Rows(rql, &datasets); err != nil {
 		return nil, err
 	}
 
