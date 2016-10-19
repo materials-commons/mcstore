@@ -44,8 +44,8 @@ func (f *apikeyFilter) Filter(request *restful.Request, response *restful.Respon
 
 // getUser matches the user with the apikey. If it cannot find a match then it returns false.
 func (f *apikeyFilter) getUser(apikey string, users dai.Users) *schema.User {
-	if user := f.keycache.getUser(apikey); user != nil {
-		return user
+	if found, user := f.keycache.getUser(apikey); found {
+		return &user
 	}
 	return f.loadUserFromDB(apikey, users)
 }

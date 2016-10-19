@@ -19,6 +19,7 @@ type Files interface {
 	UpdateFields(fileID string, fields map[string]interface{}) error
 	Delete(fileID, directoryID, projectID string) (*schema.File, error)
 	GetProject(fileID string) (*schema.Project, error)
+	FileDatasets(fileID string) ([]schema.Dataset, error)
 }
 
 // Uploads allows manipulation and access to upload requests.

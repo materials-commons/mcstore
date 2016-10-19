@@ -10,7 +10,7 @@ import (
 // mapped to apikeys.
 type apikeyCache struct {
 	mutex   *sync.RWMutex
-	apikeys map[string]*schema.User
+	apikeys map[string]schema.User
 }
 
 // apiKeyCache is a single reference to a cache that
@@ -20,26 +20,30 @@ var apiKeyCache *apikeyCache = newAPIKeyCache()
 // newAPIKeyCache creates a new apikeyCache.
 func newAPIKeyCache() *apikeyCache {
 	return &apikeyCache{
-		apikeys: make(map[string]*schema.User),
+		apikeys: make(map[string]schema.User),
 		mutex:   &sync.RWMutex{},
 	}
 }
 
 // getUser returns a user matching the given key. It
 // returns nil if no user matches the key.
-func (c *apikeyCache) getUser(key string) *schema.User {
-	var user *schema.User
-	c.withReadLock(key, func(u *schema.User) {
+func (c *apikeyCache) getUser(key string) (bool, schema.User) {
+	var (
+		user schema.User
+	)
+	found := false
+	c.withReadLock(key, func(u schema.User) {
 		user = u
+		found = true
 	})
-	return user
+	return found, user
 }
 
 // addKey will add a new apikey/user mapping. If there is
 // already an entry matching this key then nothing happens.
 func (c *apikeyCache) addKey(key string, user *schema.User) {
 	c.withWriteLockNoSuchKey(key, func() {
-		c.apikeys[key] = user
+		c.apikeys[key] = *user
 	})
 }
 
@@ -48,13 +52,13 @@ func (c *apikeyCache) addKey(key string, user *schema.User) {
 func (c *apikeyCache) resetKey(oldkey, newkey string, user *schema.User) {
 	c.withWriteLock(oldkey, func() {
 		delete(c.apikeys, oldkey)
-		c.apikeys[newkey] = user
+		c.apikeys[newkey] = *user
 	})
 }
 
 // withReadLock should only be called by the apikeyCache. It takes out
 // a read lock and if the given key is found it calls the passed func.
-func (c *apikeyCache) withReadLock(key string, fn func(user *schema.User)) {
+func (c *apikeyCache) withReadLock(key string, fn func(user schema.User)) {
 	defer c.mutex.RUnlock()
 	c.mutex.RLock()
 	if user, found := c.apikeys[key]; found {
