@@ -40,7 +40,7 @@ func (r *fileRequestWriter) write(dir string, req *flow.Request) error {
 // chunk then that chunk is incomplete and we allow a write to it.
 func (r *fileRequestWriter) validateWrite(dir, path string, req *flow.Request) error {
 	// Create directory where chunk will be written
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := os.MkdirAll(dir, 0777); err != nil {
 		return err
 	}
 
@@ -80,7 +80,7 @@ func (r *blockRequestWriter) write(dir string, req *flow.Request) error {
 // the file. The file is created as a sparse file.
 func (r *blockRequestWriter) createFile(dir, path string, size int64) error {
 	if !file.Exists(path) {
-		if err := os.MkdirAll(dir, 0700); err != nil {
+		if err := os.MkdirAll(dir, 0777); err != nil {
 			return err
 		}
 		return createSparseFile(path, size)
@@ -101,7 +101,7 @@ func createSparseFile(path string, size int64) error {
 // writeRequest performs the actual write of the request. It opens the file
 // sparse file, seeks to the proper position and then writes the data.
 func (r *blockRequestWriter) writeRequest(path string, req *flow.Request) error {
-	if f, err := os.OpenFile(path, os.O_WRONLY, 0660); err != nil {
+	if f, err := os.OpenFile(path, os.O_WRONLY, 0777); err != nil {
 		return err
 	} else {
 		defer f.Close()
