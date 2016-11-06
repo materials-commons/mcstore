@@ -14,7 +14,7 @@ type MediaTypeSummary struct {
 // where they conduct their research. A project can be shared.
 type Project struct {
 	ID          string                      `gorethink:"id,omitempty"`
-	Type        string                      `gorethink:"_type" json:"_type"`
+	Type        string                      `gorethink:"otype" json:"otype"`
 	Name        string                      `gorethink:"name"`
 	Description string                      `gorethink:"description"`
 	DataDir     string                      `gorethink:"datadir" db:"-"`

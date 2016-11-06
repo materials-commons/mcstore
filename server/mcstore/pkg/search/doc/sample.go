@@ -23,7 +23,7 @@ type SampleFile struct {
 
 type Sample struct {
 	ID          string       `gorethink:"id" json:"id"`
-	Type        string       `gorethink:"_type" json:"_type"`
+	Type        string       `gorethink:"otype" json:"otype"`
 	Description string       `gorethink:"description" json:"description"`
 	Birthtime   time.Time    `gorethink:"birthtime" json:"birthtime"`
 	MTime       time.Time    `gorethink:"mtime" json:"mtime"`

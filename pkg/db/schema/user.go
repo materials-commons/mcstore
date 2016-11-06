@@ -18,7 +18,7 @@ type User struct {
 	Description string    `gorethink:"description" json:"description"`
 	Affiliation string    `gorethink:"affiliation" json:"affiliation"`
 	HomePage    string    `gorethink:"homepage" json:"homepage"`
-	Type        string    `gorethink:"_type" json:"_type"`
+	Type        string    `gorethink:"otype" json:"otype"`
 }
 
 // NewUser creates a new User instance.

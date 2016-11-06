@@ -37,7 +37,7 @@ type MediaType struct {
 // plus the attributes that we need in our model for access, and other metadata.
 type File struct {
 	ID          string    `gorethink:"id,omitempty" json:"id"`         // Primary key.
-	Type        string    `gorethink:"_type" json:"_type"`             // Type
+	Type        string    `gorethink:"otype" json:"otype"`             // Type
 	Current     bool      `gorethink:"current" json:"current"`         // Is this the most current version.
 	Name        string    `gorethink:"name" json:"name"`               // Name of file.
 	Path        string    `gorethink:"path,omitempty" json:"path"`     // Directory path where file resides.

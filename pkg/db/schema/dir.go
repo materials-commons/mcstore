@@ -8,7 +8,7 @@ import (
 // of a users file system directory plus the metadata needed by the system.
 type Directory struct {
 	ID        string    `gorethink:"id,omitempty" json:"id"`
-	Type      string    `gorethink:"_type" json:"_type"`
+	Type      string    `gorethink:"otype" json:"otype"`
 	Owner     string    `gorethink:"owner" json:"owner"`
 	Name      string    `gorethink:"name" json:"name"`
 	Project   string    `gorethink:"project" json:"project"`

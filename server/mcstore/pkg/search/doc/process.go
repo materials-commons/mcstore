@@ -15,7 +15,7 @@ type SetupProperties struct {
 
 type Process struct {
 	ID            string            `gorethink:"id" json:"-"`
-	Type          string            `gorethink:"_type" json:"_type"`
+	Type          string            `gorethink:"otype" json:"otype"`
 	Birthtime     time.Time         `gorethink:"birthtime" json:"birthtime"`
 	MTime         time.Time         `gorethink:"mtime" json:"mtime"`
 	Name          string            `gorethink:"name" json:"name"`

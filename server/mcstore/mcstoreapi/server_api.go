@@ -139,7 +139,7 @@ func (s *ServerAPI) GetDirectory(req DirectoryRequest) (directoryID string, err 
 
 type ServerDir struct {
 	ID       string      `json:"id"`
-	Type     string      `json:"_type"`
+	Type     string      `json:"otype"`
 	Size     int64       `json:"size"`
 	Name     string      `json:"name"`
 	Path     string      `json:"path"`
