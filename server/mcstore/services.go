@@ -64,7 +64,7 @@ func esClientMust() *elastic.Client {
 	app.Log.Infof("Connecting to search url: %s", url)
 	c, err := elastic.NewClient(elastic.SetURL(url))
 	if err != nil {
-		app.Log.Panicf("Couldn't connect to ElasticSearch")
+		app.Log.Errorf("Couldn't connect to ElasticSearch")
 	}
 	return c
 }
