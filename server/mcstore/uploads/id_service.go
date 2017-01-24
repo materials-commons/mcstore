@@ -88,6 +88,9 @@ func (s *idService) ID(req IDRequest, proj *schema.Project, dir *schema.Director
 // the case of an already uploaded file it will return an upload request with all blocks marked
 // as uploaded.
 func (s *idService) findExisting(req IDRequest, proj *schema.Project, dir *schema.Directory) (*schema.Upload, error) {
+	if req.Checksum == "" {
+		return nil, app.ErrNotFound
+	}
 	if _, err := s.files.ByChecksum(req.Checksum); err == nil {
 		return s.createFinishedUpload(req, proj, dir)
 	}

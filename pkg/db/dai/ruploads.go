@@ -108,6 +108,12 @@ func (u rUploads) Delete(uploadID string) error {
 	return model.Uploads.Qs(u.session).Delete(uploadID)
 }
 
+// DeleteAll deletes all uploads in the uploads table
+func (u rUploads) DeleteAll() error {
+	_, err := r.Table("uploads").Delete().RunWrite(u.session)
+	return err
+}
+
 // toBitSet will turn a bytes representation of bitset back into a BitSet.
 func toBitSet(bitstr []byte) *bitset.BitSet {
 	b := &bitset.BitSet{}

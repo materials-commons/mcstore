@@ -38,6 +38,7 @@ type Uploads interface {
 	ForUser(user string) ([]schema.Upload, error)
 	ForProject(projectID string) ([]schema.Upload, error)
 	Delete(uploadID string) error
+	DeleteAll() error
 }
 
 // Projects is an interface describing access to projects in the system.

@@ -99,10 +99,13 @@ func configSetNotEmpty(key, value string) {
 // server implements the actual serve for mcstored. It sets up the http routes and handlers. This
 // method never returns.
 func server(port uint) {
+	session := db.RSessionMust()
+	uploads := dai.NewRUploads(session)
+	uploads.DeleteAll()
+
 	container := mcstore.NewServicesContainer(db.Sessions)
 	http.Handle("/", container)
 
-	session := db.RSessionMust()
 	access := domain.NewAccess(dai.NewRProjects(session), dai.NewRFiles(session), dai.NewRUsers(session))
 	dataHandler := mcstore.NewDataHandler(access)
 	http.Handle("/datafiles/static/", dataHandler)
