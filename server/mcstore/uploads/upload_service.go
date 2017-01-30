@@ -153,6 +153,11 @@ func (s *uploadService) assemble(req *UploadRequest, dir string) (*schema.File, 
 	app.Log.Infof("successfully uploaded fileID %s", file.ID)
 
 	s.cleanupUploadRequest(req.UploadID())
+
+	if alreadyUploaded, uploadedFile := s.uploadedFileInDir(checksum, file.Name, upload.DirectoryID); alreadyUploaded {
+		return uploadedFile, nil
+	}
+
 	return file, nil
 }
 
@@ -213,4 +218,18 @@ func (s *uploadService) cleanupUploadRequest(uploadID string) {
 	s.tracker.clear(uploadID)
 	s.uploads.Delete(uploadID)
 	s.fops.RemoveAll(app.MCDir.UploadDir(uploadID))
+}
+
+func (s *uploadService) uploadedFileInDir(checksum, fileName, dirID string) (bool, *schema.File) {
+	files, err := s.dirs.Files(dirID)
+	if err != nil {
+		return false, nil
+	}
+
+	for _, fileEntry := range files {
+		if fileEntry.Name == fileName && fileEntry.Checksum == checksum {
+			return true, &fileEntry
+		}
+	}
+	return false, nil
 }
