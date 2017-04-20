@@ -36,10 +36,10 @@ func (i *imageFileProcessor) Process() error {
 		return err
 	}
 
-	return convert(filePath, conversionFile)
+	return i.convert(filePath, conversionFile)
 }
 
-func convert(file, conversionFile string) error {
+func (i *imageFileProcessor) convert(file, conversionFile string) error {
 	var (
 		err error
 		out []byte

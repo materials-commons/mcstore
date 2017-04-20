@@ -1,5 +1,13 @@
 package processor
 
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+
+	"github.com/materials-commons/mcstore/pkg/app"
+)
+
 // spreadsheetFileProcessor processes excel spreadsheets. It
 // converts the spreadsheet into a csv file.
 type spreadsheetFileProcessor struct {
@@ -18,5 +26,34 @@ func newSpreadsheetFileProcessor(fileID string) *spreadsheetFileProcessor {
 // in a subdirectory called .conversion located in the directory the original
 // spreadsheet file is in.
 func (s *spreadsheetFileProcessor) Process() error {
-	return nil
+	filePath := app.MCDir.FilePath(s.fileID)
+	fileDir := app.MCDir.FileDir(s.fileID)
+	conversionDir := filepath.Join(fileDir, ".conversion")
+
+	if err := os.MkdirAll(conversionDir, 0777); err != nil {
+		app.Log.Errorf("Image conversion couldn't create .conversion directory: %s", err)
+		return err
+	}
+
+	return s.convert(filePath, conversionDir)
+}
+
+func (s *spreadsheetFileProcessor) convert(filePath, conversionDir string) error {
+	var (
+		err error
+		out []byte
+	)
+
+	// libreoffice --headless --convert-to pdf *.xlsx
+	cmd := "libreoffice"
+	args := []string{"--headless", "--convert-to", "pdf", filePath}
+	if out, err = exec.Command(cmd, args...).Output(); err != nil {
+		app.Log.Errorf("convert command failed: %s", err)
+		return err
+	}
+
+	app.Log.Debugf("convert command output: %s", string(out))
+
+	err = os.Rename(filePath, filepath.Join(conversionDir, filePath+".pdf"))
+	return err
 }
