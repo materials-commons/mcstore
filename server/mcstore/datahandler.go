@@ -102,6 +102,8 @@ func filePath(file *schema.File, original bool) string {
 	switch {
 	case isConvertedImage(file.MediaType.Mime) && !original:
 		return app.MCDir.FilePathImageConversion(file.FileID())
+	case isExcelSpreadsheet(file.MediaType.Mime) && !original:
+		return app.MCDir.FilePathFromConversionToPDF(file.FileID())
 	default:
 		return app.MCDir.FilePath(file.FileID())
 	}
@@ -115,6 +117,18 @@ func isConvertedImage(mime string) bool {
 	case "image/x-ms-bmp":
 		return true
 	case "image/bmp":
+		return true
+	default:
+		return false
+	}
+}
+
+// isExcelSpreadsheet checks the mime type to see if it is an excel spreadsheet
+func isExcelSpreadsheet(mime string) bool {
+	switch mime {
+	case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+		return true
+	case "application/vnd.MS-Excel":
 		return true
 	default:
 		return false

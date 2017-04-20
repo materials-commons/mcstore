@@ -107,6 +107,23 @@ func (d mcdir) FilePathImageConversion(fileID string) string {
 	return makePath(dir, fileID+".jpg")
 }
 
+// FilePathFromConversionToPDF returns the full path, include the file,
+// to the converted image file. It returns the empty string if a
+// bad fileID is given.
+func (d mcdir) FilePathFromConversionToPDF(fileID string) string {
+	for _, dirPath := range d.Paths() {
+		fileDirPath := d.FileConversionDirFromPath(dirPath, fileID)
+		filePath := makePath(fileDirPath, fileID+".pdf")
+		if file.Exists(filePath) {
+			return filePath
+		}
+	}
+
+	// By default return path from first entry if loop fails
+	dir := d.FileConversionDir(fileID)
+	return makePath(dir, fileID+".pdf")
+}
+
 // UploadDir returns the path to the upload directory for a
 // given uploadID.
 func (d mcdir) UploadDir(uploadID string) string {

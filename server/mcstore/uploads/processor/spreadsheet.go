@@ -44,7 +44,6 @@ func (s *spreadsheetFileProcessor) convert(filePath, conversionDir string) error
 		out []byte
 	)
 
-	// libreoffice --headless --convert-to pdf *.xlsx
 	cmd := "libreoffice"
 	args := []string{"--headless", "--convert-to", "pdf", filePath}
 	if out, err = exec.Command(cmd, args...).Output(); err != nil {
