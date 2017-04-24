@@ -124,7 +124,7 @@ func (f *finisher) parentID(fileName, dirID string) (parentID string, err error)
 // processFile will process the file on disk.
 func (f *finisher) processFile(fileID string, mediatype schema.MediaType) {
 	fp := processor.New(fileID, mediatype)
-	fp.Process()
+	go fp.Process()
 }
 
 // fileInDir determines if this exact file has already been uploaded
