@@ -39,7 +39,10 @@ func (h *dataHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 // permissions to access the file then a 404 (not found) will be returned by the
 // http.ServeFile method.
 func serveFile(writer http.ResponseWriter, req *http.Request, path, mediatype string) {
-	writer.Header().Set("Content-Type", mediatype)
+	writer.Header().Add("Content-Type", mediatype)
+	if mediatype == "application/pdf" {
+		writer.Header().Add("Content-Disposition", `inline; filename="filename.pdf"`)
+	}
 	app.Log.Debugf("Set Content-Type to %s", mediatype)
 	http.ServeFile(writer, req, path)
 }
@@ -81,6 +84,8 @@ func (h *dataHandler) serveData(writer http.ResponseWriter, req *http.Request) (
 	// serving the original or the converted file.
 	if !original && isConvertedImage(file.MediaType.Mime) {
 		mediatype = "image/jpeg"
+	} else if !original && isExcelSpreadsheet(file.MediaType.Mime) {
+		mediatype = "application/pdf"
 	}
 
 	return path, mediatype, nil

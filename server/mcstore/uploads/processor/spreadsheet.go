@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,12 +41,20 @@ func (s *spreadsheetFileProcessor) Process() error {
 
 func (s *spreadsheetFileProcessor) convert(filePath, conversionDir string) error {
 	var (
-		err error
-		out []byte
+		err        error
+		out        []byte
+		profileDir string
 	)
 
+	if profileDir, err = ioutil.TempDir(os.TempDir(), "materialscommons"); err != nil {
+		app.Log.Errorf("Unable to create temporary dir: %s", err)
+		return err
+	}
+
+	defer os.RemoveAll(profileDir)
+
 	cmd := "libreoffice"
-	args := []string{"--headless", "--convert-to", "pdf", filePath}
+	args := []string{"-env:UserInstallation=file://" + profileDir, "--headless", "--convert-to", "pdf", "--outdir", conversionDir, filePath}
 	if out, err = exec.Command(cmd, args...).Output(); err != nil {
 		app.Log.Errorf("convert command failed: %s", err)
 		return err

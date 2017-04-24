@@ -1,6 +1,8 @@
 package processor
 
-import "github.com/materials-commons/mcstore/pkg/db/schema"
+import (
+	"github.com/materials-commons/mcstore/pkg/db/schema"
+)
 
 // fileProcess defines an interface for processing different
 // types of files. Processing may include extracting data,
