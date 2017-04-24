@@ -9,16 +9,16 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 )
 
-// spreadsheetFileProcessor processes excel spreadsheets. It
+// officeFileProcessor processes excel spreadsheets. It
 // converts the spreadsheet into a csv file.
-type spreadsheetFileProcessor struct {
+type officeFileProcessor struct {
 	fileID string
 }
 
-// newSpreadsheetFileProcessor creates a processor for converting spreadsheets
+// newOfficeFileProcessor creates a processor for converting spreadsheets
 // to csv files.
-func newSpreadsheetFileProcessor(fileID string) *spreadsheetFileProcessor {
-	return &spreadsheetFileProcessor{
+func newOfficeFileProcessor(fileID string) *officeFileProcessor {
+	return &officeFileProcessor{
 		fileID: fileID,
 	}
 }
@@ -26,7 +26,7 @@ func newSpreadsheetFileProcessor(fileID string) *spreadsheetFileProcessor {
 // process will convert a spreadsheet to a csv file. It stores the csv file
 // in a subdirectory called .conversion located in the directory the original
 // spreadsheet file is in.
-func (s *spreadsheetFileProcessor) Process() error {
+func (s *officeFileProcessor) Process() error {
 	filePath := app.MCDir.FilePath(s.fileID)
 	fileDir := app.MCDir.FileDir(s.fileID)
 	conversionDir := filepath.Join(fileDir, ".conversion")
@@ -39,7 +39,7 @@ func (s *spreadsheetFileProcessor) Process() error {
 	return s.convert(filePath, conversionDir)
 }
 
-func (s *spreadsheetFileProcessor) convert(filePath, conversionDir string) error {
+func (s *officeFileProcessor) convert(filePath, conversionDir string) error {
 	var (
 		err        error
 		out        []byte
