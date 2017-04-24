@@ -7,8 +7,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
-	"github.com/materials-commons/mcstore/pkg/ws"
 	"github.com/materials-commons/mcstore/pkg/files"
+	"github.com/materials-commons/mcstore/pkg/ws"
 )
 
 // dataHandler implements the http.Handler interface. It provides an interface
