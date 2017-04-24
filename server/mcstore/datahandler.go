@@ -8,6 +8,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/domain"
 	"github.com/materials-commons/mcstore/pkg/ws"
+	"github.com/materials-commons/mcstore/pkg/files"
 )
 
 // dataHandler implements the http.Handler interface. It provides an interface
@@ -107,7 +108,7 @@ func filePath(file *schema.File, original bool) string {
 	switch {
 	case isConvertedImage(file.MediaType.Mime) && !original:
 		return app.MCDir.FilePathImageConversion(file.FileID())
-	case isExcelSpreadsheet(file.MediaType.Mime) && !original:
+	case files.IsOfficeDocument(file.MediaType.Mime) && !original:
 		return app.MCDir.FilePathFromConversionToPDF(file.FileID())
 	default:
 		return app.MCDir.FilePath(file.FileID())
