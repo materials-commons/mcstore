@@ -17,7 +17,7 @@ type Processor interface {
 // use to handle this file. By default it returns a processor that does
 // nothing to the file.
 func New(fileID string, mediatype schema.MediaType) Processor {
-	switch  {
+	switch {
 	case isImageTypeNeedingConversion(mediatype.Mime):
 		return newImageFileProcessor(fileID)
 	case isOfficeDocument(mediatype.Mime):
@@ -51,8 +51,8 @@ func isOfficeDocument(mime string) bool {
 }
 
 var wordMimeTypes = map[string]bool{
-	"application/msword": true,
-	"application/vnd.openxmlformats-officedocument.wordprocessingml.document":true,
+	"application/msword":                                                      true,
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
 }
 
 func isWordDocument(mime string) bool {
@@ -61,7 +61,7 @@ func isWordDocument(mime string) bool {
 }
 
 var excelMimeTypes = map[string]bool{
-	"application/vnd.ms-excel": true,
+	"application/vnd.ms-excel":                                          true,
 	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
 }
 
@@ -71,7 +71,7 @@ func isExcelDocument(mime string) bool {
 }
 
 var pptMimeTypes = map[string]bool{
-	"application/vnd.ms-powerpoint": true,
+	"application/vnd.ms-powerpoint":                                             true,
 	"application/vnd.openxmlformats-officedocument.presentationml.presentation": true,
 }
 
