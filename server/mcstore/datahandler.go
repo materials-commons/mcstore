@@ -85,7 +85,7 @@ func (h *dataHandler) serveData(writer http.ResponseWriter, req *http.Request) (
 	// serving the original or the converted file.
 	if !original && isConvertedImage(file.MediaType.Mime) {
 		mediatype = "image/jpeg"
-	} else if !original && isExcelSpreadsheet(file.MediaType.Mime) {
+	} else if !original && files.IsOfficeDocument(file.MediaType.Mime) {
 		mediatype = "application/pdf"
 	}
 
@@ -123,18 +123,6 @@ func isConvertedImage(mime string) bool {
 	case "image/x-ms-bmp":
 		return true
 	case "image/bmp":
-		return true
-	default:
-		return false
-	}
-}
-
-// isExcelSpreadsheet checks the mime type to see if it is an excel spreadsheet
-func isExcelSpreadsheet(mime string) bool {
-	switch mime {
-	case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
-		return true
-	case "application/vnd.MS-Excel":
 		return true
 	default:
 		return false
