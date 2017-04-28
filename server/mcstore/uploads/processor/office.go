@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/materials-commons/gohandy/file"
 	"github.com/materials-commons/mcstore/pkg/app"
 )
 
@@ -46,7 +47,9 @@ func (s *officeFileProcessor) convert(filePath, conversionDir string) error {
 		profileDir string
 	)
 
-	if profileDir, err = ioutil.TempDir(os.TempDir(), "materialscommons"); err != nil {
+	tmpDir := os.TempDir()
+
+	if profileDir, err = ioutil.TempDir(tmpDir, "materialscommons"); err != nil {
 		app.Log.Errorf("Unable to create temporary dir: %s", err)
 		return err
 	}
@@ -54,14 +57,25 @@ func (s *officeFileProcessor) convert(filePath, conversionDir string) error {
 	defer os.RemoveAll(profileDir)
 
 	cmd := "libreoffice"
-	args := []string{"-env:UserInstallation=file://" + profileDir, "--headless", "--convert-to", "pdf", "--outdir", conversionDir, filePath}
+	args := []string{"-env:UserInstallation=file://" + profileDir, "--headless", "--convert-to", "pdf", "--outdir", tmpDir, filePath}
 	if out, err = exec.Command(cmd, args...).Output(); err != nil {
 		app.Log.Errorf("convert command failed: %s", err)
 		return err
 	}
 
-	app.Log.Debugf("convert command output: %s", string(out))
+	filename := filepath.Base(filePath + ".pdf")
+	err = s.moveToConvDir(tmpDir, filename, conversionDir)
 
-	err = os.Rename(filePath, filepath.Join(conversionDir, filePath+".pdf"))
+	app.Log.Debugf("convert command output: %s", string(out))
 	return err
+}
+
+func (s *officeFileProcessor) moveToConvDir(tmpFileDir, filename, conversionDir string) error {
+	tmpFilePath := filepath.Join(tmpFileDir, filename)
+	convDirFilePath := filepath.Join(conversionDir, filename)
+	if err := file.Copy(tmpFilePath, convDirFilePath); err != nil {
+		return err
+	}
+
+	return os.Remove(tmpFilePath)
 }
