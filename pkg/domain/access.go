@@ -91,17 +91,15 @@ func (a *access) GetFile(apikey, fileID string) (*schema.File, error) {
 
 // isInPublishedDataset checks if the file is in a published dataset. If it is then the file is accessible.
 func (a *access) isInPublishedDataset(fileID string) bool {
-	if datasets, err := a.files.FileDatasets(fileID); err != nil {
-		return false
-	} else if datasets == nil {
-		return false
-	} else {
-		for _, ds := range datasets {
-			if ds.Published {
-				return true
-			}
-		}
+	datasets, err := a.files.FileDatasets(fileID)
+	if err != nil || datasets == nil {
 		return false
 	}
 
+	for _, ds := range datasets {
+		if ds.Published {
+			return true
+		}
+	}
+	return false
 }
