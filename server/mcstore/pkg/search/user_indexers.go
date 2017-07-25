@@ -3,7 +3,7 @@ package search
 import (
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 func NewUsersIndexer(client *elastic.Client, session *r.Session) *Indexer {

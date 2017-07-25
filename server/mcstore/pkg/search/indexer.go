@@ -5,7 +5,8 @@ import (
 
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/mcstore/pkg/app"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v5"
+	"context"
 )
 
 type Indexer struct {
@@ -18,6 +19,7 @@ type Indexer struct {
 }
 
 func (i *Indexer) Do(itype string, what interface{}) error {
+	ctx := context.TODO()
 	res, err := i.RQL.Run(i.Session)
 	if err != nil {
 		app.Log.Errorf("Failed to run query: %s", err)
@@ -43,7 +45,7 @@ func (i *Indexer) Do(itype string, what interface{}) error {
 			total++
 		} else {
 			count = 0
-			resp, err := bulkReq.Do()
+			resp, err := bulkReq.Do(ctx)
 			if err != nil {
 				app.Log.Errorf("bulkreq failed: %s %#v", err, resp)
 				return err
@@ -58,7 +60,7 @@ func (i *Indexer) Do(itype string, what interface{}) error {
 
 	if count != 0 {
 		app.Log.Infof("Indexed %d %s...", total, itype)
-		bulkReq.Do()
+		bulkReq.Do(ctx)
 	}
 
 	return nil

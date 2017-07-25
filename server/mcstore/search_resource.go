@@ -6,7 +6,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/pkg/ws/rest"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/filters"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v5"
+	"context"
 )
 
 type searchResource struct {
@@ -16,6 +17,8 @@ type searchResource struct {
 type Query struct {
 	QString string `json:"query_string"`
 }
+
+var globalCTX = context.TODO()
 
 func newSearchResource() rest.Service {
 	return &searchResource{
@@ -59,7 +62,7 @@ func (r *searchResource) searchProject(request *restful.Request, response *restf
 	project := request.Attribute("project").(schema.Project)
 	client := request.Attribute("searchclient").(*elastic.Client)
 	q := createQuery(query, project.ID)
-	results, err := client.Search().Index("mc").Query(q).Size(100).Do()
+	results, err := client.Search().Index("mc").Query(q).Size(100).Do(globalCTX)
 	if err != nil {
 		r.log.Infof("Query failed: %s", err)
 		return nil, err
@@ -82,7 +85,7 @@ func (r *searchResource) searchProjectFiles(request *restful.Request, response *
 	project := request.Attribute("project").(schema.Project)
 	client := request.Attribute("searchclient").(*elastic.Client)
 	q := createQuery(query, project.ID)
-	results, err := client.Search().Index("mc").Type("files,processes,samples").Query(q).Size(100).Do()
+	results, err := client.Search().Index("mc").Type("files,processes,samples").Query(q).Size(100).Do(globalCTX)
 	if err != nil {
 		r.log.Infof("Query failed: %s", err)
 		return nil, err
@@ -92,9 +95,9 @@ func (r *searchResource) searchProjectFiles(request *restful.Request, response *
 }
 
 func createQuery(query Query, projectID string) elastic.Query {
-	termFilterProj := elastic.NewTermFilter("project_id", projectID)
+	termQueryProj := elastic.NewTermQuery("project_id", projectID)
 	userQuery := elastic.NewQueryStringQuery(query.QString)
-	boolTerm := elastic.NewBoolFilter()
-	boolTerm = boolTerm.Must(termFilterProj, userQuery)
-	return &boolTerm
+	boolQuery := elastic.NewBoolQuery()
+	boolQuery = boolQuery.Must(termQueryProj, userQuery)
+	return boolQuery
 }

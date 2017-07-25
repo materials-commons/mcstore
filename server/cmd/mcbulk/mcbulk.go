@@ -12,7 +12,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search/doc"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v5"
+	"context"
 )
 
 var mappings string = `
@@ -96,6 +97,8 @@ var mappings string = `
 	}
 }
 `
+
+var globalCTX = context.TODO()
 
 func main() {
 	app := cli.NewApp()
@@ -233,17 +236,17 @@ func esURL() string {
 func createIndex(client *elastic.Client) {
 	fmt.Println("Creating index mc...")
 
-	exists, err := client.IndexExists("mc").Do()
+	exists, err := client.IndexExists("mc").Do(globalCTX)
 	if err != nil {
 		panic("  Failed checking index existence")
 	}
 
 	if exists {
 		fmt.Println("  Index exists deleting old one")
-		client.DeleteIndex("mc").Do()
+		client.DeleteIndex("mc").Do(globalCTX)
 	}
 
-	createStatus, err := client.CreateIndex("mc").Body(mappings).Do()
+	createStatus, err := client.CreateIndex("mc").Body(mappings).Do(globalCTX)
 	if err != nil {
 		fmt.Println("  Failed creating index: ", err)
 		os.Exit(1)

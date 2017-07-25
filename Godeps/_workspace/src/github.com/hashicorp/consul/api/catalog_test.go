@@ -31,7 +31,6 @@ func TestCatalog_Datacenters(t *testing.T) {
 }
 
 func TestCatalog_Nodes(t *testing.T) {
-	t.Parallel()
 	c, s := makeClient(t)
 	defer s.Stop()
 
@@ -48,6 +47,68 @@ func TestCatalog_Nodes(t *testing.T) {
 		}
 
 		if len(nodes) == 0 {
+			return false, fmt.Errorf("Bad: %v", nodes)
+		}
+
+		if _, ok := nodes[0].TaggedAddresses["wan"]; !ok {
+			return false, fmt.Errorf("Bad: %v", nodes[0])
+		}
+
+		return true, nil
+	}, func(err error) {
+		t.Fatalf("err: %s", err)
+	})
+}
+
+func TestCatalog_Nodes_MetaFilter(t *testing.T) {
+	meta := map[string]string{"somekey": "somevalue"}
+	c, s := makeClientWithConfig(t, nil, func(conf *testutil.TestServerConfig) {
+		conf.NodeMeta = meta
+	})
+	defer s.Stop()
+
+	catalog := c.Catalog()
+
+	// Make sure we get the node back when filtering by its metadata
+	testutil.WaitForResult(func() (bool, error) {
+		nodes, meta, err := catalog.Nodes(&QueryOptions{NodeMeta: meta})
+		if err != nil {
+			return false, err
+		}
+
+		if meta.LastIndex == 0 {
+			return false, fmt.Errorf("Bad: %v", meta)
+		}
+
+		if len(nodes) == 0 {
+			return false, fmt.Errorf("Bad: %v", nodes)
+		}
+
+		if _, ok := nodes[0].TaggedAddresses["wan"]; !ok {
+			return false, fmt.Errorf("Bad: %v", nodes[0])
+		}
+
+		if v, ok := nodes[0].Meta["somekey"]; !ok || v != "somevalue" {
+			return false, fmt.Errorf("Bad: %v", nodes[0].Meta)
+		}
+
+		return true, nil
+	}, func(err error) {
+		t.Fatalf("err: %s", err)
+	})
+
+	// Get nothing back when we use an invalid filter
+	testutil.WaitForResult(func() (bool, error) {
+		nodes, meta, err := catalog.Nodes(&QueryOptions{NodeMeta: map[string]string{"nope": "nope"}})
+		if err != nil {
+			return false, err
+		}
+
+		if meta.LastIndex == 0 {
+			return false, fmt.Errorf("Bad: %v", meta)
+		}
+
+		if len(nodes) != 0 {
 			return false, fmt.Errorf("Bad: %v", nodes)
 		}
 
@@ -84,6 +145,56 @@ func TestCatalog_Services(t *testing.T) {
 	})
 }
 
+func TestCatalog_Services_NodeMetaFilter(t *testing.T) {
+	meta := map[string]string{"somekey": "somevalue"}
+	c, s := makeClientWithConfig(t, nil, func(conf *testutil.TestServerConfig) {
+		conf.NodeMeta = meta
+	})
+	defer s.Stop()
+
+	catalog := c.Catalog()
+
+	// Make sure we get the service back when filtering by the node's metadata
+	testutil.WaitForResult(func() (bool, error) {
+		services, meta, err := catalog.Services(&QueryOptions{NodeMeta: meta})
+		if err != nil {
+			return false, err
+		}
+
+		if meta.LastIndex == 0 {
+			return false, fmt.Errorf("Bad: %v", meta)
+		}
+
+		if len(services) == 0 {
+			return false, fmt.Errorf("Bad: %v", services)
+		}
+
+		return true, nil
+	}, func(err error) {
+		t.Fatalf("err: %s", err)
+	})
+
+	// Get nothing back when using an invalid filter
+	testutil.WaitForResult(func() (bool, error) {
+		services, meta, err := catalog.Services(&QueryOptions{NodeMeta: map[string]string{"nope": "nope"}})
+		if err != nil {
+			return false, err
+		}
+
+		if meta.LastIndex == 0 {
+			return false, fmt.Errorf("Bad: %v", meta)
+		}
+
+		if len(services) != 0 {
+			return false, fmt.Errorf("Bad: %v", services)
+		}
+
+		return true, nil
+	}, func(err error) {
+		t.Fatalf("err: %s", err)
+	})
+}
+
 func TestCatalog_Service(t *testing.T) {
 	t.Parallel()
 	c, s := makeClient(t)
@@ -93,6 +204,36 @@ func TestCatalog_Service(t *testing.T) {
 
 	testutil.WaitForResult(func() (bool, error) {
 		services, meta, err := catalog.Service("consul", "", nil)
+		if err != nil {
+			return false, err
+		}
+
+		if meta.LastIndex == 0 {
+			return false, fmt.Errorf("Bad: %v", meta)
+		}
+
+		if len(services) == 0 {
+			return false, fmt.Errorf("Bad: %v", services)
+		}
+
+		return true, nil
+	}, func(err error) {
+		t.Fatalf("err: %s", err)
+	})
+}
+
+func TestCatalog_Service_NodeMetaFilter(t *testing.T) {
+	t.Parallel()
+	meta := map[string]string{"somekey": "somevalue"}
+	c, s := makeClientWithConfig(t, nil, func(conf *testutil.TestServerConfig) {
+		conf.NodeMeta = meta
+	})
+	defer s.Stop()
+
+	catalog := c.Catalog()
+
+	testutil.WaitForResult(func() (bool, error) {
+		services, meta, err := catalog.Service("consul", "", &QueryOptions{NodeMeta: meta})
 		if err != nil {
 			return false, err
 		}
@@ -128,7 +269,12 @@ func TestCatalog_Node(t *testing.T) {
 		if meta.LastIndex == 0 {
 			return false, fmt.Errorf("Bad: %v", meta)
 		}
+
 		if len(info.Services) == 0 {
+			return false, fmt.Errorf("Bad: %v", info)
+		}
+
+		if _, ok := info.Node.TaggedAddresses["wan"]; !ok {
 			return false, fmt.Errorf("Bad: %v", info)
 		}
 
@@ -157,7 +303,7 @@ func TestCatalog_Registration(t *testing.T) {
 		CheckID:   "service:redis1",
 		Name:      "Redis health check",
 		Notes:     "Script based health check",
-		Status:    "passing",
+		Status:    HealthPassing,
 		ServiceID: "redis1",
 	}
 
@@ -165,6 +311,7 @@ func TestCatalog_Registration(t *testing.T) {
 		Datacenter: "dc1",
 		Node:       "foobar",
 		Address:    "192.168.10.10",
+		NodeMeta:   map[string]string{"somekey": "somevalue"},
 		Service:    service,
 		Check:      check,
 	}
@@ -190,6 +337,10 @@ func TestCatalog_Registration(t *testing.T) {
 
 		if health[0].CheckID != "service:redis1" {
 			return false, fmt.Errorf("missing checkid service:redis1")
+		}
+
+		if v, ok := node.Node.Meta["somekey"]; !ok || v != "somevalue" {
+			return false, fmt.Errorf("missing node meta pair somekey:somevalue")
 		}
 
 		return true, nil
@@ -270,6 +421,97 @@ func TestCatalog_Registration(t *testing.T) {
 
 		if node != nil {
 			return false, fmt.Errorf("node is not deregistered: %v", node)
+		}
+
+		return true, nil
+	}, func(err error) {
+		t.Fatalf("err: %s", err)
+	})
+}
+
+func TestCatalog_EnableTagOverride(t *testing.T) {
+	t.Parallel()
+	c, s := makeClient(t)
+	defer s.Stop()
+
+	catalog := c.Catalog()
+
+	service := &AgentService{
+		ID:      "redis1",
+		Service: "redis",
+		Tags:    []string{"master", "v1"},
+		Port:    8000,
+	}
+
+	reg := &CatalogRegistration{
+		Datacenter: "dc1",
+		Node:       "foobar",
+		Address:    "192.168.10.10",
+		Service:    service,
+	}
+
+	testutil.WaitForResult(func() (bool, error) {
+		if _, err := catalog.Register(reg, nil); err != nil {
+			return false, err
+		}
+
+		node, _, err := catalog.Node("foobar", nil)
+		if err != nil {
+			return false, err
+		}
+
+		if _, ok := node.Services["redis1"]; !ok {
+			return false, fmt.Errorf("missing service: redis1")
+		}
+		if node.Services["redis1"].EnableTagOverride != false {
+			return false, fmt.Errorf("tag override set")
+		}
+
+		services, _, err := catalog.Service("redis", "", nil)
+		if err != nil {
+			return false, err
+		}
+
+		if len(services) < 1 || services[0].ServiceName != "redis" {
+			return false, fmt.Errorf("missing service: redis")
+		}
+		if services[0].ServiceEnableTagOverride != false {
+			return false, fmt.Errorf("tag override set")
+		}
+
+		return true, nil
+	}, func(err error) {
+		t.Fatalf("err: %s", err)
+	})
+
+	service.EnableTagOverride = true
+	testutil.WaitForResult(func() (bool, error) {
+		if _, err := catalog.Register(reg, nil); err != nil {
+			return false, err
+		}
+
+		node, _, err := catalog.Node("foobar", nil)
+		if err != nil {
+			return false, err
+		}
+
+		if _, ok := node.Services["redis1"]; !ok {
+			return false, fmt.Errorf("missing service: redis1")
+		}
+		if node.Services["redis1"].EnableTagOverride != true {
+			return false, fmt.Errorf("tag override not set")
+		}
+
+		services, _, err := catalog.Service("redis", "", nil)
+		if err != nil {
+			return false, err
+		}
+
+		if len(services) < 1 || services[0].ServiceName != "redis" {
+			return false, fmt.Errorf("missing service: redis")
+		}
+		if services[0].ServiceEnableTagOverride != true {
+			return false, fmt.Errorf("tag override not set")
 		}
 
 		return true, nil

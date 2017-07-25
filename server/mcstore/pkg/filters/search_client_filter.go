@@ -8,7 +8,7 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 var (

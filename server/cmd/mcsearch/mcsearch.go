@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v5"
 	"os"
 )
 

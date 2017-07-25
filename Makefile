@@ -1,4 +1,4 @@
-.PHONY: bin test all fmt deploy docs server libs cli mc mcbulk
+.PHONY: bin test all fmt deploy docs server libs cli mc mcbulk update-deps
 
 all: fmt bin
 
@@ -23,6 +23,11 @@ fmt:
 
 libs:
 	-godep go install ./...
+
+update-deps:
+	-rm -rf ../Godeps
+	-mv Godeps ..
+	-godep save ./...
 
 deploy: server
 	-cp server/mcstore/main/mcstored $$GOPATH/bin

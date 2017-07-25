@@ -7,7 +7,8 @@ import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search/doc"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v5"
+	"context"
 )
 
 type idField struct {
@@ -37,11 +38,12 @@ func fileChangeIndexer(client *elastic.Client, session *r.Session) {
 		change changeItem
 	)
 
+	ctx := context.TODO()
 	files, _ := r.Table("datafiles").Changes().Run(session)
 	for files.Next(&change) {
 		if change.OldValue.ID != "" && change.NewValue.ID == "" {
 			app.Log.Infof("File Deleted, removing from Index: %s", change.OldValue.ID)
-			client.Delete().Index("mc").Type("files").Id(change.OldValue.ID).Do()
+			client.Delete().Index("mc").Type("files").Id(change.OldValue.ID).Do(ctx)
 		} else {
 			id := getItemID(change.OldValue, change.NewValue)
 			app.Log.Infof("Indexing file id: %s", id)

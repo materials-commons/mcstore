@@ -5,7 +5,7 @@ import (
 	"github.com/materials-commons/config"
 	"github.com/materials-commons/mcstore/pkg/app"
 	"github.com/materials-commons/mcstore/pkg/db"
-	"gopkg.in/olivere/elastic.v2"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 // NewServicesContainer creates a new restful.Container made up of all
