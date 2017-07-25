@@ -5,6 +5,7 @@ import (
 
 	"os"
 
+	"context"
 	"github.com/codegangsta/cli"
 	r "github.com/dancannon/gorethink"
 	"github.com/materials-commons/config"
@@ -13,7 +14,6 @@ import (
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search"
 	"github.com/materials-commons/mcstore/server/mcstore/pkg/search/doc"
 	"gopkg.in/olivere/elastic.v5"
-	"context"
 )
 
 var mappings string = `
@@ -196,7 +196,8 @@ func runCommands(c *cli.Context) {
 	fmt.Println("Elasticsearch URL:", esurl)
 	client, err := elastic.NewClient(elastic.SetURL(esurl))
 	if err != nil {
-		panic("Unable to connect to elasticsearch")
+		fmt.Println("Unable to connect to elasticsearch:", err)
+		os.Exit(1)
 	}
 
 	session := db.RSessionMust()
