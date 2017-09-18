@@ -2,7 +2,6 @@ package processor
 
 import (
 	"github.com/materials-commons/mcstore/pkg/db/schema"
-	"github.com/materials-commons/mcstore/pkg/files"
 )
 
 // fileProcess defines an interface for processing different
@@ -19,10 +18,10 @@ type Processor interface {
 // nothing to the file.
 func New(fileID string, mediatype schema.MediaType) Processor {
 	switch {
-	case isImageTypeNeedingConversion(mediatype.Mime):
-		return newImageFileProcessor(fileID)
-	case files.IsOfficeDocument(mediatype.Mime):
-		return newOfficeFileProcessor(fileID)
+	//case isImageTypeNeedingConversion(mediatype.Mime):
+	//	return newImageFileProcessor(fileID)
+	//case files.IsOfficeDocument(mediatype.Mime):
+	//	return newOfficeFileProcessor(fileID)
 	default:
 		// Not a file type we process (yet)
 		return &noopFileProcessor{}
