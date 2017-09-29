@@ -7,6 +7,7 @@ import (
 	"github.com/materials-commons/mcstore/pkg/app"
 	"gopkg.in/olivere/elastic.v5"
 	"context"
+	"fmt"
 )
 
 type Indexer struct {
@@ -29,6 +30,7 @@ func (i *Indexer) Do(itype string, what interface{}) error {
 
 	total := 0
 	count := 0
+	totalCount := 0
 	bulkReq := i.Client.Bulk()
 	elementType := reflect.TypeOf(what)
 	result := reflect.New(elementType)
@@ -44,12 +46,14 @@ func (i *Indexer) Do(itype string, what interface{}) error {
 			count++
 			total++
 		} else {
+			totalCount = totalCount + count
 			count = 0
 			resp, err := bulkReq.Do(ctx)
 			if err != nil {
 				app.Log.Errorf("bulkreq failed: %s %#v", err, resp)
-				return err
+				//return err
 			}
+			fmt.Println("Bulk load count:", totalCount)
 		}
 		result = reflect.New(elementType)
 	}

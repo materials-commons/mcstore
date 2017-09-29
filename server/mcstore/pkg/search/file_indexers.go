@@ -65,6 +65,6 @@ func defaultFileIndexer(client *elastic.Client, session *r.Session) *Indexer {
 		},
 		Client:   client,
 		Session:  session,
-		MaxCount: 10,
+		MaxCount: 100,
 	}
 }
